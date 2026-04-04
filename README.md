@@ -1,2 +1,2 @@
-# Konnect
-NEXT 웹 개발 대회
+# KONNECT
+NEXT 웹 개발 대회 출품작
