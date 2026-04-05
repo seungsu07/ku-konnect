@@ -10,7 +10,7 @@ function App() {
         <h1 className="app-title">Konnect 학업 설계 플랫폼</h1>
         
         <p className="app-subtitle">
-          연대바보
+          이 글자가 보이면 웹훅 성공
         </p>
       </header>
     </div>
