@@ -14,5 +14,8 @@ export default defineConfig({
     allowedHosts: [
       'konnect.hydv.kr'
     ],
+    watch: {
+      usePolling: true
+    }
   }
 })
