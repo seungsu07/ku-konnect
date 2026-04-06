@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx index.ts"
+    "dev": "CHOKIDAR_USEPOLLING=true tsx watch index.ts"
   },
   "keywords": [],
   "author": "",
