@@ -68,11 +68,23 @@
   
   border-bottom: 3px solid #ff3131; 
   
-  background: linear-gradient(
+  background-image: linear-gradient(
     to top, 
     rgba(255, 49, 49, 0.15) 0%, 
     transparent 70%
   );
+  background-repeat: no-repeat;
+  background-position: bottom;
+  animation: shineUpBg 0.4s ease-out forwards;
+}
+
+@keyframes shineUpBg {
+  0% {
+    background-size: 100% 0%;
+  }
+  100% {
+    background-size: 100% 100%;
+  }
 }
 
 .login-btn {
