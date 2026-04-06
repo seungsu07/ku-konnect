@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 
-const Home = () => <h2>Home Page</h2>;
+const Home = () => <h2>Main Page</h2>;
 const Majormap = () => <h2>Majormap Page</h2>;
 const Timetable = () => <h2>Timetable Page</h2>;
 const Kommunity = () => <h2>Kommunity Page</h2>;
