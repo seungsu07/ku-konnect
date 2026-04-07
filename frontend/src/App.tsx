@@ -1,18 +1,21 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 const Home = () => <h2>Main Page</h2>;
 const Majormap = () => <h2>Majormap Page</h2>;
 const Timetable = () => <h2>Timetable Page</h2>;
 const Kommunity = () => <h2>Kommunity Page</h2>;
 const Study = () => <h2>Study Page</h2>;
-const Login = () => <h2>Login Page</h2>;
 
-function App() {
+const AppContent = () => {
+  const location = useLocation();
+  const showNavbar = location.pathname !== '/login' && location.pathname !== '/signup';
+
   return (
-    <BrowserRouter>
-    <Navbar/>
-
+    <>
+      {showNavbar && <Navbar/>}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/majormap" element={<Majormap />} />
@@ -20,7 +23,16 @@ function App() {
         <Route path="/kommunity" element={<Kommunity />} />
         <Route path="/study" element={<Study />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }
