@@ -81,7 +81,7 @@ function Signup() {
                             <input 
                                 type="text" 
                                 className={styles['form-input']} 
-                                placeholder="예: 2024123456" 
+                                placeholder="예: 2026123456" 
                                 value={studentId}
                                 onChange={(e) => setStudentId(e.target.value)}
                             />
