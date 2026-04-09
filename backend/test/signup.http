@@ -1,0 +1,14 @@
+@base = https://api.konnect.hydv.kr
+
+###
+
+# @name signup
+POST {{base}}/auth/signup
+Content-Type: application/json
+
+{
+    "a": 1
+}
+
+###
+

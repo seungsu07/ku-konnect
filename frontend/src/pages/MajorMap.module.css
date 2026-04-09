@@ -1,0 +1,246 @@
+.container {
+  padding: 40px;
+  background-color: #fdfdfd;
+  min-height: calc(100vh - 64px);
+  font-family: 'Inter', 'Pretendard', sans-serif;
+  box-sizing: border-box;
+}
+
+.header {
+  margin-bottom: 40px;
+  max-width: 800px;
+}
+
+.title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.highlight {
+  background: linear-gradient(135deg, #ff3131, #ff914d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.15rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.aiPanel {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(to right, #fee2e2, #ffedd5);
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid #fca5a5;
+  box-shadow: 0 4px 12px rgba(255, 49, 49, 0.1);
+  gap: 16px;
+}
+
+.aiIcon {
+  font-size: 2rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.aiText h4 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.aiText p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #991b1b;
+}
+
+/* Tree Container */
+.treeScroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 40px 20px 80px 20px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  border: 1px solid #f3f4f6;
+  min-height: 400px;
+}
+
+.tree {
+  display: inline-block;
+  min-width: max-content;
+}
+
+/* Tree Mechanics */
+.ul {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  position: relative;
+  margin-left: 80px; 
+}
+
+/* Line from child nodes back to parent node */
+.ul::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -80px;
+  width: 40px; 
+  border-top: 2px solid #cbd5e1;
+}
+
+.tree > .ul {
+  margin-left: 0;
+}
+.tree > .ul::before {
+  display: none;
+}
+
+.li {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+  padding: 24px 0;
+}
+
+/* Vertical spanning line */
+.li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40px; 
+  border-left: 2px solid #cbd5e1;
+}
+
+.li:first-child::before {
+  top: 50%;
+}
+.li:last-child::before {
+  bottom: 50%;
+}
+.li:only-child::before {
+  display: none;
+}
+
+/* Horizontal line pointing to standard node */
+.li::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -40px;
+  width: 40px;
+  border-top: 2px solid #cbd5e1;
+}
+
+.tree > .ul > .li::before,
+.tree > .ul > .li::after {
+  display: none;
+}
+
+/* Card Styling */
+.card {
+  min-width: 260px;
+  max-width: 260px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  z-index: 2; 
+  box-sizing: border-box;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+}
+
+.recommended {
+  border: 2px solid #ff3131;
+  background: #fffafa;
+  box-shadow: 0 8px 24px rgba(255, 49, 49, 0.12);
+}
+
+.glow {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(255, 49, 49, 0.3);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: breathe 3s infinite alternate;
+}
+
+@keyframes breathe {
+  0% { opacity: 0.4; }
+  100% { opacity: 0.8; }
+}
+
+.tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.recommended .tag {
+  background: #ff3131;
+  color: white;
+}
+
+.nodeTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.nodeSubtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Custom Scrollbar for Tree */
+.treeScroll::-webkit-scrollbar {
+  height: 12px;
+}
+.treeScroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+.treeScroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+.treeScroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

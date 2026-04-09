@@ -1,20 +1,41 @@
-import Konnect_logo from './assets/logo.svg' 
-import './App.css'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
-function App() {
+import MajorMap from './pages/MajorMap';
+
+const Home = () => <h2>Main Page</h2>;
+const Timetable = () => <h2>Timetable Page</h2>;
+const Kommunity = () => <h2>Kommunity Page</h2>;
+const Study = () => <h2>Study Page</h2>;
+
+const AppContent = () => {
+  const location = useLocation();
+  const showNavbar = location.pathname !== '/login' && location.pathname !== '/signup';
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <img src={Konnect_logo} className="app-logo" alt="React logo" />
-        <h1 className="app-title">Konnect 학업 설계 플랫폼</h1>
-        
-        <p className="app-subtitle">
-          연대바보
-        </p>
-      </header>
-    </div>
-  )
+    <>
+      {showNavbar && <Navbar/>}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/majormap" element={<MajorMap />} />
+        <Route path="/timetable" element={<Timetable />} />
+        <Route path="/kommunity" element={<Kommunity />} />
+        <Route path="/study" element={<Study />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

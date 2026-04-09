@@ -1,0 +1,213 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eaeaea;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center; 
+  z-index: 1000;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  gap: 40px; 
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #1a1a1a;
+}
+
+.logo-icon {
+  width: 128px;
+}
+
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  height: 100%; 
+  gap: 4px; 
+}
+
+.nav-item {
+  display: flex;
+  justify-content: center; 
+  align-items: center;     
+  height: 100%;            
+  min-width: 90px;         
+  padding: 6px 16px 0px 16px;        
+  text-decoration: none;
+  color: #666666;
+  font-size: 0.95rem;
+  font-weight: 500;
+  
+  border-bottom: 3px solid transparent; 
+  box-sizing: border-box;
+  transition: color 0.2s ease-in-out, border-bottom-color 0.2s ease-in-out, background-color 0.2s;
+}
+
+.nav-item:hover {
+  color: #1a1a1a;
+}
+
+.nav-item.active {
+  color: #1a1a1a;
+  font-weight: 600;
+  
+  border-bottom: 3px solid #ff3131; 
+  
+  background-image: linear-gradient(
+    to top, 
+    rgba(255, 49, 49, 0.15) 0%, 
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+  background-position: bottom;
+  animation: shineUpBg 0.4s ease-out forwards;
+}
+
+@keyframes shineUpBg {
+  0% {
+    background-size: 100% 0%;
+  }
+  100% {
+    background-size: 100% 100%;
+  }
+}
+
+.login-btn {
+  margin-left: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  padding: 8px 24px; 
+  border-radius: 9999px; 
+  
+  background-color: #ff4c3f;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  
+  transition: background-color 0.2s ease-in-out;
+}
+
+.login-btn:hover {
+  background-color: #c5382e;
+}
+
+/* =========================================
+   모바일 슬라이드 메뉴 기본 스타일 (데스크탑에선 숨김)
+   ========================================= */
+
+.mobile-menu-btn,
+.slide-menu-overlay,
+.slide-menu {
+  display: none; 
+}
+
+/* =========================================
+   반응형 (화면 가로 768px 이하일 때 적용)
+   ========================================= */
+@media (max-width: 768px) {
+  
+
+  .navbar-container {
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+
+  .navbar-menu {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-right: 4px;
+  }
+
+  .slide-menu-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+  }
+  .slide-menu-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .slide-menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: -280px; 
+    width: 280px;
+    height: 100vh;
+    background-color: #ffffff;
+    z-index: 1002;
+    padding: 24px;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    
+    box-sizing: border-box; 
+    
+    transition: left 0.3s ease-in-out;
+  }
+  
+  .slide-menu.open {
+    left: 0; 
+  }
+
+  .close-btn {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    margin-bottom: 24px;
+    color: #666;
+  }
+
+  .slide-menu-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .slide-item {
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    padding: 12px 0;
+    border-bottom: 1px solid #eaeaea;
+  }
+}
