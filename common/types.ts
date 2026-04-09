@@ -1,12 +1,7 @@
-interface User {
+export interface User {
+    student_id: number;
+    college_id: number;
+    univ_mail: string;
     id: string;
     password: string;
-    name: string;
-}
-
-interface Post {
-    id: string;
-    title: string;
-    created_at: number;
-    // ...
 }
