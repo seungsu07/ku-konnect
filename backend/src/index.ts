@@ -11,7 +11,8 @@ main(function* () {
         controllers: [RootCon, AuthCon],
         middlewares: [],
         validation: true,
-        classTransformer: true
+        classTransformer: true,
+        development: false
     });
     
     app.listen(port, host, () => {

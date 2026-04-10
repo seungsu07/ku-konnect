@@ -1,6 +1,8 @@
 import { JsonController, Get, Post, Param, Body, NotFoundError, All } from 'routing-controllers';
-import { UserData } from './dto.js';
+import { IsString, IsInt, IsEmail } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import { SignupD } from './dto.js';
+import { run } from 'effection';
 
 @JsonController('/')
 export class RootCon {
@@ -8,6 +10,16 @@ export class RootCon {
     root() {
         return 'OK';
     }
+}
+
+class CertGetD {
+    @IsEmail()
+        univ_mail!: string;
+}
+
+class CertD {
+    @IsInt()
+        cert_num!: number;
 }
 
 @JsonController('/auth')
@@ -18,9 +30,25 @@ export class AuthCon {
     }
     
     @Post('/signup')
-    signup(@Body({ required: true, validate: true }) user: UserData) {
-        console.log(user instanceof UserData);
-        console.log(plainToClass(UserData, user));
-        return user;
+    async signup(@Body() user: SignupD) {
+        return await run(function*() {
+            return {};
+        });
+    }
+    
+    @Post('/signup/cert/get')
+    async signupCertGet(@Body() cert: CertGetD) {
+        return await run(function*() {
+            const mail = cert.univ_mail;
+            return [cert instanceof CertGetD, mail];
+        });
+    }
+    
+    @Post('/signup/cert')
+    async signupCert(@Body() cert: CertD) {
+        return await run(function*() {
+            const num = cert.cert_num;
+            return {};
+        });
     }
 }
