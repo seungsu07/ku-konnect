@@ -1,13 +1,14 @@
 /** 과목 종류: 전공 | 교양 | 융합 */
-export type CourseType = 'major' | 'general' | 'inter';
+export type CourseType = "major" | "general" | "inter";
 
 /** 요일 */
-export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
+export type Day = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 
 /** 학기: 1학기 | 2학기 | 계절-여름 | 계절-겨울 */
-export type Semester = 'first' | 'second' | 'summer' | 'winter';
+export type Semester = "first" | "second" | "summer" | "winter";
 
-export interface UserID extends String {}
+/** 6 ~ 18글자 */
+export type UserID = string;
 
 /** 유저 정보 */
 export interface User {
@@ -20,28 +21,41 @@ export interface User {
     /** 프로필 */
     profiles: UserProfileID[];
     /** 학번 */
-    student_id: StudentID;
-    /** 단과대 코드 */
-    college_id: CollegeID;
+    student_id: string;
+    /** 학과 코드 */
+    dept_id: DepartmentID;
     /** 학교 메일 */
     univ_mail: string;
     /** 개인 메일 */
     mail: string;
 }
 
-export interface UserProfileID extends String {}
+/** UUID */
+export type UserProfileID = string;
 
 export interface UserProfile {
+    /** 식별자 */
     id: UserProfileID;
+    /** 닉네임 */
     nickname: string;
-    
+    /** 사진-Base64 */
+    image: string;
 }
 
-export interface StudentID extends String {}
+/** 4글자 (ex. COSE - 컴퓨터학과) */
+export type DepartmentID = string;
 
-export interface ProfessorID extends String {}
+/** 학과 정보 */
+export interface Department {
+    /** 식별자 */
+    id: DepartmentID;
+    /** 학과 이름 */
+    name: string;
+    /** 학과 번호 */
+    code: number;
+}
 
-export interface CollegeID extends String {}
+export type ProfessorID = string;
 
 /** 교수 정보 */
 export interface Professor {
@@ -55,7 +69,8 @@ export interface Professor {
     mail: string;
 }
 
-export interface CourseID extends String {}
+/** 학수번호 - 6글자 이상 */
+export type CourseID = string;
 
 /** 과목 정보 */
 export interface Course {
@@ -69,7 +84,7 @@ export interface Course {
     course_type: CourseType;
 }
 
-export interface LectureID extends String {}
+export type LectureID = string;
 
 /** 강의 정보 */
 export interface Lecture {
@@ -95,7 +110,7 @@ export interface Lecture {
     credit: number;
 }
 
-export interface LectureClassID extends String {}
+export type LectureClassID = string;
 
 /** 분반 정보 */
 export interface LectureClass {
@@ -107,7 +122,7 @@ export interface LectureClass {
     periods: PeriodID[]; // Period ID
 }
 
-export interface PeriodID extends String {}
+export type PeriodID = string;
 
 /** 교시 */
 export interface Period {
@@ -126,7 +141,7 @@ export interface Period {
 /** 지도상 좌표 */
 export type Coordinate = [number, number];
 
-export interface BuildingID extends String {}
+export type BuildingID = string;
 
 /** 건물 */
 export interface Building {
@@ -138,7 +153,7 @@ export interface Building {
     location: Coordinate;
 }
 
-export interface ClassRoomID extends String {}
+export type ClassRoomID = string;
 
 /** 교실 */
 export interface ClassRoom {
@@ -150,7 +165,7 @@ export interface ClassRoom {
     room: string;
 }
 
-export interface TimeTableID extends String {}
+export type TimeTableID = string;
 
 /** 시간표 */
 export interface TimeTable {
@@ -161,7 +176,7 @@ export interface TimeTable {
     /** 주 시간표 여부 */
     selected: boolean;
     /** 일 */
-    days: {[day: string]: TimeTableDay};
+    days: { [day: string]: TimeTableDay };
 }
 
 /** 시간표 일 */
@@ -170,7 +185,7 @@ export interface TimeTableDay {
     periods: PeriodID[];
 }
 
-export interface RoadmapID extends String {}
+export type RoadmapID = string;
 
 /** 로드맵 */
 export interface Roadmap {
@@ -181,7 +196,7 @@ export interface Roadmap {
 
 // Community
 
-export interface PostID extends String {}
+export type PostID = string;
 
 export interface Post {
     /** 식별자 */
@@ -196,15 +211,9 @@ export interface Post {
     visible: boolean;
 }
 
-export interface BoardID extends String {}
+export type BoardID = string;
 
 export interface Board {
     id: BoardID;
     posts: PostID[];
 }
-
-
-
-
-
-
