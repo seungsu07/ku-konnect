@@ -20,6 +20,10 @@ export function* ServerManager(apiChannel: ApiChannel) {
     app.all("/", (req, res) => {
         res.json("OK");
     });
+    
+    app.all("test", (req, res) => {
+        res.json({ ok: true });
+    });
 
     // app.all("/signup", (req, res) => {
     //     function resolve(data: { status: number; ok: boolean }) {
