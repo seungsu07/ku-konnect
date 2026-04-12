@@ -7,3 +7,8 @@ export interface ApiRequest {
 }
 
 export type ApiChannel = Channel<ApiRequest, void>;
+
+export interface ApiResult {
+    status: number;
+    data: any;
+}
