@@ -1,110 +1,141 @@
-import { default as express, type ErrorRequestHandler } from "express";
-import { default as createHttpError, isHttpError, HttpError } from 'http-errors';
-import { suspend } from "effection";
-import { z } from "zod";
-import { type ApiChannel, type ApiResult } from "./api-base.js";
-import { createApiChannel } from "./api.js";
+import {
+    default as express,
+    type ErrorRequestHandler,
+    type RequestHandler,
+} from 'express';
+import { default as createHttpError, isHttpError } from 'http-errors';
+import { suspend } from 'effection';
+import { z } from 'zod';
+import {
+    type ApiChannel,
+    type ApiResultSuccess,
+    type ApiResultFailed,
+} from './api-base.js';
+import { Dto } from '../../common/dto.js';
 
 export function* ServerManager(param: { apiChannel: ApiChannel }) {
-    const host = "0.0.0.0";
+    const host = '0.0.0.0';
     const port = 3000;
     const apiChannel = param.apiChannel;
-    
-    function createRequestHandler<T extends z.ZodRawShape>(scheme: z.ZodObject<T>) {
-        return function (req: express.Request, res: express.Response, next: express.NextFunction) {
-            const parseResult = scheme.safeParse(req.body);
+
+    function createRequestHandler<T extends z.ZodRawShape>(
+        scheme: z.ZodObject<T>,
+        action: string,
+    ): RequestHandler {
+        return (req, res, next) => {
+            const data = ((method) => {
+                if (method === 'GET') {
+                    try { return JSON.parse(atob(req.query.data as string)); } catch (_) { return null; }
+                }
+                if (method === 'POST') {
+                    return req.body;
+                }
+                return null;
+            })(req.method);
+            if (data == null) {
+                res.locals.result = {
+                    status: 400,
+                    data: {
+                        success: false,
+                        message: 'invalid request scheme',
+                        errDetails: {},
+                    },
+                } as ApiResultFailed;
+            }
+            const parseResult = scheme.safeParse(data);
             if (parseResult.success === false) {
-                next(createHttpError(400, 'invalid request scheme'));
-                return;
+                res.locals.result = {
+                    status: 400,
+                    data: {
+                        success: false,
+                        message: 'invalid data scheme',
+                        errDetails: z.treeifyError(parseResult.error),
+                    },
+                } as ApiResultFailed;
+                return next(createHttpError(400));
             }
-            function resolve(apiResult: ApiResult) {
+            function resolve(apiResult: ApiResultSuccess) {
                 res.locals.result = apiResult;
-                next();
+                return next();
             }
-            function reject(err: HttpError) {
-                next(err);
+            function reject(apiResult: ApiResultFailed) {
+                res.locals.result = apiResult;
+                return next(createHttpError(apiResult.status));
             }
-            apiChannel.send({ data: parseResult.data, resolve, reject });
+            apiChannel.send({
+                action,
+                data: parseResult.data,
+                resolve,
+                reject,
+            });
         };
     }
 
     const app = express();
 
-    setJsonParser: {
-        app.use(express.json());
-    
-        app.use(((err, req, res, next) => {
-            next(createHttpError(400, 'invalid request scheme'));
-        }) as ErrorRequestHandler);
-    }
+    app.use(express.json());
 
-    setRootRouter: {
-        app.all("/", (req, res) => {
-            res.json("OK");
-        });
-    }
+    app.use(((err, req, res, next) => {
+        res.locals.result = {
+            status: 400,
+            data: {
+                success: false,
+                message: 'invalid JSON',
+                errDetails: {},
+            },
+        } as ApiResultFailed;
+        return next(createHttpError(400));
+    }) as ErrorRequestHandler);
 
-    setSignUpRouter: {
-        const signUpScheme = z.object({
-            id: z.string().min(6).max(18),
-            password: z.string().min(6),
-            name: z.string().min(2).max(6),
-            student_id: z.string().length(10),
-            dept_id: z.string().length(4),
-        });
-        
-        app.post("/signup", createRequestHandler(signUpScheme));
-    }
-    
-    setSignUpMailRouter: {
-        const mailScheme = z.object({
-            session: z.uuidv4(),
-            univ_mail: z.email().toLowerCase().endsWith('@korea.ac.kr'),
-        });
-        
-        app.post("/signup/mail", createRequestHandler(mailScheme));
-    }
-    
-    setSignUpMailCertRouter: {
-        const certScheme = z.object({
-            session: z.uuidv4(),
-            univ_mail: z.email().toLowerCase().endsWith('@korea.ac.kr'),
-            cert_num: z.string().length(6),
-        });
-        
-        app.post("/signup/mail/cert", createRequestHandler(certScheme));
-    }
-    
+    app.all('/', (req, res) => {
+        return res.json('OK');
+    });
+
+    app.post(
+        '/auth/signup',
+        createRequestHandler(Dto.authSignup, 'auth.signup'),
+    );
+
+    app.post(
+        '/cert/univmail/get',
+        createRequestHandler(Dto.certUnivmailGet, 'cert.univmail.get'),
+    );
+
+    app.post(
+        '/cert/univmail/check',
+        createRequestHandler(Dto.certUnivmailCheck, 'cert.univmail.check'),
+    );
+
     // TODO
-    
-    setApiResultHandler: {
-        app.use((req, res, next) => {
-            if (res.locals.result === undefined) {
-                res.status(404).json({ error: 'not found' });
-                return;
-            }
-            res.status(res.locals.result.status).json(res.locals.result.data);
-        });
-    }
 
-    setHttpErrorHandler: {
-        app.use(((err, req, res, next) => {
-            if (isHttpError(err)) {
-                res.status(err.statusCode).json({ error: err.message });
-                return;
-            }
-            next(err);
-        }) as ErrorRequestHandler);
-    }
-    
-    setUnexpectedErrorHandler: {
-        app.use(((err, req, res, next) => {
-            res.status(500).json({ error: 'internal server error' });
-        }) as ErrorRequestHandler);
-    }
+    /** no route */
+    app.use((req, res, next) => {
+        if (res.locals.result === undefined) {
+            return res.status(404).json({ error: 'not found' });
+        }
+        return res
+            .status(res.locals.result.status)
+            .json(res.locals.result.data);
+    });
+
+    /** api error */
+    app.use(((err, req, res, next) => {
+        if (isHttpError(err)) {
+            return res.status(err.statusCode).json({
+                error: err.message,
+                details: err.details,
+            });
+        }
+        return next(err);
+    }) as ErrorRequestHandler);
+
+    /** unexpected */
+    app.use(((err, req, res, next) => {
+        return res.status(500).json({ error: 'internal server error' });
+    }) as ErrorRequestHandler);
 
     app.listen(port, host, () => {
-        console.log("Server is now running!");
+        console.log('Server is now running!');
     });
 
     yield* suspend();

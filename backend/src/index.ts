@@ -1,9 +1,9 @@
-import "reflect-metadata";
-import { main, spawn, suspend } from "effection";
-import { ServerManager } from "./server.js";
-import { ApiManager, createApiChannel } from "./api.js";
+import 'reflect-metadata';
+import { main, spawn, suspend } from 'effection';
+import { ServerManager } from './server.js';
+import { ApiManager, createApiChannel } from './api.js';
 
-main(function* () {
+await main(function* () {
     const apiChannel = createApiChannel();
     
     yield* spawn(() => ServerManager({ apiChannel }));

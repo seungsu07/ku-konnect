@@ -1,11 +1,11 @@
 /** 과목 종류: 전공 | 교양 | 융합 */
-export type CourseType = "major" | "general" | "inter";
+export type CourseType = 'major' | 'general' | 'inter';
 
 /** 요일 */
-export type Day = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
 /** 학기: 1학기 | 2학기 | 계절-여름 | 계절-겨울 */
-export type Semester = "first" | "second" | "summer" | "winter";
+export type Semester = 'first' | 'second' | 'summer' | 'winter';
 
 /** 6 ~ 18글자 */
 export type UserID = string;

@@ -1,7 +1,10 @@
-import { type Channel } from "effection";
+import { type Channel } from 'effection';
 
 export interface ApiRequest {
-    data: any;
+    action: string,
+    data: {
+        [K: string]: any;
+    };
     resolve: Function;
     reject: Function;
 }
@@ -10,5 +13,27 @@ export type ApiChannel = Channel<ApiRequest, void>;
 
 export interface ApiResult {
     status: number;
-    data: any;
+    data: {
+        [K: string]: any;
+        success: boolean;
+        message?: string;
+        errDetails?: any;
+    };
+}
+
+export interface ApiResultSuccess extends ApiResult {
+    data: {
+        [k: string]: any;
+        success: true;
+        message?: string;
+    };
+}
+
+export interface ApiResultFailed extends ApiResult {
+    data: {
+        [k: string]: any;
+        success: false;
+        message: string;
+        errDetails: any;
+    };
 }
