@@ -91,7 +91,7 @@ export interface Lecture {
     /** 식별자 */
     id: LectureID;
     /** 과목 코드 */
-    course_code: string;
+    course_code: CourseID;
     /** 개설연도 */
     ay: number;
     /** 학기 */
@@ -216,4 +216,78 @@ export type BoardID = string;
 export interface Board {
     id: BoardID;
     posts: PostID[];
+}
+
+export const DAY_MAPPING: { id: Day; label: string }[] = [
+  { id: 'mon', label: '월' },
+  { id: 'tue', label: '화' },
+  { id: 'wed', label: '수' },
+  { id: 'thu', label: '목' },
+  { id: 'fri', label: '금' },
+];
+
+
+
+/** AI 시간표 생성 선호 조건 (가중치) */
+export interface Preferences {
+  /** 공강 희망 요일 */
+  daysOff: Day[];
+  /** 점심시간 보장 선호 (true면 가급적 점심시간은 비워둠) */
+  lunchTimeLock: boolean;
+  /** 최대 연강 한도 (ex. 3이면 최대 3연강) */
+  maxConsecutive: number;
+  /** 시간표 압축 정도 가중치 (우주공강 최소화) */
+  compactnessWeight: number;
+  /** 캠퍼스 이동 거리 최소화 가중치 */
+  campusDistanceWeight: number;
+  /** 아침 수업(1교시 등) 회피 가중치 */
+  avoidMorningWeight: number;
+}
+
+/** AI 시간표 생성 필수 강제 조건 (반드시 지켜야 하는 조건) */
+export interface HardConstraints {
+  /** 점심시간 보장 필수 여부 */
+  lunchTimeLock: boolean;
+  /** 최대 연강 한도 필수 여부 */
+  maxConsecutive: boolean;
+  /** 우주공강 최소화 필수 여부 */
+  compactnessWeight: boolean;
+  /** 캠퍼스 이동 거리 최소화 필수 여부 */
+  campusDistanceWeight: boolean;
+  /** 아침 수업 회피 필수 여부 */
+  avoidMorningWeight: boolean;
+}
+
+/** 생성된 시간표 대안 (후보) */
+export interface Alternative {
+  /** 대안 식별자 (ID) */
+  id: number;
+  /** 대안 이름 (ex. "추천 1순위", "아침 없는 시간표" 등) */
+  name: string;
+  /** 해당 대안에 포함된 강의 목록 */
+  lectures: Lecture[];
+}
+
+/** 졸업 학점 현황 데이터 */
+export interface GraduationCreditData {
+  /** 구분명 (ex. 전공, 교양, 일반) */
+  name: string;
+  /** 취득 학점 값 */
+  value: number;
+  /** 차트에 표시될 색상 코드 */
+  color: string;
+}
+
+/** 졸업 요건 진행률 데이터 */
+export interface GraduationProgressData {
+  /** 식별자 */
+  id: string;
+  /** 요건명 (ex. 전공필수, 핵심교양) */
+  name: string;
+  /** 현재 취득 학점/이수 횟수 */
+  current: number;
+  /** 목표 학점/요구 횟수 */
+  target: number;
+  /** 프로그레스 바 색상 코드 */
+  color: string;
 }

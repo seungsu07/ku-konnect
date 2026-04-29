@@ -1,13 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
 import './Navbar.css';
 import logoImg from '../assets/logo.svg';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(true);
+
+  // Apply default light mode on mount and synchronize with state
+  useEffect(() => {
+    if (isLightMode) {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+  }, [isLightMode]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const toggleTheme = () => {
+    setIsLightMode(!isLightMode);
   };
 
   return (
@@ -33,9 +48,14 @@ const Navbar = () => {
           <NavLink to="/study" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>스터디</NavLink>
         </nav>
 
-        <Link to="/login" className="login-btn">
-          로그인
-        </Link>
+        <div className="navbar-actions">
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          <Link to="/login" className="login-btn">
+            로그인
+          </Link>
+        </div>
       </div>
 
       <div 

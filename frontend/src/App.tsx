@@ -4,9 +4,9 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 
 import MajorMap from './pages/MajorMap';
+import Timetable from './pages/Timetable';
 
 const Home = () => <h2>Main Page</h2>;
-const Timetable = () => <h2>Timetable Page</h2>;
 const Kommunity = () => <h2>Kommunity Page</h2>;
 const Study = () => <h2>Study Page</h2>;
 

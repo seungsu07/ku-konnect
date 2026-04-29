@@ -87,8 +87,32 @@
   }
 }
 
-.login-btn {
+.navbar-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.login-btn {
   display: flex;
   justify-content: center;
   align-items: center;

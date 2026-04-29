@@ -1,0 +1,159 @@
+/* Timetable.module.css */
+.container {
+  min-height: calc(100vh - 70px); /* Assuming navbar is ~70px */
+  background-color: #0f111a;
+  color: #ffffff;
+  padding: 24px;
+  font-family: 'Pretendard', sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2.5fr 5.0fr 2.5fr;
+  height: calc(100vh - 120px);
+}
+
+.headerRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.themeToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.themeToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+:global(body.light-mode) .container {
+  background-color: #fdfdfd;
+  color: #1a1a1a;
+}
+
+:global(body.light-mode) .themeToggleBtn {
+  background: #fff;
+  border: 1px solid #ff914d;
+  color: #ff3131;
+}
+
+:global(body.light-mode) .themeToggleBtn:hover {
+  background: #fffafa;
+  box-shadow: 0 4px 12px rgba(255, 49, 49, 0.1);
+}
+
+:global(body.light-mode) .leftPanel,
+:global(body.light-mode) .centerPanel,
+:global(body.light-mode) .rightPanel {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Glassmorphism Panels */
+.leftPanel, .centerPanel, .rightPanel {
+  background: rgba(25, 27, 43, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.leftPanel::-webkit-scrollbar,
+.centerPanel::-webkit-scrollbar,
+.rightPanel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leftPanel::-webkit-scrollbar-thumb,
+.centerPanel::-webkit-scrollbar-thumb,
+.rightPanel::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Loading State for Center Panel */
+.loadingContainer, .emptyContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.spinner {
+  color: #ff3131;
+  animation: spin 1s linear infinite;
+  margin-bottom: 24px;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loadingTitle, .emptyTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: linear-gradient(to right, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:global(body.light-mode) .loadingTitle, 
+:global(body.light-mode) .emptyTitle {
+  background: linear-gradient(135deg, #ff3131, #ff914d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.loadingDesc, .emptyDesc {
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+:global(body.light-mode) .loadingDesc, 
+:global(body.light-mode) .emptyDesc {
+  color: #666;
+}
+
+.emptyIcon {
+  font-size: 56px;
+  margin-bottom: 24px;
+  opacity: 0.8;
+}

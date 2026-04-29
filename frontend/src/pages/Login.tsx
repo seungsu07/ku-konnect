@@ -19,6 +19,10 @@ function Login() {
         navigate('/signup');
     };
 
+    const handleGoHome = () => {
+        navigate('/');
+    };
+
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
@@ -73,6 +77,14 @@ function Login() {
                             onClick={handleSignUp}
                         >
                             회원가입
+                        </button>
+                        <button 
+                            type="button" 
+                            className={`${styles.btn} ${styles['btn-secondary']}`} 
+                            style={{ marginTop: '-8px', border: 'none', background: 'transparent', color: '#94a3b8', fontSize: '14px' }}
+                            onClick={handleGoHome}
+                        >
+                            홈으로 돌아가기
                         </button>
                     </div>
                 </form>
