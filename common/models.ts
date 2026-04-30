@@ -1,3 +1,7 @@
+export type TimeStamp = number;
+
+export type UUID = ReturnType<typeof crypto.randomUUID>;
+
 /** 과목 종류: 전공 | 교양 | 융합 */
 export type CourseType = 'major' | 'general' | 'inter';
 
@@ -8,12 +12,14 @@ export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 export type Semester = 'first' | 'second' | 'summer' | 'winter';
 
 /** 6 ~ 18글자 */
-export type UserID = string;
+export type UserID = UUID;
 
 /** 유저 정보 */
 export interface User {
-    /** 아이디 */
+    /** 식별자 */
     id: UserID;
+    /** 로그인 아이디 */
+    login_id: string;
     /** 비밀번호 */
     password: string;
     /** 성명 */
@@ -31,7 +37,7 @@ export interface User {
 }
 
 /** UUID */
-export type UserProfileID = string;
+export type UserProfileID = UUID;
 
 export interface UserProfile {
     /** 식별자 */
@@ -43,7 +49,7 @@ export interface UserProfile {
 }
 
 /** 4글자 (ex. COSE - 컴퓨터학과) */
-export type DepartmentID = string;
+export type DepartmentID = UUID;
 
 /** 학과 정보 */
 export interface Department {
@@ -55,12 +61,14 @@ export interface Department {
     code: number;
 }
 
-export type ProfessorID = string;
+export type ProfessorID = UUID;
 
 /** 교수 정보 */
 export interface Professor {
     /** 식별자 */
     id: ProfessorID;
+    /** 로그인 아이디 */
+    login_id: string;
     /** 성명 */
     name: string;
     /** 연락처 */
@@ -70,7 +78,7 @@ export interface Professor {
 }
 
 /** 학수번호 - 6글자 이상 */
-export type CourseID = string;
+export type CourseID = UUID;
 
 /** 과목 정보 */
 export interface Course {
@@ -84,7 +92,7 @@ export interface Course {
     course_type: CourseType;
 }
 
-export type LectureID = string;
+export type LectureID = UUID;
 
 /** 강의 정보 */
 export interface Lecture {
@@ -110,7 +118,7 @@ export interface Lecture {
     credit: number;
 }
 
-export type LectureClassID = string;
+export type LectureClassID = UUID;
 
 /** 분반 정보 */
 export interface LectureClass {
@@ -122,7 +130,7 @@ export interface LectureClass {
     periods: PeriodID[]; // Period ID
 }
 
-export type PeriodID = string;
+export type PeriodID = UUID;
 
 /** 교시 */
 export interface Period {
@@ -141,7 +149,7 @@ export interface Period {
 /** 지도상 좌표 */
 export type Coordinate = [number, number];
 
-export type BuildingID = string;
+export type BuildingID = UUID;
 
 /** 건물 */
 export interface Building {
@@ -153,7 +161,7 @@ export interface Building {
     location: Coordinate;
 }
 
-export type ClassRoomID = string;
+export type ClassRoomID = UUID;
 
 /** 교실 */
 export interface ClassRoom {
@@ -165,7 +173,7 @@ export interface ClassRoom {
     room: string;
 }
 
-export type TimeTableID = string;
+export type TimeTableID = UUID;
 
 /** 시간표 */
 export interface TimeTable {
@@ -185,7 +193,7 @@ export interface TimeTableDay {
     periods: PeriodID[];
 }
 
-export type RoadmapID = string;
+export type RoadmapID = UUID;
 
 /** 로드맵 */
 export interface Roadmap {
@@ -196,7 +204,7 @@ export interface Roadmap {
 
 // Community
 
-export type PostID = string;
+export type PostID = UUID;
 
 export interface Post {
     /** 식별자 */
@@ -206,12 +214,12 @@ export interface Post {
     title: string;
     content: string;
     views: number;
-    created_at: Date;
-    updated_at: Date;
+    created_at: TimeStamp;
+    updated_at: TimeStamp;
     visible: boolean;
 }
 
-export type BoardID = string;
+export type BoardID = UUID;
 
 export interface Board {
     id: BoardID;
@@ -278,10 +286,12 @@ export interface GraduationCreditData {
   color: string;
 }
 
+export type GraduationProgressDataID = UUID;
+
 /** 졸업 요건 진행률 데이터 */
 export interface GraduationProgressData {
   /** 식별자 */
-  id: string;
+  id: GraduationProgressDataID;
   /** 요건명 (ex. 전공필수, 핵심교양) */
   name: string;
   /** 현재 취득 학점/이수 횟수 */
@@ -290,4 +300,17 @@ export interface GraduationProgressData {
   target: number;
   /** 프로그레스 바 색상 코드 */
   color: string;
+}
+
+//
+
+export type SessionID = UUID;
+
+export interface Session {
+    id: SessionID;
+    user_id: UserID;
+    type?: string;
+    data?: any;
+    expired: boolean;
+    expires_at: TimeStamp;
 }

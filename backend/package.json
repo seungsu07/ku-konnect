@@ -1,36 +1,17 @@
 {
-  "name": "backend",
+  "name": "konnect-backend",
   "version": "1.0.0",
   "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec 'node --loader ts-node/esm' src/index.ts"
+    "dev": "npx nodemon index.js",
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "dependencies": {
-    "@types/express": "^5.0.6",
-    "@types/lokijs": "^1.5.14",
-    "body-parser": "^2.2.2",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.4",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.0",
-    "effection": "^4.0.2",
-    "express": "^5.2.1",
-    "lokijs": "^1.5.12",
-    "reflect-metadata": "^0.2.2",
-    "routing-controllers": "^0.11.3",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.2",
-    "esbuild": "^0.28.0",
-    "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "@js-temporal/polyfill": "^0.5.1",
+    "express": "^5.2.1"
   }
 }

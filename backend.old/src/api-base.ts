@@ -1,6 +1,8 @@
 import { type Channel } from 'effection';
+import { type Session } from '../../common/models.js';
 
 export interface ApiRequest {
+    session?: Session,
     action: string,
     data: {
         [K: string]: any;

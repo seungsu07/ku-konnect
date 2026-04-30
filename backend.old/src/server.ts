@@ -6,6 +6,7 @@ import {
 import { default as createHttpError, isHttpError } from 'http-errors';
 import { suspend } from 'effection';
 import { z } from 'zod';
+import { default as jwt } from 'jsonwebtoken';
 import {
     type ApiChannel,
     type ApiResultSuccess,
@@ -54,6 +55,19 @@ export function* ServerManager(param: { apiChannel: ApiChannel }) {
                 } as ApiResultFailed;
                 return next(createHttpError(400));
             }
+            let session = null;
+            if (typeof req.headers.authorization === 'string') {
+                let token = req.headers.authorization.match(
+                    /^bearer ((?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?)$/
+                );
+                if (token) {
+                    try {
+                        session = jwt.verify(token[0], 'a');
+                    } catch (_) {
+                        
+                    }
+                }
+            }
             function resolve(apiResult: ApiResultSuccess) {
                 res.locals.result = apiResult;
                 return next();
@@ -63,6 +77,7 @@ export function* ServerManager(param: { apiChannel: ApiChannel }) {
                 return next(createHttpError(apiResult.status));
             }
             apiChannel.send({
+                token,
                 action,
                 data: parseResult.data,
                 resolve,
@@ -94,6 +109,11 @@ export function* ServerManager(param: { apiChannel: ApiChannel }) {
     app.post(
         '/auth/signup',
         createRequestHandler(Dto.authSignup, 'auth.signup'),
+    );
+    
+    app.post(
+        '/auth/session/get',
+        createRequestHandler(Dto.authSessionGet, 'auth.session.get'),
     );
 
     app.post(

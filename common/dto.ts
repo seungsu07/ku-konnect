@@ -10,13 +10,20 @@ export namespace Dto {
         name: z.string().min(2).max(6),
         student_id: z.string().length(10),
         dept_id: z.string().length(4),
+        univ_mail: z.email().toLowerCase().endsWith('@korea.ac.kr'),
+    });
+    
+    /**
+     * @route GET /auth/session/get
+     */
+    export const authSessionGet = z.object({
+        duration: z.number(),
     });
 
     /**
-     * @route POST /cert/univmail/get
+     * @route GET /cert/univmail/get
      */
     export const certUnivmailGet = z.object({
-        session: z.jwt(),
         univ_mail: z.email().toLowerCase().endsWith('@korea.ac.kr'),
     });
 
@@ -24,7 +31,6 @@ export namespace Dto {
      * @route POST /cert/univmail/check
      */
     export const certUnivmailCheck = z.object({
-        session: z.jwt(),
         univ_mail: z.email().toLowerCase().endsWith('@korea.ac.kr'),
         cert_num: z.string().length(6),
     });
