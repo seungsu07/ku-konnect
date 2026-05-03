@@ -1,9 +1,10 @@
 export type TimeStamp = number;
 
-export type UUID = ReturnType<typeof crypto.randomUUID>;
-
-/** 과목 종류: 전공 | 교양 | 융합 */
-export type CourseType = 'major' | 'general' | 'inter';
+/** 과목 종류 */
+export type CourseType =
+  | 'major' // 전공
+  | 'general' // 교양
+  | 'inter'; // 융합
 
 /** 요일 */
 export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
@@ -11,306 +12,380 @@ export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 /** 학기: 1학기 | 2학기 | 계절-여름 | 계절-겨울 */
 export type Semester = 'first' | 'second' | 'summer' | 'winter';
 
-/** 6 ~ 18글자 */
-export type UserID = UUID;
+/** 엔티티 식별자 */
+export interface EntityID<T extends string> {
+  uuid: `${string}-${string}-${string}-${string}-${string}`;
+  type: T;
+}
 
-/** 유저 정보 */
+/** 유저 식별자 */
+export type UserID = EntityID<'user'>;
+
+/** 유저 */
 export interface User {
-    /** 식별자 */
-    id: UserID;
+  /** 식별자 */
+  id: UserID;
+  login: {
     /** 로그인 아이디 */
-    login_id: string;
+    id: string;
     /** 비밀번호 */
     password: string;
-    /** 성명 */
-    name: string;
-    /** 프로필 */
-    profiles: UserProfileID[];
-    /** 학번 */
-    student_id: string;
-    /** 학과 코드 */
-    dept_id: DepartmentID;
-    /** 학교 메일 */
-    univ_mail: string;
-    /** 개인 메일 */
-    mail: string;
+  };
+  /** 성명 */
+  name: string;
+  /** 프로필 */
+  profiles: UserProfileID[];
+  /** 학번 */
+  student_id: string;
+  /** 학과 코드 */
+  dept_id: DepartmentID;
+  /** 학교 메일 */
+  univ_mail: string;
+  /** 개인 메일 */
+  mail: string;
+  data: {
+    timetables: TimeTableID[];
+    graduation_progress: GraduationProgressID;
+    posts: PostID[];
+    comments: CommentID[];
+  };
 }
 
-/** UUID */
-export type UserProfileID = UUID;
+/** 유저 프로필 식별자 */
+export type UserProfileID = EntityID<'user_profile'>;
 
+/** 유저 프로필 */
 export interface UserProfile {
-    /** 식별자 */
-    id: UserProfileID;
-    /** 닉네임 */
-    nickname: string;
-    /** 사진-Base64 */
-    image: string;
+  /** 식별자 */
+  id: UserProfileID;
+  /** 닉네임 */
+  nickname: string;
+  /** 사진-Base64 */
+  image: string;
 }
 
-/** 4글자 (ex. COSE - 컴퓨터학과) */
-export type DepartmentID = UUID;
+/** 학과 식별자 */
+export type DepartmentID = EntityID<'department'>;
 
-/** 학과 정보 */
+/** 학과 */
 export interface Department {
-    /** 식별자 */
-    id: DepartmentID;
-    /** 학과 이름 */
-    name: string;
-    /** 학과 번호 */
-    code: number;
+  /** 식별자 */
+  id: DepartmentID;
+  /** 학과 코드
+   * @description 4글자
+   * @example COSE */
+  code: string;
+  /** 학과 이름 */
+  name: string;
 }
 
-export type ProfessorID = UUID;
+/** 교수 식별자 */
+export type ProfessorID = EntityID<'professor'>;
 
-/** 교수 정보 */
+/** 교수 */
 export interface Professor {
-    /** 식별자 */
-    id: ProfessorID;
-    /** 로그인 아이디 */
-    login_id: string;
-    /** 성명 */
-    name: string;
-    /** 연락처 */
-    tel: string;
-    /** 메일 */
-    mail: string;
+  /** 식별자 */
+  id: ProfessorID;
+  /** 로그인 아이디 */
+  login_id: string;
+  /** 성명 */
+  name: string;
+  /** 연락처 */
+  tel: string;
+  /** 메일 */
+  mail: string;
 }
 
-/** 학수번호 - 6글자 이상 */
-export type CourseID = UUID;
+/** 과목 식별자 */
+export type CourseID = EntityID<'course'>;
 
-/** 과목 정보 */
+/** 과목 */
 export interface Course {
-    /** 과목 코드 */
-    id: CourseID;
-    /** 과목명 */
-    name: string;
-    /** 필수여부 */
-    required: boolean;
-    /** 전공/교양/융합 */
-    course_type: CourseType;
+  /** 식별자 */
+  id: CourseID;
+  /** 학수번호
+   * @description 6글자 이상
+   * @example COSE3310
+   */
+  code: string;
+  /** 과목명 */
+  name: string;
+  /** 필수여부 */
+  required: boolean;
+  /** 전공/교양/융합 */
+  course_type: CourseType;
 }
 
-export type LectureID = UUID;
+/** 강의 식별자 */
+export type LectureID = EntityID<'lecture'>;
 
-/** 강의 정보 */
+/** 강의 */
 export interface Lecture {
-    /** 식별자 */
-    id: LectureID;
-    /** 과목 코드 */
-    course_code: CourseID;
-    /** 개설연도 */
-    ay: number;
-    /** 학기 */
-    sem: Semester;
-    /** 교수 코드 */
-    prof_id: ProfessorID;
-    /** 학과 코드 */
-    dept_code: string;
-    /** 분반 코드 */
-    classes: LectureClassID[];
-    /** 강의시간 */
-    hours: number;
-    /** 실습시간 */
-    lab_hours: number;
-    /** 학점 */
-    credit: number;
+  /** 식별자 */
+  id: LectureID;
+  /** 과목 코드 */
+  course_code: CourseID;
+  /** 개설연도 */
+  ay: number;
+  /** 학기 */
+  sem: Semester;
+  /** 교수 코드 */
+  prof_id: ProfessorID;
+  /** 학과 코드 */
+  dept_code: string;
+  /** 분반 코드 */
+  classes: LectureClassID[];
+  /** 강의시간 */
+  hours: number;
+  /** 실습시간 */
+  lab_hours: number;
+  /** 학점 */
+  credit: number;
 }
 
-export type LectureClassID = UUID;
+/** 분반 식별자 */
+export type LectureClassID = EntityID<'lecture_class'>;
 
-/** 분반 정보 */
+/** 분반 */
 export interface LectureClass {
-    /** 식별자 */
-    id: LectureClassID;
-    /** 강의 코드 */
-    lect_code: string;
-    /** 교시 */
-    periods: PeriodID[]; // Period ID
+  /** 식별자 */
+  id: LectureClassID;
+  /** 강의 코드 */
+  lect_code: string;
+  /** 교시 */
+  periods: PeriodID[]; // Period ID
 }
 
-export type PeriodID = UUID;
+/** 교시 식별자 */
+export type PeriodID = EntityID<'period'>;
 
 /** 교시 */
 export interface Period {
-    /** 식별자 */
-    id: PeriodID;
-    /** 분반 코드 */
-    class_code: string;
-    /** 요일 */
-    day: Day;
-    /** 교시 번호 */
-    time: number;
-    /** 교실 번호 */
-    room_code: string;
+  /** 식별자 */
+  id: PeriodID;
+  /** 분반 코드 */
+  class_code: string;
+  /** 요일 */
+  day: Day;
+  /** 교시 번호 */
+  time: number;
+  /** 교실 번호 */
+  room_code: string;
 }
 
 /** 지도상 좌표 */
 export type Coordinate = [number, number];
 
-export type BuildingID = UUID;
+/** 건물 식별자 */
+export type BuildingID = EntityID<'building'>;
 
 /** 건물 */
 export interface Building {
-    /** 건물 코드 */
-    id: BuildingID;
-    /** 건물명 */
-    name: string;
-    /** 지도상 좌표 */
-    location: Coordinate;
+  /** 식별자 */
+  id: BuildingID;
+  /** 건물명 */
+  name: string;
+  /** 지도상 좌표 */
+  location: Coordinate;
 }
 
-export type ClassRoomID = UUID;
+/** 교실 식별자 */
+export type ClassRoomID = EntityID<'class_room'>;
 
 /** 교실 */
 export interface ClassRoom {
-    /** 식별자 */
-    id: ClassRoomID;
-    /** 건물 코드 */
-    bldg_id: BuildingID;
-    /** 호실 */
-    room: string;
+  /** 식별자 */
+  id: ClassRoomID;
+  /** 건물 코드 */
+  bldg_id: BuildingID;
+  /** 호실 */
+  room: string;
 }
 
-export type TimeTableID = UUID;
+/** 로드맵 식별자 */
+export type RoadmapID = EntityID<'roadmap'>;
+
+/** 로드맵 */
+export interface Roadmap {
+  /** 식별자 */
+  id: RoadmapID;
+  // TODO
+}
+
+/** 댓글 식별자 */
+export type CommentID = EntityID<'comment'>;
+
+/** 댓글 */
+export interface Comment {
+  /** 식별자 */
+  id: CommentID;
+  /** 게시글 */
+  post: PostID;
+  /** 작성자 */
+  author: UserID;
+  /** 내용 */
+  content: string;
+  /** 생성 시간 */
+  created_at: TimeStamp;
+  /** 수정 시간 */
+  updated_at: TimeStamp;
+  /** 공개 여부 */
+  visible: boolean;
+}
+
+/** 게시글 식별자 */
+export type PostID = EntityID<'post'>;
+
+/** 게시글 */
+export interface Post {
+  /** 식별자 */
+  id: PostID;
+  /** 게시판 */
+  board: BoardID;
+  /** 작성자 */
+  author: UserID;
+  /** 제목 */
+  title: string;
+  /** 내용 */
+  content: string;
+  /** 조회수 */
+  views: number;
+  /** 생성 시간 */
+  created_at: TimeStamp;
+  /** 수정 시간 */
+  updated_at: TimeStamp;
+  /** 공개 여부 */
+  visible: boolean;
+  /** 댓글 */
+  comments: CommentID[];
+}
+
+/** 게시판 식별자 */
+export type BoardID = EntityID<'board'>;
+
+/** 게시판 */
+export interface Board {
+  /** 식별자 */
+  id: BoardID;
+  /** 게시판 이름 */
+  name: string;
+  /** 게시글 */
+  posts: PostID[];
+}
+
+export const DAY_MAPPING:
+  { id: Day; label: string }[] = [
+    { id: 'mon', label: '월' },
+    { id: 'tue', label: '화' },
+    { id: 'wed', label: '수' },
+    { id: 'thu', label: '목' },
+    { id: 'fri', label: '금' },
+  ];
+
+/** 우선순위 */
+export interface Priority {
+  /** 중요도 */
+  value: number;
+  /** 잠금 여부
+   * @description true이면 같은 중요도 내에서 침범 불가
+   */
+  lock: boolean;
+};
+
+/** 시간표 AI생성 선호 조건 */
+export interface Preferences {
+  /** 공강 희망 요일 */
+  days_off: {
+    value: { [K in Day]?: boolean; }
+    priority: Priority;
+  }
+  /** 점심시간 보장 */
+  lunch_time_preserve: {
+    value: boolean;
+    priority: Priority;
+  };
+  /** 최대 연강 한도 */
+  max_consecutive: {
+    value: number;
+    priority: Priority;
+  };
+  /** 시간표 압축 가중치 */
+  compactness: {
+    value: number;
+    priority: Priority;
+  };
+  /** 캠퍼스 이동 거리 최소화 가중치 */
+  campus_closeness: {
+    value: number;
+    priority: Priority;
+  };
+  /** 아침 수업 회피 가중치 */
+  avoid_morning: {
+    value: number;
+    priority: Priority;
+  };
+}
+
+/** 시간표 식별자 */
+export type TimeTableID = EntityID<'time_table'>;
 
 /** 시간표 */
 export interface TimeTable {
-    /** 식별자 */
-    id: TimeTableID;
-    /** 소유자 */
-    user_id: UserID;
-    /** 주 시간표 여부 */
-    selected: boolean;
-    /** 일 */
-    days: { [day: string]: TimeTableDay };
+  /** 식별자 */
+  id: TimeTableID;
+  /** 이름 */
+  name: string;
+  /** 주 시간표 여부 */
+  selected: boolean;
+  /** 일 */
+  days: {
+    [K in Day]?: TimeTableDay
+  };
 }
 
 /** 시간표 일 */
 export interface TimeTableDay {
-    day: Day;
-    periods: PeriodID[];
+  day: Day;
+  periods: PeriodID[];
 }
 
-export type RoadmapID = UUID;
+/** 분수 */
+export type Fraction = [number, number];
 
-/** 로드맵 */
-export interface Roadmap {
-    /** 식별자 */
-    id: RoadmapID;
-    // TODO
+/** RGB 컬러 */
+export type RGB = [number, number, number];
+
+/** 졸업 진행률 식별자 */
+export type GraduationProgressID = EntityID<'graduation_progress'>;
+
+/** 졸업 진행률 */
+export interface GraduationProgress {
+  id: GraduationProgressID;
+  value: Fraction;
+  color: RGB;
+  details: {
+    [K in CourseType]: {
+      value: Fraction;
+      color: RGB;
+    };
+  };
 }
 
-// Community
+/** 세션 식별자 */
+export type SessionID = EntityID<'session'>;
 
-export type PostID = UUID;
-
-export interface Post {
-    /** 식별자 */
-    id: PostID;
-    board: BoardID;
-    author: UserID;
-    title: string;
-    content: string;
-    views: number;
-    created_at: TimeStamp;
-    updated_at: TimeStamp;
-    visible: boolean;
-}
-
-export type BoardID = UUID;
-
-export interface Board {
-    id: BoardID;
-    posts: PostID[];
-}
-
-export const DAY_MAPPING: { id: Day; label: string }[] = [
-  { id: 'mon', label: '월' },
-  { id: 'tue', label: '화' },
-  { id: 'wed', label: '수' },
-  { id: 'thu', label: '목' },
-  { id: 'fri', label: '금' },
-];
-
-
-
-/** AI 시간표 생성 선호 조건 (가중치) */
-export interface Preferences {
-  /** 공강 희망 요일 */
-  daysOff: Day[];
-  /** 점심시간 보장 선호 (true면 가급적 점심시간은 비워둠) */
-  lunchTimeLock: boolean;
-  /** 최대 연강 한도 (ex. 3이면 최대 3연강) */
-  maxConsecutive: number;
-  /** 시간표 압축 정도 가중치 (우주공강 최소화) */
-  compactnessWeight: number;
-  /** 캠퍼스 이동 거리 최소화 가중치 */
-  campusDistanceWeight: number;
-  /** 아침 수업(1교시 등) 회피 가중치 */
-  avoidMorningWeight: number;
-}
-
-/** AI 시간표 생성 필수 강제 조건 (반드시 지켜야 하는 조건) */
-export interface HardConstraints {
-  /** 점심시간 보장 필수 여부 */
-  lunchTimeLock: boolean;
-  /** 최대 연강 한도 필수 여부 */
-  maxConsecutive: boolean;
-  /** 우주공강 최소화 필수 여부 */
-  compactnessWeight: boolean;
-  /** 캠퍼스 이동 거리 최소화 필수 여부 */
-  campusDistanceWeight: boolean;
-  /** 아침 수업 회피 필수 여부 */
-  avoidMorningWeight: boolean;
-}
-
-/** 생성된 시간표 대안 (후보) */
-export interface Alternative {
-  /** 대안 식별자 (ID) */
-  id: number;
-  /** 대안 이름 (ex. "추천 1순위", "아침 없는 시간표" 등) */
-  name: string;
-  /** 해당 대안에 포함된 강의 목록 */
-  lectures: Lecture[];
-}
-
-/** 졸업 학점 현황 데이터 */
-export interface GraduationCreditData {
-  /** 구분명 (ex. 전공, 교양, 일반) */
-  name: string;
-  /** 취득 학점 값 */
-  value: number;
-  /** 차트에 표시될 색상 코드 */
-  color: string;
-}
-
-export type GraduationProgressDataID = UUID;
-
-/** 졸업 요건 진행률 데이터 */
-export interface GraduationProgressData {
-  /** 식별자 */
-  id: GraduationProgressDataID;
-  /** 요건명 (ex. 전공필수, 핵심교양) */
-  name: string;
-  /** 현재 취득 학점/이수 횟수 */
-  current: number;
-  /** 목표 학점/요구 횟수 */
-  target: number;
-  /** 프로그레스 바 색상 코드 */
-  color: string;
-}
-
-//
-
-export type SessionID = UUID;
-
+/** 세션 */
 export interface Session {
-    id: SessionID;
-    user_id: UserID;
-    type?: string;
-    data?: any;
-    expired: boolean;
-    expires_at: TimeStamp;
+  /** 식별자 */
+  id: SessionID;
+  /** 유저 ID */
+  user_id: UserID;
+  /** 타입 */
+  type?: string;
+  /** 데이터 */
+  data?: any;
+  /** 만료 여부 */
+  expired: boolean;
+  /** 만료 시각 */
+  expires_at: TimeStamp;
 }
