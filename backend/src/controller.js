@@ -11,7 +11,7 @@
  * @property {boolean} running
  * @property {any} result
  * @property {() => { start: boolean; stop: boolean; }} isPendingFor
- * @property {(running?: boolean) => Promise<void>} waitFor
+ * @property {(running: boolean) => Promise<void>} waitFor
  * @property {(result?: any) => Promise<void>} stop
  * @property {() => Promise<void>} start
  */
@@ -31,6 +31,7 @@ export function CreateRunningController() {
         stop: false
     };
     
+    /** @type {MonoController} */
     const inner = {
         running: false,
         result: undefined,
@@ -42,7 +43,7 @@ export function CreateRunningController() {
             };
         },
         
-        async waitFor(running=true) {
+        async waitFor(running) {
             while (true) {
                 if (outer.running == running) return;
                 await inner_con.promise;
@@ -74,6 +75,7 @@ export function CreateRunningController() {
         }
     };
     
+    /** @type {MonoController} */
     const outer = {
         running: false,
         result: undefined,
@@ -85,7 +87,7 @@ export function CreateRunningController() {
             };
         },
         
-        async waitFor(running=true) {
+        async waitFor(running) {
             while (true) {
                 if (inner.running == running) return;
                 await outer_con.promise;

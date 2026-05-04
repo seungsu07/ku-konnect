@@ -32,18 +32,16 @@ export function LoginSessionManager(context, rcon) {
     const registerQueue = [];
     /** @type {SessionID[]} */
     const garbageQueue = [];
-    
-    function collect() {}
-    
+
     return {
         /** @type {MonoController} */
         controller: rcon.outer,
-        
+
         /**
          * @param {UserID} user_id
          * @param {Temporal.Duration} duration
          */
-        register(user_id, duration=Temporal.Duration.from({ days: 7 })) {
+        register(user_id, duration = Temporal.Duration.from({ days: 7 })) {
             const expires_at = Temporal.Now
                 .zonedDateTimeISO()
                 .add(duration)
@@ -58,11 +56,11 @@ export function LoginSessionManager(context, rcon) {
                 expires_at
             };
             sessionMap.set(session_id, session);
-            const user = userMap.getOrInsert(user_id, new Set());
+            const user = userMap.get(user_id) ?? userMap.set(user_id, new Set()).get(user_id);
             user.add(session_id);
             registerQueue.push(session_id);
         },
-        
+
         /**
          * @param {SessionID | UserID} id
          * @returns {(SessionID | UserID)[]}
@@ -83,18 +81,18 @@ export function LoginSessionManager(context, rcon) {
             }
             return [];
         },
-        
+
         /**
          * @param {Temporal.Duration} delay
          * @returns {Promise<void>}
          */
-        async serve(delay=Temporal.Duration.from({ minutes: 3 })) {
+        async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
             if (!context.databaseManager) return;
             const dbManager = context.databaseManager;
             const controller = rcon.inner;
             await dbManager.controller.waitFor(true);
             await controller.start();
-            
+
             function collect() {
                 const rqTemp = registerQueue.splice(0);
                 rqTemp.forEach(e => {
@@ -113,7 +111,7 @@ export function LoginSessionManager(context, rcon) {
                     user.delete(e);
                 });
             }
-            
+
             while (true) {
                 collect();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
@@ -124,7 +122,7 @@ export function LoginSessionManager(context, rcon) {
                     break;
                 }
             }
-            
+
             await controller.stop();
         }
     };

@@ -32,21 +32,21 @@ export function CreateServer(rcon) {
         loginSessionManager: null,
         appManager: null
     };
-    context.databaseManager = DatabaseManager(context, CreateRunningController());
-    const dbMgr = context.databaseManager;
-    context.loginSessionManager = LoginSessionManager(context, CreateRunningController());
-    const lsMgr = context.loginSessionManager;
-    context.appManager = AppManager(context, CreateRunningController());
-    const apMgr = context.appManager;
     
     return {
         controller: rcon.outer,
         
         async serve() {
+            const dbMgr = DatabaseManager(context, CreateRunningController());
+            const lsMgr = LoginSessionManager(context, CreateRunningController());
+            const apMgr = AppManager(context, CreateRunningController());
             const dbCon = dbMgr.controller;
             const lsCon = lsMgr.controller;
             const apCon = apMgr.controller;
             const controller = rcon.inner;
+            context.databaseManager = dbMgr;
+            context.loginSessionManager = lsMgr;
+            context.appManager = apMgr;
             dbMgr.serve();
             lsMgr.serve();
             apMgr.serve();

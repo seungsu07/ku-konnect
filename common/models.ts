@@ -55,23 +55,28 @@ export const SEMESTER_MAPPING:
     { id: 'winter', label: '계절학기-겨울' }
   ];
 
-export type EntityType =
-  | 'user'
-  | 'user_profile'
-  | 'department'
-  | 'professor'
-  | 'course'
-  | 'lecture'
-  | 'lecture_class'
-  | 'period'
-  | 'building'
-  | 'class_room'
-  | 'comment'
-  | 'post'
-  | 'board'
-  | 'time_table'
-  | 'graduation_progress'
-  | 'session';
+export interface TYPE_ENTITY {
+  ['user']: User;
+  ['user_profile']: UserProfile;
+  ['department']: Department;
+  ['professor']: Professor;
+  ['course']: Course;
+  ['comment']: Comment;
+  ['lecture']: Lecture;
+  ['lecture_class']: LectureClass;
+  ['period']: Period;
+  ['building']: Building;
+  ['class_room']: ClassRoom;
+  ['post']: Post;
+  ['board']: Board;
+  ['time_table']: TimeTable;
+  ['graduation_progress']: GraduationProgress;
+  ['session']: Session;
+};
+
+export type EntityType = keyof TYPE_ENTITY;
+
+export type TypeEntity<T extends EntityType> = TYPE_ENTITY[T];
 
 export interface Entity<T extends EntityType> {
   id: `${string}-${string}-${string}-${string}-${string}`;
