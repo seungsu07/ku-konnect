@@ -2,27 +2,94 @@ export type TimeStamp = number;
 
 /** 과목 종류 */
 export type CourseType =
-  | 'major' // 전공
-  | 'general' // 교양
-  | 'inter'; // 융합
+  | 'major'             // 전공
+  | 'major_required'    // 전공필수
+  | 'general'           // 교양
+  | 'general_required'  // 교양필수
+  | 'inter'             // 융합
+  | 'inter_required';   // 융합필수
+
+export const COURSE_TYPE_MAPPING:
+  { id: CourseType, label: string }[] = [
+    { id: 'major', label: '전공' },
+    { id: 'major_required', label: '전공필수' },
+    { id: 'general', label: '교양' },
+    { id: 'general_required', label: '교양필수' },
+    { id: 'inter', label: '융합' },
+    { id: 'inter_required', label: '융합필수' }
+  ];
 
 /** 요일 */
-export type Day = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
+export type Day =
+  | 'sun'   // 일
+  | 'mon'   // 월
+  | 'tue'   // 화
+  | 'wed'   // 수
+  | 'thu'   // 목
+  | 'fri'   // 금
+  | 'sat';  // 토
 
-/** 학기: 1학기 | 2학기 | 계절-여름 | 계절-겨울 */
-export type Semester = 'first' | 'second' | 'summer' | 'winter';
+export const DAY_MAPPING:
+  { id: Day, label: string }[] = [
+    { id: 'sun', label: '일' },
+    { id: 'mon', label: '월' },
+    { id: 'tue', label: '화' },
+    { id: 'wed', label: '수' },
+    { id: 'thu', label: '목' },
+    { id: 'fri', label: '금' },
+    { id: 'sat', label: '토' }
+  ];
+
+/** 학기 */
+export type Semester =
+  | 'first'   // 1학기
+  | 'second'  // 2학기
+  | 'summer'  // 계절학기-여름
+  | 'winter'; // 계절학기-겨울
+
+export const SEMESTER_MAPPING:
+  { id: Semester, label: string }[] = [
+    { id: 'first', label: '1학기' },
+    { id: 'second', label: '2학기' },
+    { id: 'summer', label: '계절학기-여름' },
+    { id: 'winter', label: '계절학기-겨울' }
+  ];
+
+export type EntityType =
+  | 'user'
+  | 'user_profile'
+  | 'department'
+  | 'professor'
+  | 'course'
+  | 'lecture'
+  | 'lecture_class'
+  | 'period'
+  | 'building'
+  | 'class_room'
+  | 'comment'
+  | 'post'
+  | 'board'
+  | 'time_table'
+  | 'graduation_progress'
+  | 'session';
 
 /** 엔티티 식별자 */
-export interface EntityID<T extends string> {
-  uuid: `${string}-${string}-${string}-${string}-${string}`;
+export interface EntityID<T extends EntityType> {
+  id: `${string}-${string}-${string}-${string}-${string}`;
   type: T;
 }
+
+export interface Entity {
+  id: EntityID<EntityType>;
+}
+
+export type WithoutID<T extends Entity> = Omit<T, 'id'>;
 
 /** 유저 식별자 */
 export type UserID = EntityID<'user'>;
 
 /** 유저 */
-export interface User {
+export interface User extends Entity {
   /** 식별자 */
   id: UserID;
   login: {
@@ -43,10 +110,15 @@ export interface User {
   univ_mail: string;
   /** 개인 메일 */
   mail: string;
+  /** 데이터 */
   data: {
+    /** 시간표 */
     timetables: TimeTableID[];
+    /** 졸업 학점 */
     graduation_progress: GraduationProgressID;
+    /** 게시물 */
     posts: PostID[];
+    /** 댓글 */
     comments: CommentID[];
   };
 }
@@ -55,7 +127,7 @@ export interface User {
 export type UserProfileID = EntityID<'user_profile'>;
 
 /** 유저 프로필 */
-export interface UserProfile {
+export interface UserProfile extends Entity {
   /** 식별자 */
   id: UserProfileID;
   /** 닉네임 */
@@ -68,7 +140,7 @@ export interface UserProfile {
 export type DepartmentID = EntityID<'department'>;
 
 /** 학과 */
-export interface Department {
+export interface Department extends Entity {
   /** 식별자 */
   id: DepartmentID;
   /** 학과 코드
@@ -83,11 +155,16 @@ export interface Department {
 export type ProfessorID = EntityID<'professor'>;
 
 /** 교수 */
-export interface Professor {
+export interface Professor extends Entity {
   /** 식별자 */
   id: ProfessorID;
   /** 로그인 아이디 */
-  login_id: string;
+  login: {
+    /** 로그인 아이디 */
+    id: string;
+    /** 비밀번호 */
+    password: string;
+  };
   /** 성명 */
   name: string;
   /** 연락처 */
@@ -100,7 +177,7 @@ export interface Professor {
 export type CourseID = EntityID<'course'>;
 
 /** 과목 */
-export interface Course {
+export interface Course extends Entity {
   /** 식별자 */
   id: CourseID;
   /** 학수번호
@@ -110,8 +187,6 @@ export interface Course {
   code: string;
   /** 과목명 */
   name: string;
-  /** 필수여부 */
-  required: boolean;
   /** 전공/교양/융합 */
   course_type: CourseType;
 }
@@ -120,7 +195,7 @@ export interface Course {
 export type LectureID = EntityID<'lecture'>;
 
 /** 강의 */
-export interface Lecture {
+export interface Lecture extends Entity {
   /** 식별자 */
   id: LectureID;
   /** 과목 코드 */
@@ -147,7 +222,7 @@ export interface Lecture {
 export type LectureClassID = EntityID<'lecture_class'>;
 
 /** 분반 */
-export interface LectureClass {
+export interface LectureClass extends Entity {
   /** 식별자 */
   id: LectureClassID;
   /** 강의 코드 */
@@ -160,7 +235,7 @@ export interface LectureClass {
 export type PeriodID = EntityID<'period'>;
 
 /** 교시 */
-export interface Period {
+export interface Period extends Entity {
   /** 식별자 */
   id: PeriodID;
   /** 분반 코드 */
@@ -180,7 +255,7 @@ export type Coordinate = [number, number];
 export type BuildingID = EntityID<'building'>;
 
 /** 건물 */
-export interface Building {
+export interface Building extends Entity {
   /** 식별자 */
   id: BuildingID;
   /** 건물명 */
@@ -193,7 +268,7 @@ export interface Building {
 export type ClassRoomID = EntityID<'class_room'>;
 
 /** 교실 */
-export interface ClassRoom {
+export interface ClassRoom extends Entity {
   /** 식별자 */
   id: ClassRoomID;
   /** 건물 코드 */
@@ -202,21 +277,11 @@ export interface ClassRoom {
   room: string;
 }
 
-/** 로드맵 식별자 */
-export type RoadmapID = EntityID<'roadmap'>;
-
-/** 로드맵 */
-export interface Roadmap {
-  /** 식별자 */
-  id: RoadmapID;
-  // TODO
-}
-
 /** 댓글 식별자 */
 export type CommentID = EntityID<'comment'>;
 
 /** 댓글 */
-export interface Comment {
+export interface Comment extends Entity {
   /** 식별자 */
   id: CommentID;
   /** 게시글 */
@@ -237,7 +302,7 @@ export interface Comment {
 export type PostID = EntityID<'post'>;
 
 /** 게시글 */
-export interface Post {
+export interface Post extends Entity {
   /** 식별자 */
   id: PostID;
   /** 게시판 */
@@ -264,7 +329,7 @@ export interface Post {
 export type BoardID = EntityID<'board'>;
 
 /** 게시판 */
-export interface Board {
+export interface Board extends Entity {
   /** 식별자 */
   id: BoardID;
   /** 게시판 이름 */
@@ -272,15 +337,6 @@ export interface Board {
   /** 게시글 */
   posts: PostID[];
 }
-
-export const DAY_MAPPING:
-  { id: Day; label: string }[] = [
-    { id: 'mon', label: '월' },
-    { id: 'tue', label: '화' },
-    { id: 'wed', label: '수' },
-    { id: 'thu', label: '목' },
-    { id: 'fri', label: '금' },
-  ];
 
 /** 우선순위 */
 export interface Priority {
@@ -330,7 +386,7 @@ export interface Preferences {
 export type TimeTableID = EntityID<'time_table'>;
 
 /** 시간표 */
-export interface TimeTable {
+export interface TimeTable extends Entity {
   /** 식별자 */
   id: TimeTableID;
   /** 이름 */
@@ -359,7 +415,7 @@ export type RGB = [number, number, number];
 export type GraduationProgressID = EntityID<'graduation_progress'>;
 
 /** 졸업 진행률 */
-export interface GraduationProgress {
+export interface GraduationProgress extends Entity {
   id: GraduationProgressID;
   value: Fraction;
   color: RGB;
@@ -375,15 +431,13 @@ export interface GraduationProgress {
 export type SessionID = EntityID<'session'>;
 
 /** 세션 */
-export interface Session {
+export interface Session extends Entity {
   /** 식별자 */
   id: SessionID;
-  /** 유저 ID */
-  user_id: UserID;
   /** 타입 */
-  type?: string;
+  type: string;
   /** 데이터 */
-  data?: any;
+  data: any;
   /** 만료 여부 */
   expired: boolean;
   /** 만료 시각 */
