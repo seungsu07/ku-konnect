@@ -58,13 +58,14 @@ export const SEMESTER_MAPPING:
 export interface TYPE_ENTITY {
   ['user']: User;
   ['user_profile']: UserProfile;
+  ['campus']: Campus;
+  ['college']: College;
   ['department']: Department;
   ['professor']: Professor;
   ['course']: Course;
   ['comment']: Comment;
   ['lecture']: Lecture;
   ['lecture_class']: LectureClass;
-  ['period']: Period;
   ['building']: Building;
   ['class_room']: ClassRoom;
   ['post']: Post;
@@ -78,15 +79,20 @@ export type EntityType = keyof TYPE_ENTITY;
 
 export type TypeEntity<T extends EntityType> = TYPE_ENTITY[T];
 
+export type EntityID<T extends EntityType> =
+  `${string}-${string}-${string}-${string}-${string}` &
+  { readonly __brand?: T };
+
 export interface Entity<T extends EntityType> {
-  id: `${string}-${string}-${string}-${string}-${string}`;
+  id: EntityID<T>;
   type: T
 }
 
-export type WithoutID<T extends Entity<EntityType>> = Omit<T, 'id' | 'type'>;
+export type WithoutID<T extends Entity<EntityType>> = Omit<T, 'id'>;
 
 /** 유저 */
 export interface User extends Entity<'user'> {
+  /** 로그인 정보 */
   login: {
     /** 로그인 아이디 */
     id: string;
@@ -96,25 +102,33 @@ export interface User extends Entity<'user'> {
   /** 성명 */
   name: string;
   /** 프로필 */
-  profiles: Entity<'user_profile'>[];
+  profiles: EntityID<'user_profile'>[];
   /** 학번 */
   student_id: string;
-  /** 학과 코드 */
-  dept_id: Entity<'department'>;
+  /** 캠퍼스 */
+  campus: EntityID<'campus'>;
+  /** 단과대 */
+  college: EntityID<'college'>;
+  /** 학과 */
+  department: {
+    major: EntityID<'department'>;
+    minor: EntityID<'department'> | null;
+    status: 'none' | 'minor' | 'double' | 'advanced';
+  };
   /** 학교 메일 */
   univ_mail: string;
   /** 개인 메일 */
-  mail: string;
+  mail: string | null;
   /** 데이터 */
   data: {
     /** 시간표 */
-    timetables: Entity<'time_table'>[];
+    timetables: EntityID<'time_table'>[];
     /** 졸업 학점 */
-    graduation_progress: Entity<'graduation_progress'>;
+    graduation_progress: EntityID<'graduation_progress'> | null;
     /** 게시물 */
-    posts: Entity<'post'>[];
+    posts: EntityID<'post'>[];
     /** 댓글 */
-    comments: Entity<'comment'>[];
+    comments: EntityID<'comment'>[];
   };
 }
 
@@ -143,6 +157,28 @@ export interface Professor extends Entity<'professor'> {
   mail: string;
 }
 
+/** 캠퍼스 */
+export interface Campus extends Entity<'campus'> {
+  /** 캠퍼스 이름 */
+  name: string;
+  /** 단과대 */
+  colleges: EntityID<'college'>[];
+}
+
+/** 단과대 */
+export interface College extends Entity<'college'> {
+  /** 가상 여부 */
+  virtual?: boolean;
+  /** 학번 식별번호 */
+  code_num?: number;
+  /** 단과대 이름 */
+  name: string;
+  /** 학과 */
+  departments: EntityID<'department'>[];
+  /** 캠퍼스 */
+  campus: EntityID<'campus'>;
+}
+
 /** 학과 */
 export interface Department extends Entity<'department'> {
   /** 학과 코드
@@ -151,6 +187,8 @@ export interface Department extends Entity<'department'> {
   code: string;
   /** 학과 이름 */
   name: string;
+  /** 단과대 */
+  college: EntityID<'college'>;
 }
 
 /** 과목 */
@@ -161,7 +199,7 @@ export interface Course extends Entity<'course'> {
    */
   code: string;
   /** 학과 */
-  department: Entity<'department'>;
+  department: EntityID<'department'>;
   /** 과목명 */
   name: string;
   /** 전공/교양/융합 */
@@ -171,15 +209,15 @@ export interface Course extends Entity<'course'> {
 /** 강의 */
 export interface Lecture extends Entity<'lecture'> {
   /** 과목 */
-  course: Entity<'course'>;
+  course: EntityID<'course'>;
   /** 개설연도 */
   ay: number;
   /** 학기 */
   sem: Semester;
   /** 교수 */
-  professor: Entity<'professor'>;
+  professor: EntityID<'professor'>;
   /** 분반 */
-  classes: Entity<'lecture_class'>[];
+  classes: EntityID<'lecture_class'>[];
   /** 강의시간 */
   hours: number;
   /** 실습시간 */
@@ -203,7 +241,7 @@ export interface Period {
   /** 교시 번호 */
   time: number;
   /** 교실 */
-  room: Entity<'class_room'>;
+  room: EntityID<'class_room'>;
 }
 
 /** 지도상 좌표 */
@@ -220,7 +258,7 @@ export interface Building extends Entity<'building'> {
 /** 교실 */
 export interface ClassRoom extends Entity<'class_room'> {
   /** 건물 */
-  building: Entity<'building'>;
+  building: EntityID<'building'>;
   /** 호실 */
   room: string;
 }
@@ -228,9 +266,9 @@ export interface ClassRoom extends Entity<'class_room'> {
 /** 댓글 */
 export interface Comment extends Entity<'comment'> {
   /** 게시글 */
-  post: Entity<'post'>;
+  post: EntityID<'post'>;
   /** 작성자 */
-  author: Entity<'user'>;
+  author: EntityID<'user'>;
   /** 내용 */
   content: string;
   /** 생성 시간 */
@@ -244,9 +282,9 @@ export interface Comment extends Entity<'comment'> {
 /** 게시글 */
 export interface Post extends Entity<'post'> {
   /** 게시판 */
-  board: Entity<'board'>;
+  board: EntityID<'board'>;
   /** 작성자 */
-  author: Entity<'user'>;
+  author: EntityID<'user'>;
   /** 제목 */
   title: string;
   /** 내용 */
@@ -260,7 +298,7 @@ export interface Post extends Entity<'post'> {
   /** 공개 여부 */
   visible: boolean;
   /** 댓글 */
-  comments: Entity<'comment'>[];
+  comments: EntityID<'comment'>[];
 }
 
 /** 게시판 */
@@ -270,7 +308,7 @@ export interface Board extends Entity<'board'> {
   /** 설명 */
   description: string;
   /** 게시글 */
-  posts: Entity<'post'>[];
+  posts: EntityID<'post'>[];
 }
 
 /** 우선순위 */
@@ -332,7 +370,7 @@ export interface TimeTable extends Entity<'time_table'> {
 /** 시간표 일 */
 export interface TimeTableDay {
   day: Day;
-  periods: Entity<'period'>[];
+  periods: Period[];
 }
 
 /** 분수 */

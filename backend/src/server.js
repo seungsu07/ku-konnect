@@ -1,11 +1,14 @@
 /**
  * @import { RunningController } from './controller'
+ * @import { DatabaseManager } from './database'
+ * @import { SessionManager } from './sessions'
+ * @import { AppManager } from './app'
  */
 
 import { CreateRunningController } from './controller.js';
-import { DatabaseManager } from './database.js';
-import { LoginSessionManager } from './sessions.js';
-import { AppManager } from './app.js';
+import { CreateDatabaseManager } from './database.js';
+import { CreateSessionManager } from './sessions.js';
+import { CreateAppManager } from './app.js';
 
 
 
@@ -17,9 +20,9 @@ import { AppManager } from './app.js';
 
 /**
  * @typedef ServerContext
- * @property {ReturnType<typeof DatabaseManager>?} databaseManager
- * @property {ReturnType<typeof LoginSessionManager>?} loginSessionManager
- * @property {ReturnType<typeof AppManager>?} appManager
+ * @property {DatabaseManager?} databaseManager
+ * @property {SessionManager?} loginSessionManager
+ * @property {AppManager?} appManager
  */
 
 /**
@@ -37,9 +40,9 @@ export function CreateServer(rcon) {
         controller: rcon.outer,
         
         async serve() {
-            const dbMgr = DatabaseManager(context, CreateRunningController());
-            const lsMgr = LoginSessionManager(context, CreateRunningController());
-            const apMgr = AppManager(context, CreateRunningController());
+            const dbMgr = CreateDatabaseManager(context, CreateRunningController());
+            const lsMgr = CreateSessionManager(context, CreateRunningController());
+            const apMgr = CreateAppManager(context, CreateRunningController());
             const dbCon = dbMgr.controller;
             const lsCon = lsMgr.controller;
             const apCon = apMgr.controller;

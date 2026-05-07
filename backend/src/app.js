@@ -15,12 +15,13 @@ import { Temporal } from '@js-temporal/polyfill';
 // Express
 // ====================
 
+/** @typedef {ReturnType<typeof CreateAppManager>} AppManager */
+
 /**
  * @param {ServerContext} context
  * @param {RunningController} rcon
  */
-
-export function AppManager(context, rcon) {
+export function CreateAppManager(context, rcon) {
     const app = express();
 
     app.use(express.json());
@@ -32,7 +33,7 @@ export function AppManager(context, rcon) {
         }
     );
 
-    app.all('/', (req, res) => {
+    app.all('/auth/signup', (req, res) => {
         
     });
 

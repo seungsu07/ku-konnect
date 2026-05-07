@@ -1,5 +1,6 @@
 /**
- * @import { TypeEntity, Session, WithoutID, Entity, User, UserProfile, Department, Professor, Course, Lecture, LectureClass, Period, TimeTable, GraduationProgress, Building, ClassRoom, Comment, Post, Board, EntityType } from '../../common/models'
+ * @import { TypeEntity, Entity, EntityType, EntityID, WithoutID, User, Campus, Department, College } from '../../common/models'
+ * @import { DTO } from '../../common/dto'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
  */
@@ -15,12 +16,13 @@ import { Temporal } from '@js-temporal/polyfill';
 // Database
 // ====================
 
+/** @typedef {ReturnType<typeof CreateDatabaseManager>} DatabaseManager */
+
 /**
  * @param {ServerContext} context
  * @param {RunningController} rcon
  */
-
-export function DatabaseManager(context, rcon) {
+export function CreateDatabaseManager(context, rcon) {
     const db = new loki('./database/index.json', {
         autoload: true,
         autoloadCallback: () => {
@@ -28,9 +30,19 @@ export function DatabaseManager(context, rcon) {
         }
     });
     
+    /** @type {Collection<Entity<EntityType>>} */
     const collection =
         db.getCollection('entities') ??
-        db.addCollection('entities', { unique: ['id'], indices: ['type'] });
+        (() => {
+            const campuses = require('../../common/default/campuses.json');
+            const colleges = require('../../common/default/colleges.json');
+            const departments = require('../../common/default/departments.json');
+            const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
+            campuses.forEach(e => col.add(e));
+            colleges.forEach(e => col.add(e));
+            departments.forEach(e => col.add(e));
+            return col;
+        })();
 
     return {
         /** @type {MonoController} */
@@ -39,25 +51,27 @@ export function DatabaseManager(context, rcon) {
         /**
          * @template {EntityType} T
          * @param {T} type
-         * @param {any} param
-         * @returns {TypeEntity<T>}
+         * @param {Omit<TypeEntity<T>, 'id'>} param
+         * @returns {TypeEntity<T> & LokiObj}
          */
         createEntity(type, param) {
-            const entity = {
+            const idparam = {
                 id: crypto.randomUUID(),
-                type,
                 ...param
             };
-            return collection.add(entity);
+            /** @type {any} */
+            const entity = collection.add(idparam);
+            return entity;
         },
         
         /**
          * @template {EntityType} T
-         * @param {`${string}-${string}-${string}-${string}-${string}`} id
          * @param {T} type
-         * @returns {TypeEntity<T> | undefined}
+         * @param {EntityID<T>} id
+         * @returns {TypeEntity<T> & LokiObj | undefined}
          */
-        findByID(id, type) {
+        getByID(type, id) {
+            /** @type {any} */
             const entity = collection.by('id', id);
             if (entity?.type == type) {
                 return entity;
@@ -69,29 +83,134 @@ export function DatabaseManager(context, rcon) {
         /**
          * @template {EntityType} T
          * @param {T} type
+         * @returns {Resultset<TypeEntity<T> & LokiObj>}
          */
         findByType(type) {
-            return /** @type {loki.Collection<TypeEntity<T>>} */ (collection).chain().find(/** @type {any} */ ({ type }));
+            /** @type {any} */
+            const chain = collection.chain().find({ type });
+            return chain;
         },
         
         /**
-         * @param {TypeEntity<EntityType>} entity
+         * @template {EntityType} T
+         * @param {TypeEntity<T>} entity
+         * @returns {TypeEntity<T> & LokiObj}
          */
         updateEntity(entity) {
-            return collection.update(entity);
+            /** @type {any} */
+            const result = collection.update(entity);
+            return result;
         },
         
         /**
-         * @param {TypeEntity<EntityType>} entity
+         * @template {EntityType} T
+         * @param {TypeEntity<T>} entity
+         * @returns {TypeEntity<T> & LokiObj | null}
          */
         deleteEntity(entity) {
-            return collection.remove(entity);
+            /** @type {any} */
+            const result = collection.remove(entity);
+            return result;
         },
         
-        test() {
-            const a = this.findByID('a-b-c-d-e', 'user');
+        /**
+         * @returns {(Campus & LokiObj)[]}
+         */
+        getCampuses() {
+            /** @type {any} */
+            const campuses = collection.find({ type: 'campus' });
+            return campuses;
+        },
+        
+        /**
+         * @returns {(College & LokiObj)[]}
+         */
+        getColleges() {
+            /** @type {any} */
+            const colleges = collection.find({ type: 'college' });
+            return colleges;
+        },
+        
+        /**
+         * @returns {(Department & LokiObj)[]}
+         */
+        getDepartments() {
+            /** @type {any} */
+            const departments = collection.find({ type: 'department' });
+            return departments;
+        },
+        
+        /**
+         * @param {DTO.Auth.Signup['POST']['Request']} data
+         * @returns {DTO.Auth.Signup['POST']['Response']}
+         */
+        signUpUser(data) {
+            const {
+                campus: campusName,
+                college: collegeName,
+                department: majorCode,
+                student_id,
+                name,
+                login: {
+                    id,
+                    password
+                },
+                univ_mail: {
+                    address,
+                    token
+                }
+            } = data;
             
-            const b = this.findByType('user');
+            // mail
+            
+            const campus = this.findByType('campus').find({ name: campusName }).data()[0];
+            if (!campus)
+                return {
+                    success: false,
+                    e: 'campus_doesnt_exist'
+                };
+            const college = this.findByType('college').find({ campus: campus.id, name: collegeName }).data()[0];
+            if (!college)
+                return {
+                    success: false,
+                    e: 'college_doesnt_exist'
+                };
+            const major = this.findByType('department').find({ college: college.id, code: majorCode }).data()[0];
+            if (!major)
+                return {
+                    success: false,
+                    e: 'department_doesnt_exist'
+                }
+            /** @type {WithoutID<User>} */
+            const param = {
+                type: 'user',
+                login: {
+                    id,
+                    password
+                },
+                name,
+                profiles: [],
+                student_id,
+                campus: campus.id,
+                college: college.id,
+                department: {
+                    major: major.id,
+                    minor: null,
+                    status: 'none'
+                },
+                univ_mail: address,
+                mail: null,
+                data: {
+                    timetables: [],
+                    graduation_progress: null,
+                    posts: [],
+                    comments: []
+                }
+            };
+            this.createEntity('user', param);
+            return {
+                success: true
+            };
         },
 
         /**

@@ -1,10 +1,12 @@
 /**
- * @import { Session, SessionID, UserID } from '../../common/models'
+ * @import { Entity, WithoutID, EntityID, Session } from '../../common/models'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
+ * @import { DatabaseManager } from './database'
  */
 
 import { Temporal } from '@js-temporal/polyfill';
+import { CreateRunningController } from './controller';
 
 
 
@@ -14,23 +16,18 @@ import { Temporal } from '@js-temporal/polyfill';
 // Sessions
 // ====================
 
-/**
- * @typedef {Session & { type: 'LOGIN' }} LoginSession
- */
+/** @typedef {ReturnType<typeof CreateLoginSessionManager>} LoginSessionManager */
 
 /**
- * @param {ServerContext} context
+ * @param {DatabaseManager} dbManager
  * @param {RunningController} rcon
  */
-
-export function LoginSessionManager(context, rcon) {
-    /** @type {Map<SessionID, LoginSession>} */
+export function CreateLoginSessionManager(dbManager, rcon) {
+    /** @type {Map<EntityID<'session'>, Session>} */
     const sessionMap = new Map();
-    /** @type {Map<UserID, Set<SessionID>>} */
+    /** @type {Map<EntityID<'user'>, Set<EntityID<'session'>>>} */
     const userMap = new Map();
-    /** @type {SessionID[]} */
-    const registerQueue = [];
-    /** @type {SessionID[]} */
+    /** @type {EntityID<'session'>[]} */
     const garbageQueue = [];
 
     return {
@@ -38,7 +35,7 @@ export function LoginSessionManager(context, rcon) {
         controller: rcon.outer,
 
         /**
-         * @param {UserID} user_id
+         * @param {EntityID<'user'>} user_id
          * @param {Temporal.Duration} duration
          */
         register(user_id, duration = Temporal.Duration.from({ days: 7 })) {
@@ -47,35 +44,38 @@ export function LoginSessionManager(context, rcon) {
                 .add(duration)
                 .epochMilliseconds;
             const session_id = crypto.randomUUID();
-            /** @type {LoginSession} */
-            const session = {
-                id: session_id,
-                user_id,
-                type: 'LOGIN',
+            /** @type {WithoutID<Session>} */
+            const param = {
+                type: 'session',
+                data_type: 'LOGIN',
+                data: user_id,
                 expired: false,
                 expires_at
             };
+            if (!dbManager) return;
+            const session = dbManager.createEntity('session', param);
             sessionMap.set(session_id, session);
-            const user = userMap.get(user_id) ?? userMap.set(user_id, new Set()).get(user_id);
+            const user = userMap.get(user_id) ??
+                /** @type {Set<EntityID<'session'>>} */
+                (userMap.set(user_id, new Set()).get(user_id));
             user.add(session_id);
-            registerQueue.push(session_id);
         },
 
         /**
-         * @param {SessionID | UserID} id
-         * @returns {(SessionID | UserID)[]}
+         * @param {EntityID<'session' | 'user'>} id
+         * @returns {EntityID<'session' | 'user'>[]}
          */
         expire(id) {
             sessionChk: {
-                const session = sessionMap.get(id);
+                const session = sessionMap.get(/** @type {any} */ (id));
                 if (!session) break sessionChk;
                 if (session.expired) return [id];
                 session.expired = true;
-                garbageQueue.push(id);
+                garbageQueue.push(/** @type {any} */ (id));
                 return [id];
             }
             userChk: {
-                const user = userMap.get(id)
+                const user = userMap.get(/** @type {any} */ (id))
                 if (!user) break userChk;
                 return user.keys().flatMap(e => this.expire(e)).toArray();
             }
@@ -87,26 +87,17 @@ export function LoginSessionManager(context, rcon) {
          * @returns {Promise<void>}
          */
         async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
-            if (!context.databaseManager) return;
-            const dbManager = context.databaseManager;
             const controller = rcon.inner;
             await dbManager.controller.waitFor(true);
             await controller.start();
 
             function collect() {
-                const rqTemp = registerQueue.splice(0);
-                rqTemp.forEach(e => {
-                    const session = sessionMap.get(e);
-                    if (!session) return;
-                    if (session.expired) return;
-                    dbManager.createSession(session);
-                });
                 const gqTemp = garbageQueue.splice(0);
                 gqTemp.forEach(e => {
-                    dbManager.deleteSession(e);
                     const session = sessionMap.get(e);
-                    if (!session) return;
-                    const user = userMap.get(session.user_id);
+                    if (!session || !dbManager) return;
+                    dbManager.deleteEntity(session);
+                    const user = userMap.get(session.data);
                     if (!user) return;
                     user.delete(e);
                 });
@@ -126,4 +117,61 @@ export function LoginSessionManager(context, rcon) {
             await controller.stop();
         }
     };
+}
+
+/** @typedef {ReturnType<typeof CreateSessionManager>} SessionManager */
+
+/**
+ * @param {ServerContext} context
+ * @param {RunningController} rcon
+ */
+export function CreateSessionManager(context, rcon) {
+    
+    
+    return {
+        /** @type {MonoController} */
+        controller: rcon.outer,
+        
+        /**
+         * @param {Temporal.Duration} delay
+         * @returns {Promise<void>}
+         */
+        async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+            const dbManager = context.databaseManager;
+            if (!dbManager) return;
+            const loginMgr = CreateLoginSessionManager(dbManager, CreateRunningController());
+            const loginCon = loginMgr.controller;
+            const controller = rcon.inner;
+            loginMgr.serve();
+            await Promise.all([
+                loginCon.start(),
+                dbManager.controller.waitFor(true)
+            ]);
+            await controller.start();
+
+            while (true) {
+                if (loginCon.isPendingFor().stop) {
+                    await loginCon.stop();
+                    loginMgr.serve();
+                    await loginCon.start();
+                }
+                
+                const { promise: delay_prom, resolve } = Promise.withResolvers();
+                setTimeout(resolve, delay.total('millisecond'));
+                await Promise.any([
+                    delay_prom,
+                    loginCon.waitFor(false),
+                    controller.waitFor(false)
+                ]);
+                if (controller.isPendingFor().stop) {
+                    break;
+                }
+            }
+    
+            await Promise.all([
+                loginCon.stop()
+            ]);
+            await controller.stop();
+        }
+    }
 }
