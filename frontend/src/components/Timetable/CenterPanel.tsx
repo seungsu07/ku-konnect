@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, MapPin, AlertTriangle, ChevronDown, Plus } from 'lucide-react';
 import styles from './CenterPanel.module.css';
 import type { TimeTable } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
@@ -9,10 +9,18 @@ const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
 interface CenterPanelProps {
   timeTable: TimeTable;
-  currentIndex: number;
-  totalAlternatives: number;
-  onPrev: () => void;
-  onNext: () => void;
+  mode?: 'view' | 'create';
+  
+  // For Create Mode
+  currentIndex?: number;
+  totalAlternatives?: number;
+  onPrev?: () => void;
+  onNext?: () => void;
+  
+  // For View Mode
+  savedTimetables?: TimeTable[];
+  onSelectTimetable?: (id: string) => void;
+  onCreateNew?: () => void;
 }
 
 
@@ -21,12 +29,24 @@ const END_HOUR = 18;
 
 const CenterPanel: React.FC<CenterPanelProps> = ({
   timeTable,
-  currentIndex,
-  totalAlternatives,
+  mode = 'create',
+  currentIndex = 0,
+  totalAlternatives = 0,
   onPrev,
-  onNext
+  onNext,
+  savedTimetables = [],
+  onSelectTimetable,
+  onCreateNew
 }) => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    // Update current time every minute
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const toggleCardFlip = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,24 +73,66 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
     <div className={styles.container}>
       {/* 헤더 및 네비게이션 */}
       <div className={styles.header}>
-        <div className={styles.title}>{timeTable.name}</div>
-        <div className={styles.navigation}>
-          <button 
-            className={styles.navBtn} 
-            onClick={onPrev} 
-            disabled={currentIndex === 0}
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <span className={styles.navText}>대안 {currentIndex + 1} / {totalAlternatives}</span>
-          <button 
-            className={styles.navBtn} 
-            onClick={onNext} 
-            disabled={currentIndex === totalAlternatives - 1}
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+        {mode === 'view' ? (
+          <div className={styles.dropdownContainer}>
+            <button 
+              className={styles.dropdownTrigger} 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <div className={styles.title}>{timeTable.name}</div>
+              <ChevronDown size={24} className={`${styles.dropdownIcon} ${isDropdownOpen ? styles.open : ''}`} />
+            </button>
+            
+            {isDropdownOpen && (
+              <div className={styles.dropdownMenu}>
+                {savedTimetables.map(tt => (
+                  <button 
+                    key={tt.id} 
+                    className={`${styles.dropdownItem} ${tt.id === timeTable.id ? styles.activeItem : ''}`}
+                    onClick={() => {
+                      onSelectTimetable?.(tt.id);
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    {tt.name}
+                  </button>
+                ))}
+                <div className={styles.dropdownDivider} />
+                <button 
+                  className={styles.dropdownItemNew}
+                  onClick={() => {
+                    onCreateNew?.();
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  <Plus size={18} style={{ marginRight: '8px' }} />
+                  새 시간표 만들기
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className={styles.title}>{timeTable.name}</div>
+            <div className={styles.navigation}>
+              <button 
+                className={styles.navBtn} 
+                onClick={onPrev} 
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <span className={styles.navText}>대안 {currentIndex + 1} / {totalAlternatives}</span>
+              <button 
+                className={styles.navBtn} 
+                onClick={onNext} 
+                disabled={currentIndex === totalAlternatives - 1}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* 시간표 */}
@@ -105,6 +167,38 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
               ))}
             </React.Fragment>
           ))}
+
+          {/* 현재 시간 표시선 */}
+          {(() => {
+            const currentDayId = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][currentTime.getDay()];
+            const timeInHours = currentTime.getHours() + currentTime.getMinutes() / 60;
+            const isVisible = DISPLAY_DAYS.some(d => d.id === currentDayId) && 
+                              timeInHours >= START_HOUR && 
+                              timeInHours <= END_HOUR;
+            
+            if (!isVisible) return null;
+
+            return (
+              <div 
+                style={{
+                  gridColumn: getGridColumn(currentDayId),
+                  gridRow: `1 / span ${(END_HOUR - START_HOUR) * 2}`,
+                  position: 'relative',
+                  pointerEvents: 'none',
+                  zIndex: 50
+                }}
+              >
+                <div 
+                  className={styles.timeIndicatorLine}
+                  style={{
+                    top: `${((timeInHours - START_HOUR) / (END_HOUR - START_HOUR)) * 100}%`,
+                  }}
+                >
+                  <div className={styles.timeIndicatorDot} />
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 시간표 카드 */}
           {(() => {

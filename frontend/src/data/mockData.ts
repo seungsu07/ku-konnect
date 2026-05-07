@@ -1,4 +1,4 @@
-import type { Department, Course, Lecture, Professor, Period, ClassRoom, Building, LectureClass } from '../../../common/models';
+import type { Department, Course, Lecture, Professor, Period, ClassRoom, Building, LectureClass, TimeTable } from '../../../common/models';
 
 type UUID = `${string}-${string}-${string}-${string}-${string}`;
 export const asId = (s: string) => {
@@ -139,4 +139,23 @@ export const INITIAL_CART_LECTURES: Lecture[] = [
   MOCK_LECTURES[2], // Network
   MOCK_LECTURES[4], // DB
   MOCK_LECTURES[5], // SE
+];
+
+export const SAVED_TIMETABLES: TimeTable[] = [
+  {
+    id: asId('saved-tt-1'), type: 'time_table', name: '2026학년도 1학기 최종', selected: true,
+    days: {
+      mon: { day: 'mon', periods: [MOCK_PERIODS[0], MOCK_PERIODS[2]] },
+      wed: { day: 'wed', periods: [MOCK_PERIODS[1], MOCK_PERIODS[3], MOCK_PERIODS[8], MOCK_PERIODS[9]] },
+      thu: { day: 'thu', periods: [MOCK_PERIODS[6], MOCK_PERIODS[7]] }
+    }
+  },
+  {
+    id: asId('saved-tt-2'), type: 'time_table', name: '2026학년도 1학기 플랜B', selected: false,
+    days: {
+      tue: { day: 'tue', periods: [MOCK_PERIODS[4], MOCK_PERIODS[6]] },
+      thu: { day: 'thu', periods: [MOCK_PERIODS[5], MOCK_PERIODS[7]] },
+      fri: { day: 'fri', periods: [MOCK_PERIODS[10], MOCK_PERIODS[11]] }
+    }
+  }
 ];
