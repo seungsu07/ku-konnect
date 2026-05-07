@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Sparkles, ShoppingCart, Plus, X, ChevronRight, Lock, Unlock, Zap, Home, GraduationCap, CalendarDays, Maximize2, Map as MapIcon, Coffee, HelpCircle } from 'lucide-react';
+import { GripVertical, Sparkles, ShoppingCart, Plus, X, ChevronRight, Zap, Home, GraduationCap, CalendarDays, Maximize2, Map as MapIcon, Coffee, HelpCircle } from 'lucide-react';
 import styles from './LeftPanel.module.css';
-import type { Lecture, Preferences, HardConstraints } from '../../../../common/models';
+import type { Lecture, Preferences } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { INITIAL_CART_LECTURES, getCourse, getProfessor } from '../../data/mockData';
+import { INITIAL_CART_LECTURES, getCourse } from '../../data/mockData';
+
+const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
 //파스텔 색깔
 
@@ -53,7 +55,7 @@ const TUTORIAL_STEPS = [
   }
 ];
 
-const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
+const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, banned: Record<string, boolean>) => void }> = ({ onGenerate }) => {
   const [subjects, setSubjects] = useState<Lecture[]>(INITIAL_CART_LECTURES);
   const [bannedCells, setBannedCells] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,20 +69,12 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
   const popupRef = useRef<HTMLDivElement>(null);
 
   const [prefs, setPrefs] = useState<Preferences>({
-    daysOff: [],
-    lunchTimeLock: false,
-    maxConsecutive: 3,
-    compactnessWeight: 50,
-    campusDistanceWeight: 50,
-    avoidMorningWeight: 50,
-  });
-
-  const [hardConstraints, setHardConstraints] = useState<HardConstraints>({
-    lunchTimeLock: false,
-    maxConsecutive: false,
-    compactnessWeight: false,
-    campusDistanceWeight: false,
-    avoidMorningWeight: false,
+    days_off: { value: {}, priority: { value: 1, lock: false } },
+    lunch_time_preserve: { value: false, priority: { value: 1, lock: false } },
+    max_consecutive: { value: 3, priority: { value: 1, lock: false } },
+    compactness: { value: 3, priority: { value: 1, lock: false } },
+    campus_closeness: { value: 3, priority: { value: 1, lock: false } },
+    avoid_morning: { value: 3, priority: { value: 1, lock: false } },
   });
 
   const [isPainting, setIsPainting] = useState(false);
@@ -158,7 +152,7 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
     const newId = `lect-${nextId + 100}`;
     setNextId(n => n + 1);
     const mockLecture: Lecture = {
-      id: newId, course_code: '------', ay: 2026, sem: 'first', prof_id: 'prof-unknown', dept_code: 'UNKN', classes: [], hours: 3, lab_hours: 0, credit: 3
+      id: newId as any, type: 'lecture', course: { id: 'UNKNOWN' as any, type: 'course' }, ay: 2026, sem: 'first', professor: { id: 'prof-unknown' as any, type: 'professor' }, classes: [], hours: 3, lab_hours: 0, credit: 3
     };
     setSubjects([...subjects, mockLecture]);
   };
@@ -193,36 +187,44 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
   const applyPreset = (type: 'commuter' | 'dorm' | 'credits') => {
     setActivePreset(type);
     if (type === 'commuter') {
-      setPrefs({
-        daysOff: [], lunchTimeLock: false, maxConsecutive: 4, 
-        compactnessWeight: 100, campusDistanceWeight: 80, avoidMorningWeight: 100,
-      });
-      setHardConstraints(prev => ({ ...prev, avoidMorningWeight: true, compactnessWeight: true }));
+      setPrefs(prev => ({
+        ...prev,
+        days_off: { ...prev.days_off, value: {} },
+        lunch_time_preserve: { value: false, priority: { value: 1, lock: false } },
+        compactness: { value: 5, priority: { value: 1, lock: false } },
+        campus_closeness: { value: 4, priority: { value: 1, lock: false } },
+        avoid_morning: { value: 5, priority: { value: 1, lock: false } },
+      }));
     } else if (type === 'dorm') {
-      setPrefs({
-        daysOff: ['fri'], lunchTimeLock: true, maxConsecutive: 3, 
-        compactnessWeight: 20, campusDistanceWeight: 50, avoidMorningWeight: 0,
-      });
-      setHardConstraints(prev => ({ ...prev, lunchTimeLock: true, avoidMorningWeight: false }));
+      setPrefs(prev => ({
+        ...prev,
+        days_off: { ...prev.days_off, value: { fri: true } },
+        lunch_time_preserve: { value: true, priority: { value: 1, lock: true } },
+        compactness: { value: 1, priority: { value: 1, lock: false } },
+        campus_closeness: { value: 3, priority: { value: 1, lock: false } },
+        avoid_morning: { value: 1, priority: { value: 1, lock: false } },
+      }));
     } else if (type === 'credits') {
-      setPrefs({
-        daysOff: [], lunchTimeLock: false, maxConsecutive: 5, 
-        compactnessWeight: 90, campusDistanceWeight: 0, avoidMorningWeight: 0,
-      });
-      setHardConstraints({
-        lunchTimeLock: false, maxConsecutive: false, compactnessWeight: false, campusDistanceWeight: false, avoidMorningWeight: false,
-      });
+      setPrefs(prev => ({
+        ...prev,
+        days_off: { ...prev.days_off, value: {} },
+        lunch_time_preserve: { value: false, priority: { value: 1, lock: false } },
+        compactness: { value: 4, priority: { value: 1, lock: false } },
+        campus_closeness: { value: 1, priority: { value: 1, lock: false } },
+        avoid_morning: { value: 1, priority: { value: 1, lock: false } },
+      }));
     }
   };
 
-  const updatePrefs = (changes: Partial<Preferences>) => {
-    setPrefs(prev => ({ ...prev, ...changes }));
+  const updatePrefValue = <K extends keyof Preferences>(key: K, value: Preferences[K]['value']) => {
+    setPrefs(prev => ({
+      ...prev,
+      [key]: { ...prev[key], value }
+    }));
     setActivePreset(null);
   };
 
-  const updateHardConstraints = (key: keyof HardConstraints) => {
-    setHardConstraints(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+
 
   const previewSubjects = subjects.slice(0, 6);
   const remaining = subjects.length - previewSubjects.length;
@@ -233,26 +235,18 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
     value: number,
     onChange: (val: number) => void,
     leftLabel: string,
-    rightLabel: string,
-    hardKey: keyof HardConstraints
+    rightLabel: string
   ) => (
     <div className={styles.sliderBlock}>
       <div className={styles.sliderHeader}>
         <span className={styles.sliderTitle}>{icon} {title}</span>
-        <button
-          className={`${styles.lockBtn} ${hardConstraints[hardKey] ? styles.locked : ''}`}
-          onClick={() => updateHardConstraints(hardKey)}
-          title={hardConstraints[hardKey] ? "절대 엄수 🔒" : "필수는 아님"}
-        >
-          {hardConstraints[hardKey] ? <Lock size={14} /> : <Unlock size={14} />}
-        </button>
       </div>
       <div className={styles.sliderLabels}>
         <span className={styles.sliderLabelLeft}>{leftLabel}</span>
         <span className={styles.sliderLabelRight}>{rightLabel}</span>
       </div>
       <input
-        type="range" min="0" max="100"
+        type="range" min="1" max="5" step="1"
         value={value}
         onChange={e => onChange(parseInt(e.target.value))}
         className={styles.rangeSlider}
@@ -298,7 +292,8 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
                     ref={provided.innerRef}
                   >
                     {subjects.map((item, index) => {
-                      const color = getColor(item.course_code);
+                      const course = getCourse(item.course.id);
+                      const color = getColor(course?.code || 'unknown');
                       return (
                         <Draggable key={item.id} draggableId={`modal-${item.id}`} index={index}>
                           {(provided, snapshot) => (
@@ -314,11 +309,10 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
                                 className={styles.modalPill}
                                 style={{ background: color.bg, color: color.text }}
                               >
-                                {getCourse(item.course_code)?.name || '새로운 과목'}
+                                {course?.name || '새로운 과목'}
                               </span>
                               <div className={styles.modalItemDetails}>
-                                <span className={styles.modalItemProf}>{getProfessor(item.prof_id)?.name || '미지정'} 교수</span>
-                                <span className={styles.modalItemCode}>{item.course_code} · {item.credit}학점</span>
+                                <span className={styles.modalItemCode}>{course?.code || '----'} · {item.credit}학점</span>
                               </div>
                               <button
                                 className={styles.deleteBtn}
@@ -425,14 +419,15 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
         <div className={styles.basketPreview} onClick={() => setIsModalOpen(true)}>
           <div className={styles.pillRow}>
             {previewSubjects.map(s => {
-              const color = getColor(s.course_code);
+              const course = getCourse(s.course.id);
+              const color = getColor(course?.code || 'unknown');
               return (
                 <span
                   key={s.id}
                   className={styles.pillBadge}
                   style={{ background: color.bg, color: color.text }}
                 >
-                  {getCourse(s.course_code)?.name || '새로운 과목'}
+                  {course?.name || '새로운 과목'}
                 </span>
               );
             })}
@@ -485,31 +480,28 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
         {renderSlider(
           "시간표 압축도 (연강 vs 우주공강)",
           <Maximize2 size={14} style={{ marginRight: 6, opacity: 0.8 }} />,
-          prefs.compactnessWeight,
-          (v) => updatePrefs({ compactnessWeight: v }),
+          prefs.compactness.value,
+          (v) => updatePrefValue('compactness', v),
           "여유롭게",
-          "빡세게",
-          "compactnessWeight"
+          "빡세게"
         )}
 
         {renderSlider(
           "캠퍼스 이동 (동선 최소화)",
           <MapIcon size={14} style={{ marginRight: 6, opacity: 0.8 }} />,
-          prefs.campusDistanceWeight,
-          (v) => updatePrefs({ campusDistanceWeight: v }),
+          prefs.campus_closeness.value,
+          (v) => updatePrefValue('campus_closeness', v),
           "상관없음",
-          "이동 최소화",
-          "campusDistanceWeight"
+          "이동 최소화"
         )}
 
         {renderSlider(
           "아침 잠 사수 (1교시 회피력)",
           <Coffee size={14} style={{ marginRight: 6, opacity: 0.8 }} />,
-          prefs.avoidMorningWeight,
-          (v) => updatePrefs({ avoidMorningWeight: v }),
+          prefs.avoid_morning.value,
+          (v) => updatePrefValue('avoid_morning', v),
           "오전 수업 허용",
-          "오전 수업 기피",
-          "avoidMorningWeight"
+          "오전 수업 기피"
         )}
       </div>
 
@@ -520,15 +512,13 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
         <div className={styles.preferenceBox}>
           <div className={styles.prefTitle}><CalendarDays size={14} /> 공강 요일 만들기</div>
           <div className={styles.daysSelector}>
-            {DAY_MAPPING.map(dayObj => (
+            {DISPLAY_DAYS.map(dayObj => (
               <button
                 key={dayObj.id}
-                className={`${styles.dayBtn} ${prefs.daysOff.includes(dayObj.id) ? styles.dayActive : ''}`}
+                className={`${styles.dayBtn} ${prefs.days_off.value[dayObj.id] ? styles.dayActive : ''}`}
                 onClick={() => {
-                  const newDays = prefs.daysOff.includes(dayObj.id)
-                    ? prefs.daysOff.filter(d => d !== dayObj.id)
-                    : [...prefs.daysOff, dayObj.id];
-                  updatePrefs({ daysOff: newDays });
+                  const currentVal = !!prefs.days_off.value[dayObj.id];
+                  updatePrefValue('days_off', { ...prefs.days_off.value, [dayObj.id]: !currentVal });
                 }}
               >
                 {dayObj.label}
@@ -540,43 +530,23 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
         <div className={styles.preferenceRow}>
           <div className={styles.prefLeft}>
             <label className={styles.switch}>
-              <input type="checkbox" checked={prefs.lunchTimeLock} onChange={() => updatePrefs({ lunchTimeLock: !prefs.lunchTimeLock })} />
+              <input 
+                type="checkbox" 
+                checked={prefs.lunch_time_preserve.value} 
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setPrefs(prev => ({
+                    ...prev,
+                    lunch_time_preserve: { value: val, priority: { value: 1, lock: val } }
+                  }));
+                }} 
+              />
               <span className={styles.slider}></span>
             </label>
             <span className={styles.prefLabel}>점심시간 (11:30~14:00) 필수 보장</span>
           </div>
-          <button
-            className={`${styles.lockBtn} ${hardConstraints.lunchTimeLock ? styles.locked : ''}`}
-            onClick={() => updateHardConstraints("lunchTimeLock")}
-            title={hardConstraints.lunchTimeLock ? "절대 엄수 🔒" : "필수는 아님"}
-          >
-            {hardConstraints.lunchTimeLock ? <Lock size={14} /> : <Unlock size={14} />}
-          </button>
         </div>
 
-        <div className={styles.preferenceBox} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px' }}>
-          <div className={styles.prefLeft} style={{ flex: 1 }}>
-            <span className={styles.prefLabel}>최대 연속 수업 제한</span>
-            <select
-              className={styles.selectBox}
-              value={prefs.maxConsecutive}
-              onChange={e => updatePrefs({ maxConsecutive: parseInt(e.target.value) })}
-            >
-              <option value="2">2연강까지만 (약 3시간)</option>
-              <option value="3">3연강까지만 (약 4.5시간)</option>
-              <option value="4">4연강까지만 (약 6시간)</option>
-              <option value="5">제한 없음</option>
-            </select>
-          </div>
-          <button
-            className={`${styles.lockBtn} ${hardConstraints.maxConsecutive ? styles.locked : ''}`}
-            onClick={() => updateHardConstraints("maxConsecutive")}
-            title={hardConstraints.maxConsecutive ? "절대 엄수 🔒" : "필수는 아님"}
-            style={{ marginLeft: '12px' }}
-          >
-            {hardConstraints.maxConsecutive ? <Lock size={14} /> : <Unlock size={14} />}
-          </button>
-        </div>
       </div>
 
       {/* 개인 시간 배제 그리드 */}
@@ -587,11 +557,11 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
         </div>
         <div className={styles.miniGrid}>
           <div className={styles.gridHeader}></div>
-          {DAY_MAPPING.map(dayObj => <div key={dayObj.id} className={styles.gridHeader}>{dayObj.label}</div>)}
+          {DISPLAY_DAYS.map(dayObj => <div key={dayObj.id} className={styles.gridHeader}>{dayObj.label}</div>)}
           {TIMES.map(time => (
             <React.Fragment key={time}>
               <div className={styles.timeLabel}>{time}</div>
-              {DAY_MAPPING.map((_, dayIdx) => {
+              {DISPLAY_DAYS.map((_, dayIdx) => {
                 const key = `${dayIdx}-${time}`;
                 return (
                   <div
@@ -609,7 +579,7 @@ const LeftPanel: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
       </div>
 
       {/* 생성 버튼 */}
-      <button className={styles.generateBtn} onClick={onGenerate}>
+      <button className={styles.generateBtn} onClick={() => onGenerate(subjects, prefs, bannedCells)}>
         <Sparkles size={20} /> AI 최적 시간표 생성하기
       </button>
 

@@ -1,118 +1,142 @@
-import type { Course, Lecture, Professor, Period, ClassRoom, Building, LectureClass } from '../../../common/models';
+import type { Department, Course, Lecture, Professor, Period, ClassRoom, Building, LectureClass } from '../../../common/models';
+
+type UUID = `${string}-${string}-${string}-${string}-${string}`;
+export const asId = (s: string) => {
+  const clean = s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().padEnd(8, '0').slice(0, 8);
+  return `${clean}-0000-0000-0000-000000000000` as UUID;
+};
+
+export const MOCK_DEPARTMENTS: Department[] = [
+  { id: asId('dept-1'), type: 'department', code: 'COSE', name: '컴퓨터학과' },
+  { id: asId('dept-2'), type: 'department', code: 'GEOG', name: '교양교육원' },
+  { id: asId('dept-3'), type: 'department', code: 'INTS', name: '융합전공' },
+];
 
 export const MOCK_COURSES: Course[] = [
-  { id: 'COSE213', name: '알고리즘', required: true, course_type: 'major' },
-  { id: 'COSE341', name: '운영체제', required: true, course_type: 'major' },
-  { id: 'COSE371', name: '데이터베이스', required: true, course_type: 'major' },
-  { id: 'COSE361', name: '인공지능', required: false, course_type: 'major' },
-  { id: 'COSE342', name: '컴퓨터네트워크', required: true, course_type: 'major' },
-  { id: 'COSE312', name: '소프트웨어공학', required: false, course_type: 'major' },
-  { id: 'COSE331', name: '컴퓨터그래픽스', required: false, course_type: 'major' },
-  { id: 'GEOG121', name: '서양미술사', required: false, course_type: 'general' },
-  { id: 'INTS101', name: '인사이드파이썬', required: false, course_type: 'inter' },
+  { id: asId('COSE213'), type: 'course', code: 'COSE213', name: '알고리즘', course_type: 'major_required', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE341'), type: 'course', code: 'COSE341', name: '운영체제', course_type: 'major_required', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE371'), type: 'course', code: 'COSE371', name: '데이터베이스', course_type: 'major_required', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE361'), type: 'course', code: 'COSE361', name: '인공지능', course_type: 'major', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE342'), type: 'course', code: 'COSE342', name: '컴퓨터네트워크', course_type: 'major_required', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE312'), type: 'course', code: 'COSE312', name: '소프트웨어공학', course_type: 'major', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('COSE331'), type: 'course', code: 'COSE331', name: '컴퓨터그래픽스', course_type: 'major', department: MOCK_DEPARTMENTS[0] },
+  { id: asId('GEOG121'), type: 'course', code: 'GEOG121', name: '서양미술사', course_type: 'general', department: MOCK_DEPARTMENTS[1] },
+  { id: asId('INTS101'), type: 'course', code: 'INTS101', name: '인사이드파이썬', course_type: 'inter', department: MOCK_DEPARTMENTS[2] },
 ];
 
 export const MOCK_PROFESSORS: Professor[] = [
-  { id: 'prof-1', name: '김정석', tel: '', mail: '' },
-  { id: 'prof-2', name: '유혁', tel: '', mail: '' },
-  { id: 'prof-3', name: '김상원', tel: '', mail: '' },
-  { id: 'prof-4', name: '이성환', tel: '', mail: '' },
-  { id: 'prof-5', name: '유민수', tel: '', mail: '' },
-  { id: 'prof-6', name: '최진영', tel: '', mail: '' },
-  { id: 'prof-7', name: '신동빈', tel: '', mail: '' },
-  { id: 'prof-8', name: '홍길동', tel: '', mail: '' },
-  { id: 'prof-9', name: '박철수', tel: '', mail: '' },
+  { id: asId('prof-1'), type: 'professor', name: '김정석', tel: '', mail: '', login: { id: 'p1', password: '' } },
+  { id: asId('prof-2'), type: 'professor', name: '유혁', tel: '', mail: '', login: { id: 'p2', password: '' } },
+  { id: asId('prof-3'), type: 'professor', name: '김상원', tel: '', mail: '', login: { id: 'p3', password: '' } },
+  { id: asId('prof-4'), type: 'professor', name: '이성환', tel: '', mail: '', login: { id: 'p4', password: '' } },
+  { id: asId('prof-5'), type: 'professor', name: '유민수', tel: '', mail: '', login: { id: 'p5', password: '' } },
+  { id: asId('prof-6'), type: 'professor', name: '최진영', tel: '', mail: '', login: { id: 'p6', password: '' } },
+  { id: asId('prof-7'), type: 'professor', name: '신동빈', tel: '', mail: '', login: { id: 'p7', password: '' } },
+  { id: asId('prof-8'), type: 'professor', name: '홍길동', tel: '', mail: '', login: { id: 'p8', password: '' } },
+  { id: asId('prof-9'), type: 'professor', name: '박철수', tel: '', mail: '', login: { id: 'p9', password: '' } },
 ];
 
 export const MOCK_BUILDINGS: Building[] = [
-  { id: 'bldg-1', name: '정보통신관', location: [0, 0] },
-  { id: 'bldg-2', name: '신공학관', location: [0, 0] },
-  { id: 'bldg-3', name: '우당교양관', location: [0, 0] },
+  { id: asId('bldg-1'), type: 'building', name: '정보통신관', location: [0, 0] },
+  { id: asId('bldg-2'), type: 'building', name: '신공학관', location: [0, 0] },
+  { id: asId('bldg-3'), type: 'building', name: '우당교양관', location: [0, 0] },
 ];
 
 export const MOCK_ROOMS: ClassRoom[] = [
-  { id: 'rm-1', bldg_id: 'bldg-1', room: '206호' },
-  { id: 'rm-2', bldg_id: 'bldg-2', room: '101호' },
-  { id: 'rm-3', bldg_id: 'bldg-3', room: '403호' },
-  { id: 'rm-4', bldg_id: 'bldg-2', room: '202호' },
-  { id: 'rm-5', bldg_id: 'bldg-1', room: '105호' },
-  { id: 'rm-6', bldg_id: 'bldg-2', room: 'B101호' },
-  { id: 'rm-7', bldg_id: 'bldg-3', room: '203호' },
-  { id: 'rm-8', bldg_id: 'bldg-1', room: '301호' },
-  { id: 'rm-9', bldg_id: 'bldg-2', room: '205호' },
-  { id: 'rm-10', bldg_id: 'bldg-3', room: '102호' },
+  { id: asId('rm-1'), type: 'class_room', building: MOCK_BUILDINGS[0], room: '206호' },
+  { id: asId('rm-2'), type: 'class_room', building: MOCK_BUILDINGS[1], room: '101호' },
+  { id: asId('rm-3'), type: 'class_room', building: MOCK_BUILDINGS[2], room: '403호' },
+  { id: asId('rm-4'), type: 'class_room', building: MOCK_BUILDINGS[1], room: '202호' },
+  { id: asId('rm-5'), type: 'class_room', building: MOCK_BUILDINGS[0], room: '105호' },
+  { id: asId('rm-6'), type: 'class_room', building: MOCK_BUILDINGS[1], room: 'B101호' },
+  { id: asId('rm-7'), type: 'class_room', building: MOCK_BUILDINGS[2], room: '203호' },
+  { id: asId('rm-8'), type: 'class_room', building: MOCK_BUILDINGS[0], room: '301호' },
+  { id: asId('rm-9'), type: 'class_room', building: MOCK_BUILDINGS[1], room: '205호' },
+  { id: asId('rm-10'), type: 'class_room', building: MOCK_BUILDINGS[2], room: '102호' },
 ];
 
-export const MOCK_PERIODS: Period[] = [
-  // 대안 1
-  { id: 'pd-1', class_code: 'cls-1', day: 'mon', time: 9, room_code: 'rm-1' },
-  { id: 'pd-1-2', class_code: 'cls-1', day: 'wed', time: 9, room_code: 'rm-1' },
-  { id: 'pd-2', class_code: 'cls-2', day: 'mon', time: 10.5, room_code: 'rm-2' },
-  { id: 'pd-2-2', class_code: 'cls-2', day: 'wed', time: 10.5, room_code: 'rm-2' },
-  { id: 'pd-3', class_code: 'cls-3', day: 'wed', time: 13, room_code: 'rm-3' },
-  { id: 'pd-4', class_code: 'cls-4', day: 'wed', time: 14.5, room_code: 'rm-4' },
-  { id: 'pd-5', class_code: 'cls-5', day: 'thu', time: 10.5, room_code: 'rm-1' },
+export type MockPeriod = Period & { id: UUID, type: 'period' };
 
-  // 대안 2
-  { id: 'pd-6', class_code: 'cls-6', day: 'tue', time: 13, room_code: 'rm-5' },
-  { id: 'pd-7', class_code: 'cls-7', day: 'thu', time: 15, room_code: 'rm-6' },
-  { id: 'pd-8', class_code: 'cls-8', day: 'fri', time: 13, room_code: 'rm-7' },
+export const MOCK_PERIODS: MockPeriod[] = [
+  // Course 0 - OS - Prof 0 - Class 1
+  { id: asId('pd-101'), type: 'period', day: 'mon', time: 9, room: MOCK_ROOMS[0] },
+  { id: asId('pd-102'), type: 'period', day: 'wed', time: 9, room: MOCK_ROOMS[0] },
+  // Course 0 - OS - Prof 0 - Class 2
+  { id: asId('pd-103'), type: 'period', day: 'mon', time: 10.5, room: MOCK_ROOMS[0] },
+  { id: asId('pd-104'), type: 'period', day: 'wed', time: 10.5, room: MOCK_ROOMS[0] },
+  // Course 0 - OS - Prof 1 - Class 3
+  { id: asId('pd-105'), type: 'period', day: 'tue', time: 9, room: MOCK_ROOMS[1] },
+  { id: asId('pd-106'), type: 'period', day: 'thu', time: 9, room: MOCK_ROOMS[1] },
+  // Course 0 - OS - Prof 1 - Class 4
+  { id: asId('pd-107'), type: 'period', day: 'tue', time: 10.5, room: MOCK_ROOMS[1] },
+  { id: asId('pd-108'), type: 'period', day: 'thu', time: 10.5, room: MOCK_ROOMS[1] },
+  
+  // Course 1 - Network - Prof 2 - Class 5 (4교시)
+  { id: asId('pd-201'), type: 'period', day: 'mon', time: 13.5, room: MOCK_ROOMS[2] },
+  { id: asId('pd-202'), type: 'period', day: 'wed', time: 13.5, room: MOCK_ROOMS[2] },
+  // Course 1 - Network - Prof 3 - Class 6 (4교시)
+  { id: asId('pd-203'), type: 'period', day: 'tue', time: 13.5, room: MOCK_ROOMS[3] },
+  { id: asId('pd-204'), type: 'period', day: 'thu', time: 13.5, room: MOCK_ROOMS[3] },
 
-  // 대안 3
-  { id: 'pd-9', class_code: 'cls-9', day: 'mon', time: 10, room_code: 'rm-8' },
-  { id: 'pd-10', class_code: 'cls-10', day: 'mon', time: 12, room_code: 'rm-8' },
-  { id: 'pd-11', class_code: 'cls-11', day: 'tue', time: 10, room_code: 'rm-9' },
-  { id: 'pd-12', class_code: 'cls-12', day: 'wed', time: 10, room_code: 'rm-10' },
+  // Course 2 - DB - Prof 4 - Class 7 (1,2 연강)
+  { id: asId('pd-301'), type: 'period', day: 'fri', time: 9, room: MOCK_ROOMS[4] },
+  { id: asId('pd-302'), type: 'period', day: 'fri', time: 10.5, room: MOCK_ROOMS[4] },
+
+  // Course 3 - SE - Prof 5 - Class 8 (5교시)
+  { id: asId('pd-401'), type: 'period', day: 'mon', time: 15, room: MOCK_ROOMS[5] },
+  { id: asId('pd-402'), type: 'period', day: 'wed', time: 15, room: MOCK_ROOMS[5] },
 ];
 
 export const MOCK_CLASSES: LectureClass[] = [
-  { id: 'cls-1', lect_code: 'lect-1', periods: ['pd-1'] },
-  { id: 'cls-2', lect_code: 'lect-2', periods: ['pd-2'] },
-  { id: 'cls-3', lect_code: 'lect-3', periods: ['pd-3'] },
-  { id: 'cls-4', lect_code: 'lect-4', periods: ['pd-4'] },
-  { id: 'cls-5', lect_code: 'lect-5', periods: ['pd-5'] },
-  { id: 'cls-6', lect_code: 'lect-6', periods: ['pd-6'] },
-  { id: 'cls-7', lect_code: 'lect-7', periods: ['pd-7'] },
-  { id: 'cls-8', lect_code: 'lect-8', periods: ['pd-8'] },
-  { id: 'cls-9', lect_code: 'lect-9', periods: ['pd-9'] },
-  { id: 'cls-10', lect_code: 'lect-10', periods: ['pd-10'] },
-  { id: 'cls-11', lect_code: 'lect-11', periods: ['pd-11'] },
-  { id: 'cls-12', lect_code: 'lect-12', periods: ['pd-12'] },
+  { id: asId('cls-1'), type: 'lecture_class', code: '01', periods: [MOCK_PERIODS[0], MOCK_PERIODS[1]] },
+  { id: asId('cls-2'), type: 'lecture_class', code: '02', periods: [MOCK_PERIODS[2], MOCK_PERIODS[3]] },
+  { id: asId('cls-3'), type: 'lecture_class', code: '03', periods: [MOCK_PERIODS[4], MOCK_PERIODS[5]] },
+  { id: asId('cls-4'), type: 'lecture_class', code: '04', periods: [MOCK_PERIODS[6], MOCK_PERIODS[7]] },
+  
+  { id: asId('cls-5'), type: 'lecture_class', code: '01', periods: [MOCK_PERIODS[8], MOCK_PERIODS[9]] },
+  { id: asId('cls-6'), type: 'lecture_class', code: '02', periods: [MOCK_PERIODS[10], MOCK_PERIODS[11]] },
+
+  { id: asId('cls-7'), type: 'lecture_class', code: '01', periods: [MOCK_PERIODS[12], MOCK_PERIODS[13]] },
+
+  { id: asId('cls-8'), type: 'lecture_class', code: '01', periods: [MOCK_PERIODS[14], MOCK_PERIODS[15]] },
 ];
 
 export const MOCK_LECTURES: Lecture[] = [
-  // 대안 1
-  { id: 'lect-1', course_code: 'COSE213', ay: 2026, sem: 'first', prof_id: 'prof-1', dept_code: 'CSE', classes: ['cls-1'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-2', course_code: 'COSE341', ay: 2026, sem: 'first', prof_id: 'prof-2', dept_code: 'CSE', classes: ['cls-2'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-3', course_code: 'COSE371', ay: 2026, sem: 'first', prof_id: 'prof-3', dept_code: 'CSE', classes: ['cls-3'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-4', course_code: 'COSE361', ay: 2026, sem: 'first', prof_id: 'prof-4', dept_code: 'CSE', classes: ['cls-4'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-5', course_code: 'COSE342', ay: 2026, sem: 'first', prof_id: 'prof-5', dept_code: 'CSE', classes: ['cls-5'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-6', course_code: 'COSE213', ay: 2026, sem: 'first', prof_id: 'prof-1', dept_code: 'CSE', classes: ['cls-6'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-7', course_code: 'COSE341', ay: 2026, sem: 'first', prof_id: 'prof-2', dept_code: 'CSE', classes: ['cls-7'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-8', course_code: 'GEOG121', ay: 2026, sem: 'first', prof_id: 'prof-8', dept_code: 'GEO', classes: ['cls-8'], hours: 1.5, lab_hours: 0, credit: 2 },
-  { id: 'lect-9', course_code: 'COSE213', ay: 2026, sem: 'first', prof_id: 'prof-1', dept_code: 'CSE', classes: ['cls-9'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-10', course_code: 'COSE341', ay: 2026, sem: 'first', prof_id: 'prof-2', dept_code: 'CSE', classes: ['cls-10'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-11', course_code: 'COSE371', ay: 2026, sem: 'first', prof_id: 'prof-3', dept_code: 'CSE', classes: ['cls-11'], hours: 1.5, lab_hours: 0, credit: 3 },
-  { id: 'lect-12', course_code: 'INTS101', ay: 2026, sem: 'first', prof_id: 'prof-9', dept_code: 'INT', classes: ['cls-12'], hours: 1.5, lab_hours: 0, credit: 3 },
+  // OS (MOCK_COURSES[0])
+  { id: asId('lect-1'), type: 'lecture', course: MOCK_COURSES[0], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[0], classes: [MOCK_CLASSES[0], MOCK_CLASSES[1]], hours: 1.25, lab_hours: 0, credit: 3 },
+  { id: asId('lect-2'), type: 'lecture', course: MOCK_COURSES[0], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[1], classes: [MOCK_CLASSES[2], MOCK_CLASSES[3]], hours: 1.25, lab_hours: 0, credit: 3 },
   
-  // 장바구니에 담길 과목
-  { id: 'lect-13', course_code: 'COSE312', ay: 2026, sem: 'first', prof_id: 'prof-6', dept_code: 'CSE', classes: [], hours: 3, lab_hours: 0, credit: 3 },
-  { id: 'lect-14', course_code: 'COSE331', ay: 2026, sem: 'first', prof_id: 'prof-7', dept_code: 'CSE', classes: [], hours: 3, lab_hours: 0, credit: 3 },
+  // Network (MOCK_COURSES[1])
+  { id: asId('lect-3'), type: 'lecture', course: MOCK_COURSES[1], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[2], classes: [MOCK_CLASSES[4]], hours: 1.25, lab_hours: 0, credit: 3 },
+  { id: asId('lect-4'), type: 'lecture', course: MOCK_COURSES[1], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[3], classes: [MOCK_CLASSES[5]], hours: 1.25, lab_hours: 0, credit: 3 },
+
+  // DB (MOCK_COURSES[2])
+  { id: asId('lect-5'), type: 'lecture', course: MOCK_COURSES[2], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[4], classes: [MOCK_CLASSES[6]], hours: 1.25, lab_hours: 0, credit: 3 },
+
+  // SE (MOCK_COURSES[3])
+  { id: asId('lect-6'), type: 'lecture', course: MOCK_COURSES[3], ay: 2026, sem: 'first', professor: MOCK_PROFESSORS[5], classes: [MOCK_CLASSES[7]], hours: 1.25, lab_hours: 0, credit: 3 },
 ];
+
 
 export const getCourse = (id: string) => MOCK_COURSES.find(c => c.id === id);
 export const getProfessor = (id: string) => MOCK_PROFESSORS.find(p => p.id === id);
+export const getLecturesByCourse = (courseId: string) => MOCK_LECTURES.filter(l => l.course.id === courseId);
 export const getLectureClass = (id: string) => MOCK_CLASSES.find(c => c.id === id);
 export const getPeriod = (id: string) => MOCK_PERIODS.find(p => p.id === id);
 export const getClassRoom = (id: string) => MOCK_ROOMS.find(r => r.id === id);
 export const getBuilding = (id: string) => MOCK_BUILDINGS.find(b => b.id === id);
+export const getLectureByPeriod = (periodId: string) => {
+  return MOCK_LECTURES.find(lect => 
+    lect.classes.some(cls => {
+      const lectureClass = getLectureClass(cls.id);
+      return lectureClass?.periods.some(p => (p as MockPeriod).id === periodId);
+    })
+  );
+};
 
 export const INITIAL_CART_LECTURES: Lecture[] = [
-  MOCK_LECTURES[0], // 알고리즘
-  MOCK_LECTURES[1], // 운영체제
-  MOCK_LECTURES[2], // 데이터베이스
-  MOCK_LECTURES[3], // 인공지능
-  MOCK_LECTURES[4], // 컴퓨터네트워크
-  MOCK_LECTURES[12], // 소프트웨어공학
-  MOCK_LECTURES[13], // 컴퓨터그래픽스
+  MOCK_LECTURES[0], // OS
+  MOCK_LECTURES[2], // Network
+  MOCK_LECTURES[4], // DB
+  MOCK_LECTURES[5], // SE
 ];

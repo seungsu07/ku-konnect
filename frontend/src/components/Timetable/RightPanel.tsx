@@ -2,8 +2,19 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Target, Info } from 'lucide-react';
 import styles from './RightPanel.module.css';
-import type { GraduationCreditData, GraduationProgressData } from '../../../../common/models';
+export interface GraduationCreditData {
+  name: string;
+  value: number;
+  color: string;
+}
 
+export interface GraduationProgressData {
+  id: string;
+  name: string;
+  current: number;
+  target: number;
+  color: string;
+}
 const DATA: GraduationCreditData[] = [
   { name: '이수 (핵심교양)', value: 12, color: '#ff3131' },
   { name: '이수 (전공필수)', value: 24, color: '#ff914d' },

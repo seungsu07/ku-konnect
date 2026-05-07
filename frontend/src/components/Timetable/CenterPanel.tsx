@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, AlertTriangle } from 'lucide-react';
 import styles from './CenterPanel.module.css';
-import type { Alternative } from '../../../../common/models';
+import type { TimeTable } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { getCourse, getProfessor, getLectureClass, getPeriod, getBuilding, getClassRoom } from '../../data/mockData';
+import { getCourse, getProfessor, getPeriod, getBuilding, getClassRoom, getLectureByPeriod } from '../../data/mockData';
+
+const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
 interface CenterPanelProps {
-  alternative: Alternative;
+  timeTable: TimeTable;
   currentIndex: number;
   totalAlternatives: number;
   onPrev: () => void;
@@ -18,7 +20,7 @@ const START_HOUR = 9;
 const END_HOUR = 18;
 
 const CenterPanel: React.FC<CenterPanelProps> = ({
-  alternative,
+  timeTable,
   currentIndex,
   totalAlternatives,
   onPrev,
@@ -35,7 +37,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
   };
 
   const getGridColumn = (dayId: string) => {
-    const index = DAY_MAPPING.findIndex(d => d.id === dayId);
+    const index = DISPLAY_DAYS.findIndex(d => d.id === dayId);
     return index !== -1 ? index + 2 : 2;
   };
 
@@ -51,7 +53,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
     <div className={styles.container}>
       {/* 헤더 및 네비게이션 */}
       <div className={styles.header}>
-        <div className={styles.title}>{alternative.name}</div>
+        <div className={styles.title}>{timeTable.name}</div>
         <div className={styles.navigation}>
           <button 
             className={styles.navBtn} 
@@ -75,7 +77,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
       <div className={styles.timetableWrapper}>
         <div className={styles.gridDays}>
           <div className={styles.dayCell}></div>
-          {DAY_MAPPING.map(day => (
+          {DISPLAY_DAYS.map(day => (
             <div key={day.id} className={styles.dayCell}>{day.label}</div>
           ))}
         </div>
@@ -94,7 +96,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
                 {START_HOUR + i}
               </div>
               {/* Vertical lines */}
-              {DAY_MAPPING.map((_, dayIdx) => (
+              {DISPLAY_DAYS.map((_, dayIdx) => (
                 <div 
                   key={`line-${i}-${dayIdx}`} 
                   className={styles.gridSlot} 
@@ -106,41 +108,67 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
 
           {/* 시간표 카드 */}
           {(() => {
-            const renderableClasses: any[] = [];
-            alternative.lectures.forEach(lecture => {
-              const course = getCourse(lecture.course_code);
-              const professor = getProfessor(lecture.prof_id);
+            const rawClasses: any[] = [];
+            
+            Object.values(timeTable.days).forEach(dayData => {
+              if (!dayData) return;
+              dayData.periods.forEach(periodRef => {
+                const period = getPeriod(periodRef.id);
+                if (!period) return;
+                
+                const lecture = getLectureByPeriod(period.id);
+                if (!lecture) return;
 
-              lecture.classes.forEach(classId => {
-                const lectureClass = getLectureClass(classId);
-                if (!lectureClass) return;
+                const course = getCourse(lecture.course.id);
+                const professor = getProfessor(lecture.professor.id);
+                const room = getClassRoom(period.room.id);
+                const building = room ? getBuilding(room.building.id) : undefined;
 
-                lectureClass.periods.forEach((periodId: string) => {
-                  const period = getPeriod(periodId);
-                  if (!period) return;
+                const startTime = period.time;
+                const endTime = period.time + lecture.hours;
 
-                  const room = getClassRoom(period.room_code);
-                  const building = room ? getBuilding(room.bldg_id) : undefined;
-
-                  const startTime = period.time;
-                  const endTime = period.time + lecture.hours;
-
-                  renderableClasses.push({
-                    id: `${lecture.id}-${period.id}`,
-                    lectureId: lecture.id,
-                    courseName: course?.name || '알 수 없음',
-                    courseCode: course?.id || '----',
-                    courseType: course?.course_type || 'major',
-                    credit: lecture.credit,
-                    profName: professor?.name || '미지정',
-                    day: period.day,
-                    start: startTime,
-                    end: endTime,
-                    location: `${building?.name || ''} ${room?.room || ''}`.trim(),
-                    warning: course?.name === '인공지능'
-                  });
+                rawClasses.push({
+                  id: `${lecture.id}-${period.id}`,
+                  lectureId: lecture.id,
+                  courseName: course?.name || '알 수 없음',
+                  courseCode: course?.code || '----',
+                  courseType: course?.course_type || 'major',
+                  credit: lecture.credit,
+                  profName: professor?.name || '미지정',
+                  day: period.day,
+                  start: startTime,
+                  end: endTime,
+                  location: `${building?.name || ''} ${room?.room || ''}`.trim(),
+                  warning: course?.name === '인공지능'
                 });
               });
+            });
+
+            // Group and Merge contiguous periods
+            const renderableClasses: any[] = [];
+            const grouped = new Map<string, any[]>();
+
+            rawClasses.forEach(cls => {
+              const key = `${cls.lectureId}-${cls.day}`;
+              if (!grouped.has(key)) grouped.set(key, []);
+              grouped.get(key)!.push(cls);
+            });
+
+            grouped.forEach(list => {
+              list.sort((a, b) => a.start - b.start);
+              let current = list[0];
+              for (let i = 1; i < list.length; i++) {
+                const next = list[i];
+                // If next class starts within 0.3 hours (18 minutes) of current class ending, merge them
+                // This accounts for standard 15-minute breaks between periods
+                if (next.start - current.end <= 0.3) {
+                  current.end = next.end;
+                } else {
+                  renderableClasses.push(current);
+                  current = next;
+                }
+              }
+              renderableClasses.push(current);
             });
 
             return renderableClasses.map(cls => {
