@@ -7,6 +7,9 @@
 
 import loki from 'lokijs';
 import { Temporal } from '@js-temporal/polyfill';
+import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
+import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
+import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
 
 
 
@@ -23,10 +26,15 @@ import { Temporal } from '@js-temporal/polyfill';
  * @param {RunningController} rcon
  */
 export function CreateDatabaseManager(context, rcon) {
-    const db = new loki('./database/index.json', {
+    const db = new loki('database.json', {
         autoload: true,
         autoloadCallback: () => {
             console.log('Database loaded');
+        },
+        autosave: true,
+        autosaveInterval: 60000,
+        autosaveCallback: () => {
+            console.log('Database saved');
         }
     });
     
@@ -34,13 +42,10 @@ export function CreateDatabaseManager(context, rcon) {
     const collection =
         db.getCollection('entities') ??
         (() => {
-            const campuses = require('../../common/default/campuses.json');
-            const colleges = require('../../common/default/colleges.json');
-            const departments = require('../../common/default/departments.json');
             const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
-            campuses.forEach(e => col.add(e));
-            colleges.forEach(e => col.add(e));
-            departments.forEach(e => col.add(e));
+            col.insert(JSON_CAMPUSES);
+            col.insert(JSON_COLLEGES);
+            col.insert(JSON_DEPARTMENTS);
             return col;
         })();
 
@@ -51,16 +56,17 @@ export function CreateDatabaseManager(context, rcon) {
         /**
          * @template {EntityType} T
          * @param {T} type
-         * @param {Omit<TypeEntity<T>, 'id'>} param
-         * @returns {TypeEntity<T> & LokiObj}
+         * @param {WithoutID<TypeEntity<T>>} param
+         * @returns {TypeEntity<T> & LokiObj | undefined}
          */
-        createEntity(type, param) {
+        createEntity(param, type) {
+            if (param.type != type) return undefined;
             const idparam = {
                 id: crypto.randomUUID(),
                 ...param
             };
             /** @type {any} */
-            const entity = collection.add(idparam);
+            const entity = collection.insertOne(idparam);
             return entity;
         },
         
@@ -207,10 +213,15 @@ export function CreateDatabaseManager(context, rcon) {
                     comments: []
                 }
             };
-            this.createEntity('user', param);
-            return {
-                success: true
-            };
+            const user = this.createEntity(param, 'user');
+            return user?
+                {
+                    success: true
+                }:
+                {
+                    success: false,
+                    e: 'unexpected'
+                };
         },
 
         /**
@@ -221,7 +232,10 @@ export function CreateDatabaseManager(context, rcon) {
             await controller.start();
 
             while (true) {
-
+                const { promise: db_save, resolve: db_save_resv } = Promise.withResolvers();
+                db.save(db_save_resv);
+                const err = await db_save;
+                if (err) console.error(err);
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([delay_prom, controller.waitFor(false)]);

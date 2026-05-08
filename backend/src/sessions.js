@@ -6,7 +6,7 @@
  */
 
 import { Temporal } from '@js-temporal/polyfill';
-import { CreateRunningController } from './controller';
+import { CreateRunningController } from './controller.js';
 
 
 
@@ -37,6 +37,7 @@ export function CreateLoginSessionManager(dbManager, rcon) {
         /**
          * @param {EntityID<'user'>} user_id
          * @param {Temporal.Duration} duration
+         * @returns {boolean}
          */
         register(user_id, duration = Temporal.Duration.from({ days: 7 })) {
             const expires_at = Temporal.Now
@@ -52,13 +53,15 @@ export function CreateLoginSessionManager(dbManager, rcon) {
                 expired: false,
                 expires_at
             };
-            if (!dbManager) return;
-            const session = dbManager.createEntity('session', param);
+            if (!dbManager) return false;
+            const session = dbManager.createEntity(param, 'session');
+            if (!session) return false;
             sessionMap.set(session_id, session);
             const user = userMap.get(user_id) ??
                 /** @type {Set<EntityID<'session'>>} */
                 (userMap.set(user_id, new Set()).get(user_id));
             user.add(session_id);
+            return true;
         },
 
         /**
