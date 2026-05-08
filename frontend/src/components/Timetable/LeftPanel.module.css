@@ -302,23 +302,8 @@
 }
 
 .dndWithNumbers {
-  display: grid;
-  grid-template-columns: 32px 1fr;
-  column-gap: 10px;
-  align-items: start;
-}
-
-.numberColumn {
   display: flex;
   flex-direction: column;
-}
-
-.numberColumnWrapper {
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
 }
 
 .rankBadge {
@@ -377,7 +362,7 @@
 
 .modalDndItem {
   display: grid;
-  grid-template-columns: 20px 120px 1fr 30px;
+  grid-template-columns: 32px 20px 110px 1fr 30px;
   align-items: center;
   column-gap: 10px;
   background: rgba(255, 255, 255, 0.04);

@@ -152,7 +152,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
     const newId = `lect-${nextId + 100}`;
     setNextId(n => n + 1);
     const mockLecture: Lecture = {
-      id: newId as any, type: 'lecture', course: { id: 'UNKNOWN' as any, type: 'course' }, ay: 2026, sem: 'first', professor: { id: 'prof-unknown' as any, type: 'professor' }, classes: [], hours: 3, lab_hours: 0, credit: 3
+      id: newId as any, type: 'lecture', course: 'UNKNOWN' as any, ay: 2026, sem: 'first', professor: 'prof-unknown' as any, classes: [], hours: 3, lab_hours: 0, credit: 3
     };
     setSubjects([...subjects, mockLecture]);
   };
@@ -274,15 +274,6 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
             </button>
           </div>
           <div className={styles.dndWithNumbers}>
-            <div className={styles.numberColumn}>
-              {subjects.map((_, idx) => (
-                <div key={idx} className={styles.numberColumnWrapper}>
-                  <div className={`${styles.rankBadge} ${idx === 0 ? styles.topRank : ''}`}>
-                    {idx + 1}
-                  </div>
-                </div>
-              ))}
-            </div>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="subjects-modal">
                 {(provided) => (
@@ -292,7 +283,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
                     ref={provided.innerRef}
                   >
                     {subjects.map((item, index) => {
-                      const course = getCourse(item.course.id);
+                      const course = getCourse(item.course);
                       const color = getColor(course?.code || 'unknown');
                       return (
                         <Draggable key={item.id} draggableId={`modal-${item.id}`} index={index}>
@@ -304,6 +295,9 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
                               style={provided.draggableProps.style}
                               className={`${styles.modalDndItem} ${snapshot.isDragging ? styles.dragging : ''}`}
                             >
+                              <div className={`${styles.rankBadge} ${index === 0 ? styles.topRank : ''}`}>
+                                {index + 1}
+                              </div>
                               <GripVertical size={14} className={styles.gripIcon} />
                               <span
                                 className={styles.modalPill}
@@ -419,7 +413,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
         <div className={styles.basketPreview} onClick={() => setIsModalOpen(true)}>
           <div className={styles.pillRow}>
             {previewSubjects.map(s => {
-              const course = getCourse(s.course.id);
+              const course = getCourse(s.course);
               const color = getColor(course?.code || 'unknown');
               return (
                 <span

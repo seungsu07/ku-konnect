@@ -1,5 +1,5 @@
 import type { Lecture, Preferences, TimeTable, Day } from '../../../common/models';
-import { getLectureClass, getClassRoom, getBuilding, asId, getLecturesByCourse } from '../data/mockData';
+import { getLectureClass, getClassRoom, getBuilding, asId, getLecturesByCourse, getLectureByClass } from '../data/mockData';
 import type { MockPeriod } from '../data/mockData';
 
 export interface WorkerInput {
@@ -38,7 +38,7 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   const coursePriority = new Map<string, number>();
 
   basket.forEach((lect, idx) => {
-    const cid = lect.course.id;
+    const cid = lect.course;
     if (!courseGroups.has(cid)) {
       courseGroups.set(cid, []);
       coursePriority.set(cid, idx);
@@ -51,7 +51,7 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   const classArrays: string[][] = uniqueCourseIds.map(cid => {
     // Collect ALL lectures for this course, not just the ones explicitly in the basket
     const lectures = getLecturesByCourse(cid);
-    const classIds = lectures.flatMap(l => l.classes.map(c => c.id));
+    const classIds = lectures.flatMap(l => l.classes);
     return ['none', ...classIds];
   });
 
@@ -76,8 +76,10 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
   combinations.forEach(classCombo => {
     let isValid = true;
-    let periods: MockPeriod[] = [];
-    const periodSet = new Set<string>();
+    let periods: (MockPeriod & { duration: number })[] = [];
+    const scheduledByDay: Record<string, {start: number, end: number}[]> = {
+      sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
+    };
     const activeClasses = classCombo.filter(id => id !== 'none');
 
     if (activeClasses.length === 0) return; // Skip completely empty timetables
@@ -87,15 +89,24 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
         const cls = getLectureClass(clsId);
         if (!cls) continue;
         
+        const lecture = getLectureByClass(clsId);
+        const duration = lecture ? lecture.hours / cls.periods.length : 1.5;
+
         for (const p of cls.periods as MockPeriod[]) {
-          const key = `${p.day}-${p.time}`;
-          if (periodSet.has(key)) {
+          const start = p.time;
+          const end = start + duration;
+          
+          const collision = scheduledByDay[p.day].some(existing => 
+            (start < existing.end && end > existing.start)
+          );
+          
+          if (collision) {
             isValid = false;
             deadEndCounts.overlap++;
             break;
           }
-          periodSet.add(key);
-          periods.push(p);
+          scheduledByDay[p.day].push({ start, end });
+          periods.push({ ...p, duration });
         }
         if (!isValid) break;
       }
@@ -121,7 +132,7 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
       if (periods.some(p => {
         const dayIdx = DISPLAY_DAYS.indexOf(p.day);
         const tStart = Math.floor(p.time);
-        const tEnd = Math.floor(p.time + 1.25 - 0.01);
+        const tEnd = Math.floor(p.time + p.duration - 0.01);
         for (let t = tStart; t <= tEnd; t++) {
           const cellKey = `${dayIdx}-${t}`;
           if (bannedCells[cellKey]) return true;
@@ -178,11 +189,11 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
           }
 
           // Campus
-          const room1 = getClassRoom(current.room.id);
-          const room2 = getClassRoom(next.room.id);
+          const room1 = getClassRoom(current.room);
+          const room2 = getClassRoom(next.room);
           if (room1 && room2) {
-            const b1 = getBuilding(room1.building.id);
-            const b2 = getBuilding(room2.building.id);
+            const b1 = getBuilding(room1.building);
+            const b2 = getBuilding(room2.building);
             if (b1 && b2) {
               const dx = b1.location[0] - b2.location[0];
               const dy = b1.location[1] - b2.location[1];

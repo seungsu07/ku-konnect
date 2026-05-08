@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, MapPin, AlertTriangle, ChevronDown, Plus } f
 import styles from './CenterPanel.module.css';
 import type { TimeTable } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { getCourse, getProfessor, getPeriod, getBuilding, getClassRoom, getLectureByPeriod } from '../../data/mockData';
+import { getCourse, getProfessor, getPeriod, getBuilding, getClassRoom, getLectureByPeriod, getLectureClassByPeriod } from '../../data/mockData';
 
 const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
@@ -206,20 +206,23 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
             
             Object.values(timeTable.days).forEach(dayData => {
               if (!dayData) return;
-              dayData.periods.forEach(periodRef => {
+              dayData.periods.forEach((periodRef: any) => {
                 const period = getPeriod(periodRef.id);
                 if (!period) return;
                 
                 const lecture = getLectureByPeriod(period.id);
                 if (!lecture) return;
 
-                const course = getCourse(lecture.course.id);
-                const professor = getProfessor(lecture.professor.id);
-                const room = getClassRoom(period.room.id);
-                const building = room ? getBuilding(room.building.id) : undefined;
+                const lectureClass = getLectureClassByPeriod(period.id);
+                const duration = lectureClass ? lecture.hours / lectureClass.periods.length : 1.5;
+
+                const course = getCourse(lecture.course);
+                const professor = getProfessor(lecture.professor);
+                const room = getClassRoom(period.room);
+                const building = room ? getBuilding(room.building) : undefined;
 
                 const startTime = period.time;
-                const endTime = period.time + lecture.hours;
+                const endTime = period.time + duration;
 
                 rawClasses.push({
                   id: `${lecture.id}-${period.id}`,
