@@ -3,42 +3,7 @@ import styles from './Timetable.module.css';
 import LeftPanel from '../components/Timetable/LeftPanel';
 import CenterPanel from '../components/Timetable/CenterPanel';
 import RightPanel from '../components/Timetable/RightPanel';
-import { Loader2 } from 'lucide-react';
-
-import { MOCK_LECTURES } from '../data/mockData';
-
-const DUMMY_TIMETABLE_ALTERNATIVES = [
-  {
-    id: 1,
-    name: '대안 1 (공강 위주)',
-    lectures: [
-      MOCK_LECTURES[0],
-      MOCK_LECTURES[1],
-      MOCK_LECTURES[2],
-      MOCK_LECTURES[3],
-      MOCK_LECTURES[4],
-    ]
-  },
-  {
-    id: 2,
-    name: '대안 2 (오전 배제)',
-    lectures: [
-      MOCK_LECTURES[5],
-      MOCK_LECTURES[6],
-      MOCK_LECTURES[7],
-    ]
-  },
-  {
-    id: 3,
-    name: '대안 3 (이동 최소화)',
-    lectures: [
-      MOCK_LECTURES[8],
-      MOCK_LECTURES[9],
-      MOCK_LECTURES[10],
-      MOCK_LECTURES[11],
-    ]
-  }
-];
+import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
 import type { TimeTable, Lecture, Preferences } from '../../../common/models';
 import { SAVED_TIMETABLES } from '../data/mockData';
