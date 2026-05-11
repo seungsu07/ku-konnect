@@ -332,7 +332,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/auth/login
              * @method POST
-             * @type {RouteFunction<'/api/auth/login', 'POST', never, { success: false; } | { success: true; token: EntityID<'session'>; }>}
+             * @type {RouteFunction<'/api/auth/login', 'POST', undefined, { success: false; } | { success: true; token: EntityID<'session'>; }>}
              */
             authLogin(data) {
                 if (!sessionManager) throw new Error();
@@ -445,32 +445,26 @@ export function CreateDatabaseManager(context, rcon) {
             },
             
             /**
-             * /api/generate/timetable
+             * /api/data/timetable
              * @method POST
-             * @type {RouteFunction<'/api/generate/timetable', 'POST', User>}
+             * @type {RouteFunction<'/api/data/timetable', 'GET', User>}
              */
-            generateTimetable(data, user) {
-                if (!sessionManager) throw new Error();
-                const mailMgr = sessionManager.context.mailSessionManager;
-                if (!mailMgr) throw new Error();
-                const {
-                    courses,
-                    preferences
-                } = data;
-                const timetables = generateTimetable(
-                    user,
-                    courses.map(e => solveID(e, 1)),
-                    preferences
-                );
-                const ids = timetables.map(e => dbm.createEntity(e)?.id);
-                if (ids.includes(undefined))
+            dataTimetable(data, user) {
+                const { id } = data;
+                const timetable = dbm.getByID(id);
+                if (!timetable)
                     return {
                         success: false,
-                        e: 'unexpected'
+                        e: 'timetable_doesnt_exist'
+                    };
+                if (timetable.user != user.id)
+                    return {
+                        success: false,
+                        e: 'timetable_doesnt_exist'
                     };
                 return {
                     success: true,
-                    alternatives: /** @type {any} */ (ids)
+                    data: timetable
                 };
             }
         },

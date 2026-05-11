@@ -3,10 +3,12 @@
  * @import { RequestHandler } from 'express'
  * @import { RunningController } from './controller'
  * @import { ServerContext } from './server'
- * @import { Path, Scheme, PATH_ROUTE, TypeGuarder, TypeGuardObject, MethodOf } from '../../common/dto'
+ * @import { Path, Scheme, TypeGuarder, TypeGuardObject, MethodOf, ErrorString, PickIndices } from '../../common/dto'
+ * @import { User } from '../../common/models'
  */
 
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { Temporal } from '@js-temporal/polyfill';
 import { makeStringGuarder, makeNumberGuarder, makeBooleanGuarder, makeUndefinedGuarder, makeArrayGuarder, makeObjectGuarder } from '../../common/dto.ts';
 
@@ -70,37 +72,70 @@ export function CreateAppManager(context, rcon) {
     };
     
     /**
-     * @template T, E
-     * @param {TypeGuardObject<T, E>} o
-     * @returns {TypeGuarder<T, E>}
+     * @template T
+     * @param {TypeGuardObject<T, ParseError>} o
+     * @returns {TypeGuarder<T, ParseError>}
+     * @description Make TypeGuarder for Object, Tuple.
      */
-    function solveGuardObject(o) {
+    function objectGuarder(o) {
         return (t) => {
-            const obg = G.o(t);
-            if (obg instanceof ParseError)
-                return new ParseError(obg.message, []);
-            const entries = Object.entries(o).map(([k, v]) => [k, v(t[k])]);
-            const errIndex= entries.findIndex(([_, v]) => v instanceof ParseError);
+            const objg = G.o(t);
+            if (objg instanceof ParseError)
+                return new ParseError(objg.message, []);
+            const tup = Array.isArray(o);
+            /** @type {any} */
+            const obj = {};
+            /** @type {ParseError | undefined} */
             let error;
-            if (errIndex != -1) {
-                /** @type {[string, ParseError]} */
-                const [k, v] =/** @type {any} */ (entries[errIndex]);
-                error = new ParseError(v.message, v.path.concat([k]));
-            }
-            return error? error: Object.fromEntries(entries)
+            return Object.entries(o).every(([k, v]) => {
+                const res = v(t[k]);
+                if (res instanceof ParseError) {
+                    error = new ParseError(res.message, [k, ...res.path]);
+                    return false;
+                }
+                obj[k] = res;
+                return true;
+            })? tup? Object.values(obj): obj: error;
+        };
+    }
+    
+    /**
+     * @template T
+     * @param {TypeGuarder<T, ParseError>} g
+     * @returns {TypeGuarder<T[], ParseError>}
+     * @description Make TypeGuarder for non-fixed Array.
+     */
+    function arrayGuarder(g) {
+        return (t) => {
+            const arrg = G.a(t);
+            if (arrg instanceof ParseError)
+                return new ParseError(arrg.message, []);
+            /** @type {any} */
+            const arr = [];
+            /** @type {ParseError | undefined} */
+            let error;
+            return /** @type {any[]} */ (t).every((v, i) => {
+                const res = g(v);
+                if (res instanceof ParseError) {
+                    error = new ParseError(res.message, [`(index ${i})`, ...res.path]);
+                    return false;
+                }
+                arr.push(res);
+                return true;
+            })? arr: error;
         };
     }
     
     /** @type {{ [K in Path]: { [L in MethodOf<K>]: TypeGuarder<Scheme<K, L, 'REQ'>, ParseError> } }} */
     const guarders = {
         '/api/auth/login': {
-            POST: solveGuardObject({
+            POST: objectGuarder({
                 id: G.id,
                 password: G.s
             })
         },
         '/api/auth/signup': {
-            POST: solveGuardObject({
+            POST: objectGuarder({
                 campus: G.id,
                 college: G.id,
                 department: G.id,
@@ -110,7 +145,7 @@ export function CreateAppManager(context, rcon) {
                 name: G.s,
                 login_id: G.s,
                 password: G.s,
-                univ_mail: solveGuardObject({
+                univ_mail: objectGuarder({
                     address:  (t) =>
                         /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                         new ParseError('This field needed to be email address', []),
@@ -118,18 +153,14 @@ export function CreateAppManager(context, rcon) {
                 })
             })
         },
-        '/api/data/timetable': {
-            GET: solveGuardObject({
-                id: G.id
-            })
-        },
+        //TODO
         '/api/auth/verify/mail': {
-            GET: solveGuardObject({
+            GET: objectGuarder({
                 address: (t) =>
                     /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                     new ParseError('This field needed to be email address', [])
             }),
-            POST: solveGuardObject({
+            POST: objectGuarder({
                 address:  (t) =>
                     /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                     new ParseError('This field needed to be email address', []),
@@ -146,11 +177,27 @@ export function CreateAppManager(context, rcon) {
      * @template V
      * @param {T} path
      * @param {U} method
-     * @param {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>>} fn
-     * @returns {[T, RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>>]}
+     * @param {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>} fn
+     * @returns {[T, RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>]}
      */
     function makeHandler(path, method, fn) {
-        /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>>} */
+        /**
+         * @param {Parameters<typeof fn>[0]} req
+         * @returns {User | null}
+         */
+        function getSessionUser(req) {
+            const loginMgr = context.sessionManager?.context.loginSessionManager;
+            if (!loginMgr) return null;
+            const token = req.cookies.token;
+            if (!token) return null;
+            const result = loginMgr.check(token);
+            if (!result.valid) return null;
+            const { user_id } = result;
+            const user = context.databaseManager?.getByID(user_id);
+            return user ?? null;
+        }
+        
+        /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>} */
         function handler(req, res, next) {
             const data = method == 'GET'?
                 req.query: req.body;
@@ -161,11 +208,12 @@ export function CreateAppManager(context, rcon) {
                 res.status(400).json(/** @type {any} */ ({
                     success: false,
                     e: `${gdata.message}${gdata.path.length?
-                        ', at \'' + gdata.path.reverse().join('.') + '\'': ''}`
+                        ', at \'' + gdata.path.join('.') + '\'': ''}`
                 }));
                 return;
             }
             req.body = gdata;
+            res.locals.getSessionUser = getSessionUser.bind(null, req);
             fn(req, res, next);
             return;
         }
@@ -175,6 +223,8 @@ export function CreateAppManager(context, rcon) {
     const app = express();
 
     app.use(express.json());
+    
+    app.use(cookieParser());
 
     app.use(/** @type {express.ErrorRequestHandler} */
         (err, req, res, next) => {
@@ -183,8 +233,46 @@ export function CreateAppManager(context, rcon) {
         }
     );
     
-    app.post(...makeHandler('/api/auth/signup', 'POST', (req, res, next) => {
-        res.status(200).end('congrats.');
+    app.post(...makeHandler('/api/auth/login', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const raw = context.databaseManager.API.authLogin(data);
+        if (raw.success) {
+            const result = {
+                success: raw.success,
+                expires_at: raw.expires_at
+            };
+            res.cookie('token', raw.token, {
+                expires: new Date(raw.expires_at),
+                httpOnly: true
+            });
+            res.status(200).json(result);
+        } else {
+            const result = {
+                success: raw.success,
+                e: raw.e
+            }
+            res.status(400).json(result);
+        }
+    }));
+    
+    app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.authSignup(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/timetable', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataTimetable(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
 
     app.use(/** @type {express.ErrorRequestHandler} */

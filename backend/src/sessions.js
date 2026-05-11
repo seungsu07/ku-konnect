@@ -60,7 +60,7 @@ export function CreateLoginSessionManager(context, rcon) {
          * @param {EntityID<'user'> | undefined} user_id
          * @returns {{ valid: false; } | { valid: true; limit: number; token: EntityID<'session'>, user_id: EntityID<'user'> }}
          */
-        check(token, user_id) {
+        check(token, user_id=undefined) {
             if (!dbManager) throw new Error();
             const session = dbManager.getByID(token);
             if (

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
+    "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
     "lokijs": "^1.5.12"
   }
