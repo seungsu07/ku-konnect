@@ -1,0 +1,17 @@
+POST http://localhost:3000/api/auth/signup HTTP/1.1
+content-type: application/json
+
+{
+    "campus": "12345678-1234-1234-1234-123456789abc",
+    "college": "12345678-1234-1234-1234-123456789abc",
+    "department": "12345678-1234-1234-1234-123456789abc",
+    "name": "human",
+    "login_id": "human",
+    "univ_mail":1,
+    "student_id": "2026320165",
+    "password": "human",
+    "univ_mail": {
+        "address": "a@gmail.com",
+        "token": "12345678-1234-1234-1234-123456789abc"
+    }
+}
