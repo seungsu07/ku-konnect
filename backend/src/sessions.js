@@ -1,5 +1,5 @@
 /**
- * @import { Entity, WithoutID, EntityID, Session } from '../../common/models'
+ * @import { WithoutID, EntityID, Session } from '../../common/models'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
  * @import { DatabaseManager } from './database'
@@ -19,17 +19,13 @@ import { CreateRunningController } from './controller.js';
 /** @typedef {ReturnType<typeof CreateLoginSessionManager>} LoginSessionManager */
 
 /**
- * @param {DatabaseManager} dbManager
+ * @param {SessionContext} context
  * @param {RunningController} rcon
  */
-export function CreateLoginSessionManager(dbManager, rcon) {
-    /** @type {Map<EntityID<'session'>, Session>} */
-    const sessionMap = new Map();
-    /** @type {Map<EntityID<'user'>, Set<EntityID<'session'>>>} */
-    const userMap = new Map();
-    /** @type {EntityID<'session'>[]} */
-    const garbageQueue = [];
-
+export function CreateLoginSessionManager(context, rcon) {
+    /** @type {SessionContext['dbManager']} */
+    let dbManager;
+    
     return {
         /** @type {MonoController} */
         controller: rcon.outer,
@@ -37,14 +33,15 @@ export function CreateLoginSessionManager(dbManager, rcon) {
         /**
          * @param {EntityID<'user'>} user_id
          * @param {Temporal.Duration} duration
-         * @returns {boolean}
+         * @returns {{ token: EntityID<'session'>; expires_at: number }?}
          */
         register(user_id, duration = Temporal.Duration.from({ days: 7 })) {
+            dbManager = context.dbManager;
+            if (!dbManager) throw new Error();
             const expires_at = Temporal.Now
                 .zonedDateTimeISO()
                 .add(duration)
                 .epochMilliseconds;
-            const session_id = crypto.randomUUID();
             /** @type {WithoutID<Session>} */
             const param = {
                 type: 'session',
@@ -53,36 +50,52 @@ export function CreateLoginSessionManager(dbManager, rcon) {
                 expired: false,
                 expires_at
             };
-            if (!dbManager) return false;
-            const session = dbManager.createEntity(param, 'session');
-            if (!session) return false;
-            sessionMap.set(session_id, session);
-            const user = userMap.get(user_id) ??
-                /** @type {Set<EntityID<'session'>>} */
-                (userMap.set(user_id, new Set()).get(user_id));
-            user.add(session_id);
-            return true;
+            const session = dbManager.createEntity(param);
+            if (!session) return null;
+            return { token: session.id, expires_at };
+        },
+        
+        /**
+         * @param {EntityID<'session'>} token
+         * @param {EntityID<'user'> | undefined} user_id
+         * @returns {{ valid: false; } | { valid: true; limit: number; token: EntityID<'session'>, user_id: EntityID<'user'> }}
+         */
+        check(token, user_id) {
+            if (!dbManager) throw new Error();
+            const session = dbManager.getByID(token);
+            if (
+                !session ||
+                session.expired ||
+                session.data_type != 'LOGIN' ||
+                session.data != (user_id ?? session.data)
+            ) return { valid: false };
+            const now = Temporal.Now.instant().epochMilliseconds;
+            if (session.expires_at < now) {
+                session.expired = true;
+                dbManager.updateEntity(session);
+            }
+            return {
+                valid: true,
+                limit: session.expired? -1: session.expires_at - now,
+                token,
+                user_id: session.data
+            };
         },
 
         /**
-         * @param {EntityID<'session' | 'user'>} id
-         * @returns {EntityID<'session' | 'user'>[]}
+         * @param {EntityID<'session'>} token
+         * @returns {void}
          */
-        expire(id) {
-            sessionChk: {
-                const session = sessionMap.get(/** @type {any} */ (id));
-                if (!session) break sessionChk;
-                if (session.expired) return [id];
-                session.expired = true;
-                garbageQueue.push(/** @type {any} */ (id));
-                return [id];
-            }
-            userChk: {
-                const user = userMap.get(/** @type {any} */ (id))
-                if (!user) break userChk;
-                return user.keys().flatMap(e => this.expire(e)).toArray();
-            }
-            return [];
+        expire(token) {
+            if (!dbManager) throw new Error();
+            const session = dbManager.getByID(token);
+            if (
+                !session ||
+                session.expired ||
+                session.data_type != 'LOGIN'
+            ) return;
+            session.expired = true;
+            dbManager.updateEntity(session);
         },
 
         /**
@@ -90,29 +103,203 @@ export function CreateLoginSessionManager(dbManager, rcon) {
          * @returns {Promise<void>}
          */
         async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+            dbManager = context.dbManager;
+            if (!dbManager) throw new Error();
             const controller = rcon.inner;
             await dbManager.controller.waitFor(true);
             await controller.start();
 
-            function collect() {
-                const gqTemp = garbageQueue.splice(0);
-                gqTemp.forEach(e => {
-                    const session = sessionMap.get(e);
-                    if (!session || !dbManager) return;
-                    dbManager.deleteEntity(session);
-                    const user = userMap.get(session.data);
-                    if (!user) return;
-                    user.delete(e);
-                });
-            }
-
             while (true) {
-                collect();
+                
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([delay_prom, controller.waitFor(false)]);
                 if (controller.isPendingFor().stop) {
-                    collect();
+                    break;
+                }
+            }
+
+            await controller.stop();
+        }
+    };
+}
+
+/** @typedef {ReturnType<typeof CreateMailSessionManager>} MailSessionManager */
+
+/**
+ * @param {SessionContext} context
+ * @param {RunningController} rcon
+ */
+export function CreateMailSessionManager(context, rcon) {
+    /** @type {SessionContext['dbManager']} */
+    let dbManager;
+    
+    return {
+        /** @type {MonoController} */
+        controller: rcon.outer,
+
+        /**
+         * @param {string} address
+         * @param {Temporal.Duration} duration
+         * @returns {{ expires_at: number; }?}
+         */
+        registerVerify(address, duration = Temporal.Duration.from({ minutes: 5 })) {
+            if (!dbManager) throw new Error();
+            const expires_at = Temporal.Now
+                .zonedDateTimeISO()
+                .add(duration)
+                .epochMilliseconds;
+            /** @type {WithoutID<Session>} */
+            const param = {
+                type: 'session',
+                data_type: 'MAIL_VERIFY',
+                data: address,
+                expired: false,
+                expires_at
+            };
+            const session = dbManager.createEntity(param);
+            if (!session) return null;
+            return { expires_at };
+        },
+        
+        /**
+         * @param {string} address
+         * @param {Temporal.Duration} duration
+         * @returns {{ token: EntityID<'session'>; expires_at: number; }?}
+         */
+        register(address, duration = Temporal.Duration.from({ hours: 1 })) {
+            if (!dbManager) throw new Error();
+            const expires_at = Temporal.Now
+                .zonedDateTimeISO()
+                .add(duration)
+                .epochMilliseconds;
+            /** @type {WithoutID<Session>} */
+            const param = {
+                type: 'session',
+                data_type: 'MAIL',
+                data: address,
+                expired: false,
+                expires_at
+            };
+            const session = dbManager.createEntity(param);
+            if (!session) return null;
+            return { token: session.id, expires_at };
+        },
+        
+        /**
+         * @param {string} address
+         * @returns {{ valid: false; } | { valid: true; limit: number; code: string }}
+         */
+        checkVerify(address) {
+            if (!dbManager) throw new Error();
+            const code = String(Math.floor(Math.random() * 1000000));
+            const session = dbManager.findEntity({
+                type: 'session',
+                data_type: 'MAIL_VERIFY',
+                expired: false,
+                data: {
+                    address,
+                    code
+                }
+            }).at(0);
+            if (
+                !session ||
+                session.expired ||
+                session.data_type != 'MAIL_VERIFY' ||
+                session.data.address != address
+            ) return { valid: false };
+            const now = Temporal.Now.instant().epochMilliseconds;
+            if (session.expires_at < now) {
+                session.expired = true;
+                dbManager.updateEntity(session);
+            }
+            return {
+                valid: true,
+                limit: session.expired? -1: session.expires_at - now,
+                code: session.data.code
+            };
+        },
+        
+        /**
+         * @param {EntityID<'session'>} token
+         * @param {string | undefined} address
+         * @returns {{ valid: false; } | { valid: true; limit: number; token: EntityID<'session'>; address: string; }}
+         */
+        check(token, address) {
+            if (!dbManager) throw new Error();
+            const session = dbManager.getByID(token);
+            if (
+                !session ||
+                session.expired ||
+                session.data_type != 'MAIL_VERIFY' ||
+                session.data != (address ?? session.data)
+            ) return { valid: false };
+            const now = Temporal.Now.instant().epochMilliseconds;
+            if (session.expires_at < now) {
+                session.expired = true;
+                dbManager.updateEntity(session);
+            }
+            return {
+                valid: true,
+                limit: session.expired? -1: session.expires_at - now,
+                token,
+                address: session.data
+            };
+        },
+        
+        /**
+         * @param {string} address
+         * @returns {void}
+         */
+        expireVerify(address) {
+            if (!dbManager) throw new Error();
+            const session = dbManager.findEntity({
+                type: 'session',
+                data_type: 'MAIL_VERIFY',
+                expired: false,
+                data: address
+            }).at(0);
+            if (
+                !session ||
+                session.expired
+            ) return;
+            session.expired = true;
+            dbManager.updateEntity(session);
+        },
+
+        /**
+         * @param {EntityID<'session'>} token
+         * @returns {void}
+         */
+        expire(token) {
+            if (!dbManager) throw new Error();
+            const session = dbManager.getByID(token);
+            if (
+                !session ||
+                session.expired ||
+                session.data_type != 'MAIL'
+            ) return;
+            session.expired = true;
+            dbManager.updateEntity(session);
+        },
+
+        /**
+         * @param {Temporal.Duration} delay
+         * @returns {Promise<void>}
+         */
+        async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+            dbManager = context.dbManager;
+            if (!dbManager) throw new Error();
+            const controller = rcon.inner;
+            await dbManager.controller.waitFor(true);
+            await controller.start();
+
+            while (true) {
+                
+                const { promise: delay_prom, resolve } = Promise.withResolvers();
+                setTimeout(resolve, delay.total('millisecond'));
+                await Promise.any([delay_prom, controller.waitFor(false)]);
+                if (controller.isPendingFor().stop) {
                     break;
                 }
             }
@@ -125,29 +312,53 @@ export function CreateLoginSessionManager(dbManager, rcon) {
 /** @typedef {ReturnType<typeof CreateSessionManager>} SessionManager */
 
 /**
+ * @typedef SessionContext
+ * @property {LoginSessionManager?} loginSessionManager
+ * @property {MailSessionManager?} mailSessionManager
+ * @property {DatabaseManager?} dbManager
+ */
+
+/**
  * @param {ServerContext} context
  * @param {RunningController} rcon
  */
 export function CreateSessionManager(context, rcon) {
+    /** @type {SessionContext} */
+    const sessionContext = {
+        loginSessionManager: null,
+        mailSessionManager: null,
+        dbManager: null
+    };
     
+    let dbManager;
     
     return {
         /** @type {MonoController} */
         controller: rcon.outer,
+        context: sessionContext,
+        
+        collect() {}, // TODO
         
         /**
          * @param {Temporal.Duration} delay
          * @returns {Promise<void>}
          */
         async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
-            const dbManager = context.databaseManager;
-            if (!dbManager) return;
-            const loginMgr = CreateLoginSessionManager(dbManager, CreateRunningController());
+            dbManager = context.databaseManager;
+            if (!dbManager) throw new Error();
+            sessionContext.dbManager = dbManager;
+            const loginMgr = CreateLoginSessionManager(sessionContext, CreateRunningController());
+            const mailMgr = CreateMailSessionManager(sessionContext, CreateRunningController());
             const loginCon = loginMgr.controller;
+            const mailCon = mailMgr.controller;
             const controller = rcon.inner;
+            sessionContext.loginSessionManager = loginMgr;
+            sessionContext.mailSessionManager = mailMgr;
             loginMgr.serve();
+            mailMgr.serve();
             await Promise.all([
                 loginCon.start(),
+                mailCon.start(),
                 dbManager.controller.waitFor(true)
             ]);
             await controller.start();
@@ -158,12 +369,18 @@ export function CreateSessionManager(context, rcon) {
                     loginMgr.serve();
                     await loginCon.start();
                 }
+                if (mailCon.isPendingFor().stop) {
+                    await mailCon.stop();
+                    mailMgr.serve();
+                    await mailCon.start();
+                }
                 
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([
                     delay_prom,
                     loginCon.waitFor(false),
+                    mailCon.waitFor(false),
                     controller.waitFor(false)
                 ]);
                 if (controller.isPendingFor().stop) {
@@ -172,7 +389,8 @@ export function CreateSessionManager(context, rcon) {
             }
     
             await Promise.all([
-                loginCon.stop()
+                loginCon.stop(),
+                mailCon.stop()
             ]);
             await controller.stop();
         }

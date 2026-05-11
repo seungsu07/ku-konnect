@@ -1,12 +1,14 @@
 /**
- * @import { TypeEntity, Entity, EntityType, EntityID, WithoutID, User, Campus, Department, College } from '../../common/models'
- * @import { DTO } from '../../common/dto'
+ * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session } from '../../common/models'
+ * @import { RouteFunction, Scheme } from '../../common/dto'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
  */
 
 import loki from 'lokijs';
 import { Temporal } from '@js-temporal/polyfill';
+import crypto from 'node:crypto';
+import { generateTimetable } from './algorithm.js';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
 import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
 import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
@@ -48,186 +50,437 @@ export function CreateDatabaseManager(context, rcon) {
             col.insert(JSON_DEPARTMENTS);
             return col;
         })();
+    
+    /** @type {ServerContext['sessionManager']} */
+    let sessionManager;
+    
+    /**
+     * @param {string} password
+     * @param {string} salt
+     */
+    function makehash(password, salt=crypto.randomBytes(8).toHex()) {
+        const iterations = 100000;
+        const keylen = 64;
+        const digest = 'sha512';
+        return {
+            hash: crypto
+                .pbkdf2Sync(password, salt, iterations, keylen, digest)
+                .toHex(),
+            salt
+        };
+    }
 
-    return {
+    /**
+     * @param {Temporal.DurationLike} cond
+     */
+    function duration(cond) {
+        return Temporal.Duration.from(cond);
+    }
+
+    /**
+     * @template {EntityType} T
+     * @template {EntityID<T>} U
+     * @typedef {{ [K in keyof U]: U[K] extends EntityID<infer V>? SolvedID<V, U[K]>: U[K] }} SolvedID<U>
+     */
+
+    /**
+     * @template {TypeEntity<EntityType> | EntityID<EntityType>} T
+     * @param {T} nested
+     * @param {number} max_depth
+     * @returns {SolvedNestedID<T>}
+     */
+    function solveID(nested, max_depth) {
+        ++max_depth;
+        /** @type {[string, any][][]} */
+        const stack = [[['0', nested]]];
+        const idx = [0];
+        const id_map = new Map();
+        let h = 0;
+        while (true) {
+            if (idx[h] == stack[h].length) {
+                if (h == 0) {
+                    return stack[0][0][1];
+                }
+                stack.pop();
+                idx.pop();
+                --h;
+                ++idx[h];
+                continue;
+            }
+            const c = stack[h][idx[h]];
+            let [k, v] = c;
+            if (
+                typeof v == 'string' &&
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)
+            ) {
+                if (!id_map.has(v))
+                    id_map.set(v, v=dbm.getByID(v))
+                else
+                    v = id_map.get(v);
+                stack[h][idx[h]][1] = v;
+            }
+            if (h > 0)
+                stack[h-1][idx[h-1]][1][k] = v;
+            if (v != null && typeof v == 'object' && h <= max_depth) {
+                stack.push(Object.entries(v));
+                idx.push(0);
+                ++h;
+                continue;
+            }
+            ++idx[h];
+        }
+    }
+    
+    /** @type {Map<string | EntityID<EntityType>, WeakRef<any>>} */
+    const idMap = new Map();
+
+    const dbm = {
         /** @type {MonoController} */
         controller: rcon.outer,
+        context: {
+            collection,
+            idMap
+        },
         
         /**
          * @template {EntityType} T
-         * @param {T} type
-         * @param {WithoutID<TypeEntity<T>>} param
-         * @returns {TypeEntity<T> & LokiObj | undefined}
+         * @param {string | EntityID<T>} id
+         * @returns {TypeEntity<T> | undefined}
          */
-        createEntity(param, type) {
-            if (param.type != type) return undefined;
+        fromIDMap(id) {
+            return idMap.get(id)?.deref();
+        },
+        
+        /**
+         * @param {Entity<EntityType>} entity
+         */
+        pushIDMap(entity) {
+            idMap.set(entity.id, new WeakRef(entity));
+        },
+        
+        collectIDMap() {/* TODO */},
+        
+        /**
+         * @template {EntityType} T
+         * @template {TypeEntity<T>} U
+         * @param {WithoutID<U>} param
+         * @returns {U | undefined}
+         */
+        createEntity(param) {
             const idparam = {
                 id: crypto.randomUUID(),
                 ...param
             };
-            /** @type {any} */
             const entity = collection.insertOne(idparam);
-            return entity;
+            if (!entity) return undefined;
+            this.pushIDMap(entity);
+            return /** @type {any} */ (entity);
         },
         
         /**
          * @template {EntityType} T
-         * @param {T} type
-         * @param {EntityID<T>} id
-         * @returns {TypeEntity<T> & LokiObj | undefined}
+         * @param {EntityID<T> | string} id
+         * @returns {TypeEntity<T> | undefined}
          */
-        getByID(type, id) {
-            /** @type {any} */
+        getByID(id) {
+            const ref = this.fromIDMap(id);
+            if (ref) return ref;
             const entity = collection.by('id', id);
-            if (entity?.type == type) {
-                return entity;
-            } else {
-                return undefined;
-            }
+            if (!entity) return undefined;
+            this.pushIDMap(entity);
+            return /** @type {any} */ (entity);
         },
         
         /**
          * @template {EntityType} T
-         * @param {T} type
-         * @returns {Resultset<TypeEntity<T> & LokiObj>}
+         * @param {LokiQuery<TypeEntity<T>> & { type: T }} query
+         * @returns {TypeEntity<T>[]}
          */
-        findByType(type) {
-            /** @type {any} */
-            const chain = collection.chain().find({ type });
-            return chain;
+        findEntity(query) {
+            return collection.chain()
+                .find({ ...query })
+                .map(e => ({ id: e.id }))
+                .data({
+                    forceClones: false,
+                    removeMeta: true
+                })
+                .reduce((arr, { id }) => {
+                    const ref = this.fromIDMap(id);
+                    if (ref) {
+                        arr.push(ref);
+                        return arr;
+                    }
+                    const entity = this.getByID(id);
+                    if (!entity) return arr;
+                    this.pushIDMap(entity);
+                    arr.push(entity);
+                    return arr;
+                }, /** @type {any[]} */ ([]));
         },
         
         /**
-         * @template {EntityType} T
-         * @param {TypeEntity<T>} entity
-         * @returns {TypeEntity<T> & LokiObj}
+         * @template {TypeEntity<EntityType>} T
+         * @param {T} entity
+         * @returns {T | undefined}
          */
         updateEntity(entity) {
-            /** @type {any} */
             const result = collection.update(entity);
-            return result;
+            return /** @type {any} */ (result);
         },
         
         /**
-         * @template {EntityType} T
-         * @param {TypeEntity<T>} entity
-         * @returns {TypeEntity<T> & LokiObj | null}
+         * @template {TypeEntity<EntityType>} T
+         * @param {T} entity
+         * @returns {T | undefined}
          */
         deleteEntity(entity) {
-            /** @type {any} */
             const result = collection.remove(entity);
-            return result;
+            if (!result) return undefined;
+            idMap.delete(entity.id);
+            return /** @type {any} */ (result);
         },
         
-        /**
-         * @returns {(Campus & LokiObj)[]}
-         */
-        getCampuses() {
-            /** @type {any} */
-            const campuses = collection.find({ type: 'campus' });
-            return campuses;
-        },
-        
-        /**
-         * @returns {(College & LokiObj)[]}
-         */
-        getColleges() {
-            /** @type {any} */
-            const colleges = collection.find({ type: 'college' });
-            return colleges;
-        },
-        
-        /**
-         * @returns {(Department & LokiObj)[]}
-         */
-        getDepartments() {
-            /** @type {any} */
-            const departments = collection.find({ type: 'department' });
-            return departments;
-        },
-        
-        /**
-         * @param {DTO.Auth.Signup['POST']['Request']} data
-         * @returns {DTO.Auth.Signup['POST']['Response']}
-         */
-        signUpUser(data) {
-            const {
-                campus: campusName,
-                college: collegeName,
-                department: majorCode,
-                student_id,
-                name,
-                login: {
+        API: {
+            /**
+             * /api/auth/signup
+             * @method POST
+             * @type {RouteFunction<'/api/auth/signup', 'POST'>}
+             */
+            authSignup(data) {
+                if (!sessionManager) throw new Error();
+                const mailMgr = sessionManager.context.mailSessionManager;
+                if (!mailMgr) throw new Error();
+                const {
+                    campus: campus_id,
+                    college: college_id,
+                    department: department_id,
+                    student_id,
+                    name,
+                    login_id,
+                    password,
+                    univ_mail: {
+                        address,
+                        token
+                    }
+                } = data;
+                const mailSession = mailMgr.check(token, address);
+                if (!mailSession.valid)
+                    return {
+                        success: false,
+                        e: 'mail_not_verified'
+                    };
+                mailMgr.expire(token);
+                const campus = dbm.findEntity({
+                    id: campus_id,
+                    type: 'campus'
+                }).at(0);
+                if (!campus)
+                    return {
+                        success: false,
+                        e: 'campus_doesnt_exist'
+                    };
+                const college = dbm.findEntity({
+                    type: 'college',
+                    id: college_id,
+                    campus: campus.id
+                }).at(0);
+                if (!college)
+                    return {
+                        success: false,
+                        e: 'college_doesnt_exist'
+                    };
+                const major = dbm.findEntity({
+                    type: 'department',
+                    id: department_id,
+                    college: college.id
+                }).at(0);
+                if (!major)
+                    return {
+                        success: false,
+                        e: 'department_doesnt_exist'
+                    }
+                const { hash, salt } = makehash(password);
+                /** @type {WithoutID<User>} */
+                const param = {
+                    type: 'user',
+                    login_id,
+                    login_hash: hash,
+                    login_salt: salt,
+                    name,
+                    student_id,
+                    campus: campus.id,
+                    college: college.id,
+                    department: {
+                        major: major.id,
+                        minor: null,
+                        status: 'none'
+                    },
+                    univ_mail: address,
+                    mail: null,
+                };
+                const user = dbm.createEntity(param);
+                return user?
+                    {
+                        success: true
+                    }:
+                    {
+                        success: false,
+                        e: 'unexpected'
+                    };
+            },
+            
+            /**
+             * /api/auth/login
+             * @method POST
+             * @type {RouteFunction<'/api/auth/login', 'POST', never, { success: false; } | { success: true; token: EntityID<'session'>; }>}
+             */
+            authLogin(data) {
+                if (!sessionManager) throw new Error();
+                const loginMgr = sessionManager.context.loginSessionManager;
+                if (!loginMgr) throw new Error();
+                const {
                     id,
                     password
-                },
-                univ_mail: {
+                } = data;
+                const user = dbm.findEntity({
+                    type: 'user',
+                    login_id: id
+                }).at(0);
+                if (!user)
+                    return {
+                        success: false,
+                        e: 'user_doesnt_exist'
+                    };
+                const { hash } = makehash(password, user.login_salt);
+                if (user.login_hash != hash)
+                    return {
+                        success: false,
+                        e: 'user_doesnt_exist'
+                    };
+                const { hash: n_hash, salt } = makehash(password);
+                user.login_hash = n_hash;
+                user.login_salt = salt;
+                if (!dbm.updateEntity(user))
+                    return {
+                        success: false,
+                        e: 'unexpected'
+                    };
+                const dur = duration({ days: 30 });
+                const reg = loginMgr.register(user.id, dur);
+                if (!reg)
+                    return {
+                        success: false,
+                        e: 'unexpected'
+                    };
+                return {
+                    success: true,
+                    expires_at: reg.expires_at,
+                    token: reg.token
+                };
+            },
+            
+            /**
+             * /api/auth/verify/mail
+             * @method GET
+             * @type {RouteFunction<'/api/auth/verify/mail', 'GET'>}
+             */
+            verifyMailGet(data) {
+                if (!sessionManager) throw new Error();
+                const mailMgr = sessionManager.context.mailSessionManager;
+                if (!mailMgr) throw new Error();
+                const {
+                    address
+                } = data;
+                if (mailMgr.checkVerify(address))
+                    mailMgr.expireVerify(address);
+                const mailvSession = mailMgr.registerVerify(address);
+                if (!mailvSession)
+                    return {
+                        success: false,
+                        e: 'unexpected'
+                    };
+                // TODO - send mail
+                return {
+                    success: true,
+                    expires_at: mailvSession.expires_at
+                };
+            },
+            
+            /**
+             * /api/auth/verify/mail
+             * @method POST
+             * @type {RouteFunction<'/api/auth/verify/mail', 'POST'>}
+             */
+            verifyMailPost(data) {
+                if (!sessionManager) throw new Error();
+                const mailMgr = sessionManager.context.mailSessionManager;
+                if (!mailMgr) throw new Error();
+                const {
                     address,
-                    token
-                }
-            } = data;
+                    code
+                } = data;
+                const mailvSession = mailMgr.checkVerify(address);
+                if (!mailvSession.valid)
+                    return {
+                        success: false,
+                        e: 'try_get_verifying_code'
+                    };
+                if (code != mailvSession.code)
+                    return {
+                        success: false,
+                        e: 'code_doesnt_match'
+                    };
+                mailMgr.expireVerify(address);
+                const mailSession = mailMgr.register(address);
+                if (!mailSession)
+                    return {
+                        success: false,
+                        e: 'unexpected'
+                    };
+                return {
+                    success: true,
+                    token: mailSession.token,
+                    expires_at: mailSession.expires_at
+                };
+            },
             
-            // mail
-            
-            const campus = this.findByType('campus').find({ name: campusName }).data()[0];
-            if (!campus)
+            /**
+             * /api/generate/timetable
+             * @method POST
+             * @type {RouteFunction<'/api/generate/timetable', 'POST', User>}
+             */
+            generateTimetable(data, user) {
+                if (!sessionManager) throw new Error();
+                const mailMgr = sessionManager.context.mailSessionManager;
+                if (!mailMgr) throw new Error();
+                const {
+                    courses,
+                    preferences
+                } = data;
+                const timetables = generateTimetable(
+                    user,
+                    courses.map(e => solveID(e, 1)),
+                    preferences
+                );
+                const ids = timetables.map(e => dbm.createEntity(e)?.id);
+                if (ids.includes(undefined))
+                    return {
+                        success: false,
+                        e: 'unexpected'
+                    };
                 return {
-                    success: false,
-                    e: 'campus_doesnt_exist'
+                    success: true,
+                    alternatives: /** @type {any} */ (ids)
                 };
-            const college = this.findByType('college').find({ campus: campus.id, name: collegeName }).data()[0];
-            if (!college)
-                return {
-                    success: false,
-                    e: 'college_doesnt_exist'
-                };
-            const major = this.findByType('department').find({ college: college.id, code: majorCode }).data()[0];
-            if (!major)
-                return {
-                    success: false,
-                    e: 'department_doesnt_exist'
-                }
-            /** @type {WithoutID<User>} */
-            const param = {
-                type: 'user',
-                login: {
-                    id,
-                    password
-                },
-                name,
-                profiles: [],
-                student_id,
-                campus: campus.id,
-                college: college.id,
-                department: {
-                    major: major.id,
-                    minor: null,
-                    status: 'none'
-                },
-                univ_mail: address,
-                mail: null,
-                data: {
-                    timetables: [],
-                    graduation_progress: null,
-                    posts: [],
-                    comments: []
-                }
-            };
-            const user = this.createEntity(param, 'user');
-            return user?
-                {
-                    success: true
-                }:
-                {
-                    success: false,
-                    e: 'unexpected'
-                };
+            }
         },
 
         /**
          * @returns {Promise<void>}
          */
         async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+            sessionManager = context.sessionManager;
+            if (!sessionManager) throw new Error();
             const controller = rcon.inner;
             await controller.start();
 
@@ -243,8 +496,13 @@ export function CreateDatabaseManager(context, rcon) {
                     break;
                 }
             }
-
+            
+            const { promise: db_close, resolve: db_close_resv } = Promise.withResolvers();
+            db.close(db_close_resv);
+            await db_close;
             await controller.stop();
         }
     };
+    
+    return dbm;
 }

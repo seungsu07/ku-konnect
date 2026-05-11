@@ -10,6 +10,7 @@ import { CreateRunningController } from './src/controller.js';
     server.serve();
     await server.controller.start();
     console.log('Server is running');
+    Object.defineProperty(global, 'server', { get: () => server });
     await server.controller.waitFor(false);
     console.log('Server stopped');
 })();

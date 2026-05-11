@@ -83,6 +83,19 @@ export type EntityID<T extends EntityType> =
   `${string}-${string}-${string}-${string}-${string}` &
   { readonly __brand?: T };
 
+export type SolvedID<T> =
+  T extends EntityID<infer U extends EntityType>?
+  TypeEntity<U>: never;
+
+export type SolvedNestedID<T> =
+  T extends EntityID<any>?
+    SolvedNestedID<SolvedID<T>>:
+  T extends Array<infer U>?
+    Array<SolvedNestedID<U>>:
+  T extends object?
+    { [K in keyof T]: SolvedNestedID<T[K]> }:
+  T;
+
 export interface Entity<T extends EntityType> {
   id: EntityID<T>;
   type: T
@@ -92,17 +105,14 @@ export type WithoutID<T extends Entity<EntityType>> = Omit<T, 'id'>;
 
 /** 유저 */
 export interface User extends Entity<'user'> {
-  /** 로그인 정보 */
-  login: {
-    /** 로그인 아이디 */
-    id: string;
-    /** 비밀번호 */
-    password: string;
-  };
+  /** 로그인 아이디 */
+  login_id: string;
+  /** crypto.pbkdf2Sync(password, salt, iterations=100000, keylen=64, digest=sha512).toHex() */
+  login_hash: string;
+  /** 솔트 */
+  login_salt: string;
   /** 성명 */
   name: string;
-  /** 프로필 */
-  profiles: EntityID<'user_profile'>[];
   /** 학번 */
   student_id: string;
   /** 캠퍼스 */
@@ -119,21 +129,12 @@ export interface User extends Entity<'user'> {
   univ_mail: string;
   /** 개인 메일 */
   mail: string | null;
-  /** 데이터 */
-  data: {
-    /** 시간표 */
-    timetables: EntityID<'time_table'>[];
-    /** 졸업 학점 */
-    graduation_progress: EntityID<'graduation_progress'> | null;
-    /** 게시물 */
-    posts: EntityID<'post'>[];
-    /** 댓글 */
-    comments: EntityID<'comment'>[];
-  };
 }
 
 /** 유저 프로필 */
 export interface UserProfile extends Entity<'user_profile'> {
+  /** 유저 */
+  user: EntityID<'user'>;
   /** 닉네임 */
   nickname: string;
   /** 사진-Base64 */
@@ -143,12 +144,11 @@ export interface UserProfile extends Entity<'user_profile'> {
 /** 교수 */
 export interface Professor extends Entity<'professor'> {
   /** 로그인 아이디 */
-  login: {
-    /** 로그인 아이디 */
-    id: string;
-    /** 비밀번호 */
-    password: string;
-  };
+  login_id: string;
+  /** crypto.pbkdf2Sync(password, salt, iterations=100000, keylen=64, digest=sha512).toHex() */
+  login_hash: string;
+  /** 솔트 */
+  login_salt: string;
   /** 성명 */
   name: string;
   /** 연락처 */
@@ -161,8 +161,6 @@ export interface Professor extends Entity<'professor'> {
 export interface Campus extends Entity<'campus'> {
   /** 캠퍼스 이름 */
   name: string;
-  /** 단과대 */
-  colleges: EntityID<'college'>[];
 }
 
 /** 단과대 */
@@ -173,8 +171,6 @@ export interface College extends Entity<'college'> {
   code_num?: number;
   /** 단과대 이름 */
   name: string;
-  /** 학과 */
-  departments: EntityID<'department'>[];
   /** 캠퍼스 */
   campus: EntityID<'campus'>;
 }
@@ -198,12 +194,12 @@ export interface Course extends Entity<'course'> {
    * @example COSE3310
    */
   code: string;
-  /** 학과 */
-  department: EntityID<'department'>;
   /** 과목명 */
   name: string;
   /** 전공/교양/융합 */
   course_type: CourseType;
+  /** 학과 */
+  department: EntityID<'department'>;
 }
 
 /** 강의 */
@@ -216,8 +212,6 @@ export interface Lecture extends Entity<'lecture'> {
   sem: Semester;
   /** 교수 */
   professor: EntityID<'professor'>;
-  /** 분반 */
-  classes: EntityID<'lecture_class'>[];
   /** 강의시간 */
   hours: number;
   /** 실습시간 */
@@ -230,6 +224,8 @@ export interface Lecture extends Entity<'lecture'> {
 export interface LectureClass extends Entity<'lecture_class'> {
   /** 코드 */
   code: string;
+  /** 강의 */
+  lecture: EntityID<'lecture'>;
   /** 교시 */
   periods: Period[];
 }
@@ -290,15 +286,15 @@ export interface Post extends Entity<'post'> {
   /** 내용 */
   content: string;
   /** 조회수 */
-  views: number;
+  view_count: number;
+  /** 댓글 수 */
+  comment_count: number;
   /** 생성 시간 */
   created_at: TimeStamp;
   /** 수정 시간 */
   updated_at: TimeStamp;
   /** 공개 여부 */
   visible: boolean;
-  /** 댓글 */
-  comments: EntityID<'comment'>[];
 }
 
 /** 게시판 */
@@ -307,8 +303,8 @@ export interface Board extends Entity<'board'> {
   name: string;
   /** 설명 */
   description: string;
-  /** 게시글 */
-  posts: EntityID<'post'>[];
+  /** 게시글 수 */
+  post_count: number;
 }
 
 /** 우선순위 */
@@ -325,7 +321,7 @@ export interface Priority {
 export interface Preferences {
   /** 공강 희망 요일 */
   days_off: {
-    value: { [K in Day]?: boolean; }
+    value: { [K in Day]?: boolean; };
     priority: Priority;
   }
   /** 점심시간 보장 */
@@ -353,12 +349,19 @@ export interface Preferences {
     value: number;
     priority: Priority;
   };
+  /** 개인 일정 */
+  personal_schedule: {
+    value: { [K in Day]?: number[]; };
+    priority: Priority;
+  };
 }
 
 /** 시간표 */
 export interface TimeTable extends Entity<'time_table'> {
   /** 이름 */
   name: string;
+  /** 유저 */
+  user: EntityID<'user'>;
   /** 주 시간표 여부 */
   selected: boolean;
   /** 일 */
@@ -382,6 +385,7 @@ export type RGB = [number, number, number];
 /** 졸업 진행률 */
 export interface GraduationProgress extends Entity<'graduation_progress'> {
   value: Fraction;
+  user: EntityID<'user'>;
   color: RGB;
   details: {
     [K in CourseType]: {
@@ -391,10 +395,15 @@ export interface GraduationProgress extends Entity<'graduation_progress'> {
   };
 }
 
+export type SessionDataType =
+  | 'LOGIN'
+  | 'MAIL_VERIFY'
+  | 'MAIL';
+
 /** 세션 */
 export interface Session extends Entity<'session'> {
   /** 타입 */
-  data_type: string;
+  data_type: SessionDataType;
   /** 데이터 */
   data: any;
   /** 만료 여부 */

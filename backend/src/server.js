@@ -21,7 +21,7 @@ import { CreateAppManager } from './app.js';
 /**
  * @typedef ServerContext
  * @property {DatabaseManager?} databaseManager
- * @property {SessionManager?} loginSessionManager
+ * @property {SessionManager?} sessionManager
  * @property {AppManager?} appManager
  */
 
@@ -32,30 +32,31 @@ export function CreateServer(rcon) {
     /** @type {ServerContext} */
     const context = {
         databaseManager: null,
-        loginSessionManager: null,
+        sessionManager: null,
         appManager: null
     };
     
     return {
         controller: rcon.outer,
+        context,
         
         async serve() {
             const dbMgr = CreateDatabaseManager(context, CreateRunningController());
-            const lsMgr = CreateSessionManager(context, CreateRunningController());
+            const ssMgr = CreateSessionManager(context, CreateRunningController());
             const apMgr = CreateAppManager(context, CreateRunningController());
             const dbCon = dbMgr.controller;
-            const lsCon = lsMgr.controller;
+            const ssCon = ssMgr.controller;
             const apCon = apMgr.controller;
             const controller = rcon.inner;
             context.databaseManager = dbMgr;
-            context.loginSessionManager = lsMgr;
+            context.sessionManager = ssMgr;
             context.appManager = apMgr;
             dbMgr.serve();
-            lsMgr.serve();
+            ssMgr.serve();
             apMgr.serve();
             await Promise.all([
                 dbCon.start(),
-                lsCon.start(),
+                ssCon.start(),
                 apCon.start()
             ]);
             await controller.start();
@@ -66,10 +67,10 @@ export function CreateServer(rcon) {
                     dbMgr.serve();
                     await dbCon.start();
                 }
-                if (lsCon.isPendingFor().stop) {
-                    await lsCon.stop();
-                    lsMgr.serve();
-                    await lsCon.start();
+                if (ssCon.isPendingFor().stop) {
+                    await ssCon.stop();
+                    ssMgr.serve();
+                    await ssCon.start();
                 }
                 if (apCon.isPendingFor().stop) {
                     await apCon.stop();
@@ -78,7 +79,7 @@ export function CreateServer(rcon) {
                 }
                 await Promise.any([
                     dbCon.waitFor(false),
-                    lsCon.waitFor(false),
+                    ssCon.waitFor(false),
                     apCon.waitFor(false),
                     controller.waitFor(false)
                 ]);
@@ -89,12 +90,12 @@ export function CreateServer(rcon) {
             
             await Promise.all([
                 dbCon.stop(),
-                lsCon.stop(),
+                ssCon.stop(),
                 apCon.stop()
             ]);
             context.appManager = null;
             context.databaseManager = null;
-            context.loginSessionManager = null;
+            context.sessionManager = null;
             await controller.stop();
         }
     };
