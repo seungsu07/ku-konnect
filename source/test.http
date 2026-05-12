@@ -15,3 +15,8 @@ content-type: application/json
         "token": "12345678-1234-1234-1234-123456789abc"
     }
 }
+
+###
+
+GET https://api.konnect.hydv.kr/api/auth/verify/mail?address=mangchya069@gmail.com
+content-type: application/json

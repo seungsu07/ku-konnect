@@ -201,10 +201,8 @@ export function CreateMailSessionManager(context, rcon) {
                 type: 'session',
                 data_type: 'MAIL_VERIFY',
                 expired: false,
-                data: {
-                    address,
-                    code
-                }
+                'data.address': address,
+                'data.code': code
             }).at(0);
             if (
                 !session ||

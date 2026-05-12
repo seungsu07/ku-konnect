@@ -263,7 +263,7 @@ export function CreateDatabaseManager(context, rcon) {
          */
         findEntity(query) {
             return collection.chain()
-                .find({ ...query })
+                .find(query)
                 .map(e => ({ id: e.id }))
                 .data({
                     forceClones: false,
