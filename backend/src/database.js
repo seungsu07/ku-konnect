@@ -1,8 +1,8 @@
 /**
- * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session } from '../../common/models'
- * @import { RouteFunction, Scheme } from '../../common/dto'
- * @import { RunningController, MonoController } from './controller'
- * @import { ServerContext } from './server'
+ * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session } from '../../common/models.js'
+ * @import { RouteFunction, Scheme } from '../../common/dto.js'
+ * @import { RunningController, MonoController } from './controller.js'
+ * @import { ServerContext } from './server.js'
  */
 
 import loki from 'lokijs';

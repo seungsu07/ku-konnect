@@ -121,7 +121,36 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
   };
   
-  '/api/auth/verify/tel': {}; //TODO
+  '/api/auth/verify/tel': {
+    GET: {
+      REQ: {
+        tel: string;
+      };
+      
+      RES: {
+        success: true;
+        expires_at: number;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+    
+    POST: {
+      REQ: {
+        tel: string;
+        code: string;
+        user: EntityID<'user'>;
+      };
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+  };
   
   '/api/auth/signup': {
     POST: {
@@ -219,7 +248,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: {
+        id: string;
+        password: string;
+      };
+      
+      RES: {
+        success: true;
+        deleted_at: number;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
   
   '/api/data/userprofile': {
@@ -235,7 +277,17 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    POST: {}; //TODO
+    POST: {
+      REQ: Pick<UserProfile, 'nickname' | 'image'>;
+      
+      RES: {
+        success: true;
+        data: UserProfile;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
     
     PATCH: {
       REQ: {
@@ -252,7 +304,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: EntityID<'user_profile'>;
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
   
   '/api/data/professor': {
@@ -411,7 +472,21 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    POST: {}; //TODO
+    POST: {
+      REQ: Pick<Comment,
+        | 'post'
+        | 'content'
+        | 'visible'
+      >;
+      
+      RES: {
+        success: true;
+        data: Comment;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
     
     PATCH: {
       REQ: {
@@ -428,7 +503,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: EntityID<'comment'>;
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
   
   '/api/data/post': {
@@ -459,7 +543,22 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    POST: {}; //TODO
+    POST: {
+      REQ: Pick<Post,
+        | 'board'
+        | 'title'
+        | 'content'
+        | 'visible'
+      >;
+      
+      RES: {
+        success: true;
+        data: Post;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
     
     PATCH: {
       REQ: {
@@ -480,7 +579,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: EntityID<'post'>;
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
   
   '/api/data/board': {
@@ -510,7 +618,21 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    POST: {}; //TODO
+    POST: {
+      REQ: Pick<TimeTable,
+        | 'name'
+        | 'selected'
+        | 'days'
+      >;
+      
+      RES: {
+        success: true;
+        data: TimeTable;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
     
     PATCH: {
       REQ: {
@@ -527,7 +649,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: EntityID<'time_table'>;
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
   
   '/api/data/graduationprogress': {
@@ -579,11 +710,28 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       };
     };
     
-    POST: {}; //TODO
+    PATCH: {
+      REQ: Partial<Pick<Session, 'expired' | 'expires_at'>>;
+      
+      RES: {
+        success: true;
+        modified: { [K in keyof Session]?: boolean };
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
     
-    PATCH: {}; //TODO
-    
-    DELETE: {}; //TODO
+    DELETE: {
+      REQ: EntityID<'session'>;
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
   };
 }
 
@@ -619,38 +767,38 @@ export type PickIndices<T extends any[], U extends number[]> =
   U extends [infer V extends keyof T, ...infer W extends number[]]? [T[V], ...PickIndices<T, W>]:
   never;
 
-export function makeStringGuarder<E>(e: E): TypeGuarder<string, E> {
+export function stringGuarder<E>(e: E): TypeGuarder<string, E> {
   return (t) => typeof t == 'string'? t: e;
 }
 
-export function makeNumberGuarder<E>(e: E): TypeGuarder<number, E> {
+export function numberGuarder<E>(e: E): TypeGuarder<number, E> {
   return (t) => typeof t == 'number'? t: e;
 }
 
-export function makeBooleanGuarder<E>(e: E): TypeGuarder<boolean, E> {
+export function booleanGuarder<E>(e: E): TypeGuarder<boolean, E> {
   return (t) => typeof t == 'boolean'? t: e;
 }
 
-export function makeBigintGuarder<E>(e: E): TypeGuarder<bigint, E> {
+export function bigintGuarder<E>(e: E): TypeGuarder<bigint, E> {
   return (t) => typeof t == 'bigint'? t: e;
 }
 
-export function makeSymbolGuarder<E>(e: E): TypeGuarder<symbol, E> {
+export function symbolGuarder<E>(e: E): TypeGuarder<symbol, E> {
   return (t) => typeof t == 'symbol'? t: e;
 }
 
-export function makeNullGuarder<E>(e: E): TypeGuarder<null, E> {
+export function nullGuarder<E>(e: E): TypeGuarder<null, E> {
   return (t) => t === null? t: e;
 }
 
-export function makeUndefinedGuarder<E>(e: E): TypeGuarder<undefined, E> {
+export function undefinedGuarder<E>(e: E): TypeGuarder<undefined, E> {
   return (t) => typeof t == 'undefined'? t: e;
 }
 
-export function makeArrayGuarder<E>(e: E): TypeGuarder<any[], E> {
+export function arrayGuarder<E>(e: E): TypeGuarder<any[], E> {
   return (t) => Array.isArray(t)? t: e;
 }
 
-export function makeObjectGuarder<E = any>(e: E): TypeGuarder<object, E> {
+export function objectGuarder<E = any>(e: E): TypeGuarder<object, E> {
   return (t) => typeof t == 'object'? t === null? e: t: e;
 }

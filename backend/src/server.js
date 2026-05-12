@@ -1,12 +1,12 @@
 /**
  * @import { RunningController } from './controller'
- * @import { DatabaseManager } from './database'
+ * @import { DatabaseManager } from './database.js/index.js'
  * @import { SessionManager } from './sessions'
  * @import { AppManager } from './app'
  */
 
 import { CreateRunningController } from './controller.js';
-import { CreateDatabaseManager } from './database.js';
+import { CreateDatabaseManager } from './database.js/index.js';
 import { CreateSessionManager } from './sessions.js';
 import { CreateAppManager } from './app.js';
 

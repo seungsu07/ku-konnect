@@ -10,7 +10,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { Temporal } from '@js-temporal/polyfill';
-import { makeStringGuarder, makeNumberGuarder, makeBooleanGuarder, makeUndefinedGuarder, makeArrayGuarder, makeObjectGuarder } from '../../common/dto.ts';
+import { stringGuarder, numberGuarder, booleanGuarder, undefinedGuarder, arrayGuarder, objectGuarder } from '../../common/dto.ts';
 
 
 
@@ -44,7 +44,7 @@ export function CreateAppManager(context, rcon) {
      * @param {E} e
      * @returns {TypeGuarder<UUID, E>}
      */
-    function makeUUIDGuarder(e) {
+    function UUIDGuarder(e) {
         return (t) => typeof t == 'string' && checkUUID(t)? t: e;
     }
     
@@ -61,15 +61,27 @@ export function CreateAppManager(context, rcon) {
         return this;
     }
     
-    const G = {
-        s: makeStringGuarder(new ParseError('This field needed to be string', [])),
-        n: makeNumberGuarder(new ParseError('This field needed to be number', [])),
-        b: makeBooleanGuarder(new ParseError('This field needed to be boolean', [])),
-        u: makeUndefinedGuarder(new ParseError('This field needed to be undefined', [])),
-        id: makeUUIDGuarder(new ParseError('This field needed to be UUID', [])),
-        a: makeArrayGuarder(new ParseError('This field needed to be array', [])),
-        o: makeObjectGuarder(new ParseError('This field needed to be object', []))
-    };
+    /**
+     * @template T
+     * @param {string} msg
+     * @param {TypeGuarder<T, ParseError>[]} gs
+     * @returns {TypeGuarder<T, ParseError>}
+     */
+    function anyGuarder(msg, ...gs) {
+        return (t) => {
+            /** @type {ParseError?} */
+            let err = null;
+            for (const g of gs) {
+                const res = g(t);
+                if (res instanceof ParseError)
+                    err = res;
+                else
+                    return res;
+            }
+            err = new ParseError(msg, /** @type {ParseError} */ (err).path);
+            return err;
+        };
+    }
     
     /**
      * @template T
@@ -77,18 +89,18 @@ export function CreateAppManager(context, rcon) {
      * @returns {TypeGuarder<T, ParseError>}
      * @description Make TypeGuarder for Object, Tuple.
      */
-    function objectGuarder(o) {
+    function gObjectGuarder(o) {
         return (t) => {
-            const objg = G.o(t);
-            if (objg instanceof ParseError)
-                return new ParseError(objg.message, []);
+            const og = G.o(t);
+            if (og instanceof ParseError)
+                return new ParseError(og.message, []);
             const tup = Array.isArray(o);
             /** @type {any} */
             const obj = {};
             /** @type {ParseError | undefined} */
             let error;
             return Object.entries(o).every(([k, v]) => {
-                const res = v(t[k]);
+                const res = v(og[k]);
                 if (res instanceof ParseError) {
                     error = new ParseError(res.message, [k, ...res.path]);
                     return false;
@@ -105,16 +117,16 @@ export function CreateAppManager(context, rcon) {
      * @returns {TypeGuarder<T[], ParseError>}
      * @description Make TypeGuarder for non-fixed Array.
      */
-    function arrayGuarder(g) {
+    function gArrayGuarder(g) {
         return (t) => {
-            const arrg = G.a(t);
-            if (arrg instanceof ParseError)
-                return new ParseError(arrg.message, []);
+            const ag = G.a(t);
+            if (ag instanceof ParseError)
+                return new ParseError(ag.message, []);
             /** @type {any} */
             const arr = [];
             /** @type {ParseError | undefined} */
             let error;
-            return /** @type {any[]} */ (t).every((v, i) => {
+            return ag.every((v, i) => {
                 const res = g(v);
                 if (res instanceof ParseError) {
                     error = new ParseError(res.message, [`(index ${i})`, ...res.path]);
@@ -126,16 +138,44 @@ export function CreateAppManager(context, rcon) {
         };
     }
     
+    /**
+     * @template T
+     * @param {TypeGuarder<T, ParseError>} g
+     * @param {string | undefined} msg
+     * @returns {TypeGuarder<T | undefined, ParseError>}
+     */
+    function optGuarder(g, msg=undefined) {
+        return (t) =>
+            G.u(t) instanceof ParseError?
+                msg?
+                    ((r) => r instanceof ParseError?
+                        new ParseError(msg, []):
+                        r
+                    )(g(t)):
+                    g(t):
+                undefined;
+    }
+    
+    const G = {
+        s: stringGuarder(new ParseError('This field needed to be string', [])),
+        n: numberGuarder(new ParseError('This field needed to be number', [])),
+        b: booleanGuarder(new ParseError('This field needed to be boolean', [])),
+        u: undefinedGuarder(new ParseError('This field needed to be undefined', [])),
+        id: UUIDGuarder(new ParseError('This field needed to be UUID', [])),
+        a: arrayGuarder(new ParseError('This field needed to be array', [])),
+        o: objectGuarder(new ParseError('This field needed to be object', []))
+    };
+    
     /** @type {{ [K in Path]: { [L in MethodOf<K>]: TypeGuarder<Scheme<K, L, 'REQ'>, ParseError> } }} */
     const guarders = {
         '/api/auth/login': {
-            POST: objectGuarder({
+            POST: gObjectGuarder({
                 id: G.id,
                 password: G.s
             })
         },
         '/api/auth/signup': {
-            POST: objectGuarder({
+            POST: gObjectGuarder({
                 campus: G.id,
                 college: G.id,
                 department: G.id,
@@ -145,7 +185,7 @@ export function CreateAppManager(context, rcon) {
                 name: G.s,
                 login_id: G.s,
                 password: G.s,
-                univ_mail: objectGuarder({
+                univ_mail: gObjectGuarder({
                     address:  (t) =>
                         /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                         new ParseError('This field needed to be email address', []),
@@ -153,14 +193,13 @@ export function CreateAppManager(context, rcon) {
                 })
             })
         },
-        //TODO
         '/api/auth/verify/mail': {
-            GET: objectGuarder({
+            GET: gObjectGuarder({
                 address: (t) =>
                     /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                     new ParseError('This field needed to be email address', [])
             }),
-            POST: objectGuarder({
+            POST: gObjectGuarder({
                 address:  (t) =>
                     /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
                     new ParseError('This field needed to be email address', []),
@@ -168,7 +207,18 @@ export function CreateAppManager(context, rcon) {
                     /[0-9]{6}/.test(t)? t:
                     new ParseError('This field needed to be 6-digit code', [])
             })
-        }
+        },
+        '/api/data/user': {
+            GET: gObjectGuarder({
+                id: anyGuarder('This field needed to be UUID or undefined', G.u, G.id)
+            }),
+            POST: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    name: 
+                })
+            })
+        };
     };
     
     /**
