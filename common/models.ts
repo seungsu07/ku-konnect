@@ -190,8 +190,8 @@ export interface Department extends Entity<'department'> {
 /** 과목 */
 export interface Course extends Entity<'course'> {
   /** 학수 번호
-   * @description 6글자 이상
-   * @example COSE3310
+   * @description 영문 4글자 + 숫자 3글자
+   * @example COSE331
    */
   code: string;
   /** 과목명 */
@@ -227,13 +227,11 @@ export interface LectureClass extends Entity<'lecture_class'> {
   /** 강의 */
   lecture: EntityID<'lecture'>;
   /** 교시 */
-  periods: Period[];
+  periods: TimeTableDay[];
 }
 
 /** 교시 */
 export interface Period {
-  /** 요일 */
-  day: Day;
   /** 교시 번호 */
   time: number;
   /** 교실 */

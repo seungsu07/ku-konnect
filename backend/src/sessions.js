@@ -2,7 +2,7 @@
  * @import { WithoutID, EntityID, Session } from '../../common/models'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
- * @import { DatabaseManager } from './database.js/index.js'
+ * @import { DatabaseManager } from './database.js'
  */
 
 import { Temporal } from '@js-temporal/polyfill';

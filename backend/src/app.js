@@ -4,13 +4,13 @@
  * @import { RunningController } from './controller'
  * @import { ServerContext } from './server'
  * @import { Path, Scheme, TypeGuarder, TypeGuardObject, MethodOf, ErrorString, PickIndices } from '../../common/dto'
- * @import { User } from '../../common/models'
+ * @import { CourseType, Day, Semester, TimeTableDay, User } from '../../common/models'
  */
 
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { Temporal } from '@js-temporal/polyfill';
-import { stringGuarder, numberGuarder, booleanGuarder, undefinedGuarder, arrayGuarder, objectGuarder } from '../../common/dto.ts';
+import { stringGuarder, numberGuarder, booleanGuarder, undefinedGuarder, arrayGuarder, objectGuarder, nullGuarder } from '../../common/dto.ts';
 
 
 
@@ -55,32 +55,10 @@ export function CreateAppManager(context, rcon) {
      * @property {string} message
      * @property {string[]} path
      */
-    function ParseError(message, path) {
+    function ParseError(message, path=[]) {
         this.message = message;
         this.path = path;
         return this;
-    }
-    
-    /**
-     * @template T
-     * @param {string} msg
-     * @param {TypeGuarder<T, ParseError>[]} gs
-     * @returns {TypeGuarder<T, ParseError>}
-     */
-    function anyGuarder(msg, ...gs) {
-        return (t) => {
-            /** @type {ParseError?} */
-            let err = null;
-            for (const g of gs) {
-                const res = g(t);
-                if (res instanceof ParseError)
-                    err = res;
-                else
-                    return res;
-            }
-            err = new ParseError(msg, /** @type {ParseError} */ (err).path);
-            return err;
-        };
     }
     
     /**
@@ -93,7 +71,7 @@ export function CreateAppManager(context, rcon) {
         return (t) => {
             const og = G.o(t);
             if (og instanceof ParseError)
-                return new ParseError(og.message, []);
+                return new ParseError(og.message);
             const tup = Array.isArray(o);
             /** @type {any} */
             const obj = {};
@@ -121,7 +99,7 @@ export function CreateAppManager(context, rcon) {
         return (t) => {
             const ag = G.a(t);
             if (ag instanceof ParseError)
-                return new ParseError(ag.message, []);
+                return new ParseError(ag.message);
             /** @type {any} */
             const arr = [];
             /** @type {ParseError | undefined} */
@@ -140,30 +118,54 @@ export function CreateAppManager(context, rcon) {
     
     /**
      * @template T
-     * @param {TypeGuarder<T, ParseError>} g
+     * @param {TypeGuarder<T, ParseError>[]} gs
      * @param {string | undefined} msg
+     * @returns {TypeGuarder<T, ParseError>}
+     */
+    function anyGuarder(gs, msg=undefined) {
+        return (t) => {
+            /** @type {ParseError?} */
+            let err = null;
+            for (const g of gs) {
+                const res = g(t);
+                if (res instanceof ParseError)
+                    err = res;
+                else
+                    return res;
+            }
+            err = new ParseError(
+                msg?? /** @type {ParseError} */ (err).message,
+                /** @type {ParseError} */ (err).path
+            );
+            return err;
+        };
+    }
+    
+    /**
+     * @template T
+     * @param {TypeGuarder<T, ParseError>} g
+     * @param {string} msg
      * @returns {TypeGuarder<T | undefined, ParseError>}
      */
-    function optGuarder(g, msg=undefined) {
+    function optGuarder(g, msg=' or undefined') {
         return (t) =>
             G.u(t) instanceof ParseError?
-                msg?
-                    ((r) => r instanceof ParseError?
-                        new ParseError(msg, []):
-                        r
-                    )(g(t)):
-                    g(t):
+                ((r) => r instanceof ParseError?
+                    new ParseError(r.message + msg):
+                    r
+                )(g(t)):
                 undefined;
     }
     
     const G = {
-        s: stringGuarder(new ParseError('This field needed to be string', [])),
-        n: numberGuarder(new ParseError('This field needed to be number', [])),
-        b: booleanGuarder(new ParseError('This field needed to be boolean', [])),
-        u: undefinedGuarder(new ParseError('This field needed to be undefined', [])),
-        id: UUIDGuarder(new ParseError('This field needed to be UUID', [])),
-        a: arrayGuarder(new ParseError('This field needed to be array', [])),
-        o: objectGuarder(new ParseError('This field needed to be object', []))
+        s: stringGuarder(new ParseError('This field needed to be string')),
+        n: numberGuarder(new ParseError('This field needed to be number')),
+        b: booleanGuarder(new ParseError('This field needed to be boolean')),
+        u: undefinedGuarder(new ParseError('This field needed to be undefined')),
+        id: UUIDGuarder(new ParseError('This field needed to be UUID')),
+        a: arrayGuarder(new ParseError('This field needed to be array')),
+        o: objectGuarder(new ParseError('This field needed to be object')),
+        nl: nullGuarder(new ParseError('This field needed to be null')),
     };
     
     /** @type {{ [K in Path]: { [L in MethodOf<K>]: TypeGuarder<Scheme<K, L, 'REQ'>, ParseError> } }} */
@@ -180,15 +182,15 @@ export function CreateAppManager(context, rcon) {
                 college: G.id,
                 department: G.id,
                 student_id: (t) =>
-                    /^20[12][0-9]{7}$/.test(t)? t:
-                    new ParseError('This field needed to be student id', []),
+                    /^20[12][0-9]{7}$/.test(t)? String(t):
+                    new ParseError('This field needed to be student id'),
                 name: G.s,
                 login_id: G.s,
                 password: G.s,
                 univ_mail: gObjectGuarder({
                     address:  (t) =>
-                        /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
-                        new ParseError('This field needed to be email address', []),
+                        /^.+@korea\.ac\.kr$/.test(t)? String(t):
+                        new ParseError('This field needed to be \'korea.ac.kr\' email address'),
                     token: G.id
                 })
             })
@@ -196,29 +198,262 @@ export function CreateAppManager(context, rcon) {
         '/api/auth/verify/mail': {
             GET: gObjectGuarder({
                 address: (t) =>
-                    /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
-                    new ParseError('This field needed to be email address', [])
+                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    new ParseError('This field needed to be email address')
             }),
             POST: gObjectGuarder({
                 address:  (t) =>
-                    /^.+@[0-9A-z]+\.[0-9A-z]{2,6}$/.test(t)? t:
-                    new ParseError('This field needed to be email address', []),
+                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    new ParseError('This field needed to be email address'),
                 code: (t) =>
-                    /[0-9]{6}/.test(t)? t:
-                    new ParseError('This field needed to be 6-digit code', [])
+                    /[0-9]{6}/.test(t)? String(t):
+                    new ParseError('This field needed to be 6-digit code')
             })
         },
         '/api/data/user': {
             GET: gObjectGuarder({
-                id: anyGuarder('This field needed to be UUID or undefined', G.u, G.id)
+                id: optGuarder(G.id)
             }),
-            POST: gObjectGuarder({
+            PATCH: gObjectGuarder({
                 id: G.id,
                 data: gObjectGuarder({
-                    name: 
+                    name: optGuarder(G.s),
+                    student_id: optGuarder((t) =>
+                        /^20[12][0-9]{7}$/.test(t)? String(t):
+                        new ParseError('This field needed to be student id')
+                    ),
+                    campus: optGuarder(G.id),
+                    college: optGuarder(G.id),
+                    department: anyGuarder([G.u, gObjectGuarder({
+                        major: G.id,
+                        minor: anyGuarder(
+                            [G.nl, G.id],
+                            'This field needed to be UUID or null'
+                        ),
+                        status: (t) =>
+                            /^(?:none|minor|double|advanced)$/.test(t)?
+                            /** @type {'none' | 'minor' | 'double' | 'advanced'} */ (String(t)):
+                            new ParseError('This field needed to be one of \'none\', \'minor\', \'double\', \'advanced\'')
+                    })]),
+                    mail: anyGuarder([G.u, gObjectGuarder({
+                        address: G.s,
+                        token: G.id
+                    })]),
+                    univ_mail: anyGuarder([G.u, gObjectGuarder({
+                        address: (t) =>
+                            /^.+@korea\.ac\.kr$/.test(t)? String(t):
+                            new ParseError('This field needed to be \'korea.ac.kr\' email address'),
+                        token: G.id
+                    })]),
+                    password: optGuarder(G.s)
                 })
+            }),
+            DELETE: gObjectGuarder({
+                id: G.s,
+                password: G.s
             })
-        };
+        },
+        '/api/data/userprofile': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                user: optGuarder(G.id),
+                nickname: optGuarder(G.s)
+            }),
+            POST: gObjectGuarder({
+                nickname: G.s,
+                image: (t) =>
+                    /^[A-Za-z0-9+\/]+={0,2}$/.test(t)? String(t):
+                    new ParseError('This field needed to be Base64 string')
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    nickname: optGuarder(G.s),
+                    image: optGuarder((t) =>
+                        /^[A-Za-z0-9+\/]+={0,2}$/.test(t)? String(t):
+                        new ParseError('This field needed to be Base64 string')
+                    )
+                })
+            }),
+            DELETE: G.id
+        },
+        '/api/data/professor': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                name: optGuarder(G.s),
+                tel: optGuarder((t) =>
+                    /^0[0-9]{1,2}-[0-9]{4}-[0-9]{4}$/.test(t)? String(t):
+                    new ParseError('This field needed to be telephone number')
+                ),
+                mail: optGuarder((t) =>
+                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    new ParseError('This field needed to be email address')
+                )
+            })
+        },
+        '/api/data/campus': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                name: optGuarder(G.s)
+            })
+        },
+        '/api/data/college': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                virtual: optGuarder(G.b),
+                code_num: optGuarder(G.n),
+                name: optGuarder(G.s),
+                campus: optGuarder(G.id)
+            })
+        },
+        '/api/data/department': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                code: optGuarder(G.s),
+                name: optGuarder(G.s),
+                college: optGuarder(G.id)
+            })
+        },
+        '/api/data/course': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                code: optGuarder((t) =>
+                    /^[A-Za-z]{4}[0-9]{3}$/.test(t)? String(t):
+                    new ParseError('This field needed to be course code')
+                ),
+                name: optGuarder(G.s),
+                course_type: optGuarder((t) =>
+                    /^(?:major|major_required|general|general_required|inter|inter_required)$/.test(t)? /** @type {CourseType} */ (String(t)):
+                    new ParseError('This field needed to be one of \'major\', \'major_required\', \'general\', \'general_required\', \'inter\', \'inter_required\'')
+                ),
+                department: optGuarder(G.id)
+            })
+        },
+        '/api/data/lecture': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                course: optGuarder(G.id),
+                ay: optGuarder(G.n),
+                sem: optGuarder((t) =>
+                    /^(?:first|second|summer|winter)$/.test(t)? /** @type {Semester} */ (String(t)):
+                    new ParseError('This field needed to be one of \'first\', \'second\', \'summer\', \'winter\'')
+                ),
+                professor: optGuarder(G.id),
+                hours: optGuarder(G.n),
+                lab_hours: optGuarder(G.n),
+                credit: optGuarder(G.n)
+            })
+        },
+        '/api/data/lectureclass': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                code: optGuarder(G.s),
+                lecture: optGuarder(G.id)
+            })
+        },
+        '/api/data/building': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                name: optGuarder(G.s),
+                location: optGuarder(gObjectGuarder([G.n, G.n]))
+            })
+        },
+        '/api/data/classroom': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                building: optGuarder(G.id),
+                room: optGuarder(G.s)
+            })
+        },
+        '/api/data/comment': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                post: optGuarder(G.id),
+                page: optGuarder(G.n)
+            }),
+            POST: gObjectGuarder({
+                post: G.id,
+                content: G.s,
+                visible: G.b
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    content: G.s,
+                    visible: G.b
+                })
+            }),
+            DELETE: G.id
+        },
+        '/api/data/post': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                board: optGuarder(G.id),
+                title: optGuarder(G.s),
+                content: optGuarder(G.s)
+            }),
+            POST: gObjectGuarder({
+                board: G.id,
+                title: G.s,
+                content: G.s,
+                visible: G.b
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    title: optGuarder(G.s),
+                    content: optGuarder(G.s),
+                    visible: optGuarder(G.b)
+                })
+            }),
+            DELETE: G.id
+        },
+        '/api/data/board': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                name: optGuarder(G.s)
+            })
+        },
+        '/api/data/timetable': ((daysg) => ({
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                user: optGuarder(G.id)
+            }),
+            POST: gObjectGuarder({
+                name: G.s,
+                selected: G.b,
+                days: daysg
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    name: optGuarder(G.s),
+                    selected: optGuarder(G.b),
+                    days: daysg
+                })
+            }),
+            DELETE: G.id
+        }))(((dayg) => gObjectGuarder({
+            sun: optGuarder(dayg),
+            mon: optGuarder(dayg),
+            tue: optGuarder(dayg),
+            wed: optGuarder(dayg),
+            thu: optGuarder(dayg),
+            fri: optGuarder(dayg),
+            sat: optGuarder(dayg),
+        }))(gObjectGuarder({
+                day: (t) =>
+                    /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)?
+                        /** @type {Day} */ (String(t)):
+                        new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
+                periods: gArrayGuarder(gObjectGuarder({
+                    time: G.n,
+                    room: G.id
+                }))
+            })
+        )),
+        '/api/data/graduationprogress': {},
+        '/api/data/session': {}
     };
     
     /**
@@ -272,7 +507,7 @@ export function CreateAppManager(context, rcon) {
 
     const app = express();
 
-    app.use(express.json());
+    app.use(express.json({ limit: '500kb' }));
     
     app.use(cookieParser());
 

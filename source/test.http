@@ -11,7 +11,7 @@ content-type: application/json
     "student_id": "2026320165",
     "password": "human",
     "univ_mail": {
-        "address": "a@gmail.com",
+        "address": "mangchya069@korea.ac.kr",
         "token": "12345678-1234-1234-1234-123456789abc"
     }
 }
