@@ -27,6 +27,7 @@ export type ErrorString =
   | 'department_doesnt_exist'
   | 'college_doesnt_exist'
   | 'mail_not_verified'
+  | 'send_mail_failed'
   | 'try_get_verifying_code'
   | 'code_doesnt_match'
   | 'user_doesnt_exist'

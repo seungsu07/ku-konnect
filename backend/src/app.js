@@ -571,10 +571,10 @@ export function CreateAppManager(context, rcon) {
         }
     );
     
-    app.get(...makeHandler('/api/auth/verify/mail', 'GET', (req, res) => {
+    app.get(...makeHandler('/api/auth/verify/mail', 'GET', async (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
-        const result = context.databaseManager.API.verifyMailGet(data);
+        const result = await context.databaseManager.API.verifyMailGet(data);
         res.status(result.success? 200: 400).json(result);
     }));
     

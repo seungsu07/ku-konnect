@@ -141,7 +141,7 @@ export function CreateMailSessionManager(context, rcon) {
         /**
          * @param {string} address
          * @param {Temporal.Duration} duration
-         * @returns {{ expires_at: number; }?}
+         * @returns {{ code: string, expires_at: number; }?}
          */
         registerVerify(address, duration = Temporal.Duration.from({ minutes: 5 })) {
             if (!dbManager) throw new Error();
@@ -149,17 +149,21 @@ export function CreateMailSessionManager(context, rcon) {
                 .zonedDateTimeISO()
                 .add(duration)
                 .epochMilliseconds;
+            const code = Math.round(Math.random() * 1000000).toString();
             /** @type {WithoutID<Session>} */
             const param = {
                 type: 'session',
                 data_type: 'MAIL_VERIFY',
-                data: address,
+                data: {
+                    address,
+                    code
+                },
                 expired: false,
                 expires_at
             };
             const session = dbManager.createEntity(param);
             if (!session) return null;
-            return { expires_at };
+            return { code, expires_at };
         },
         
         /**

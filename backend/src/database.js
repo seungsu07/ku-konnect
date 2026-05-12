@@ -6,9 +6,9 @@
  */
 
 import loki from 'lokijs';
+import nodemailer from 'nodemailer';
 import { Temporal } from '@js-temporal/polyfill';
 import crypto from 'node:crypto';
-import { generateTimetable } from './algorithm.js';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
 import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
 import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
@@ -18,8 +18,68 @@ import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type
 
 
 // ====================
+// SMTP
+// ====================
+
+const transporter = nodemailer.createTransport({
+    host: 'smtp-relay.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
+/**
+ * @param {string} to
+ * @param {string} subject
+ * @param {string} html
+ */
+export function sendMail(to, subject, html) {
+    return transporter.sendMail({
+        from: `"HYDV.KR" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        html
+    }).then(() => true).catch((e) => (console.error(e), false));
+};
+
+/**
+ * @param {string} title
+ * @param {string} content
+ */
+function mailTemplate(title, content) {
+    return `
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+        <head>
+        <body>
+            <h1>${title}</h1>
+            <hr>
+            ${content}
+        </body>
+    </html>
+    `;
+}
+
+// ====================
+
+
+
+
+
+// ====================
 // Database
 // ====================
+
+/**
+ * @template {(...args: any[]) => any} T
+ * @typedef {(...args: Parameters<T>) => Promise<ReturnType<Awaited<T>>>} Asyncify
+ */
 
 /** @typedef {ReturnType<typeof CreateDatabaseManager>} DatabaseManager */
 
@@ -139,7 +199,8 @@ export function CreateDatabaseManager(context, rcon) {
         controller: rcon.outer,
         context: {
             collection,
-            idMap
+            idMap,
+            sendMail
         },
         
         /**
@@ -373,9 +434,9 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/auth/verify/mail
              * @method GET
-             * @type {RouteFunction<'/api/auth/verify/mail', 'GET'>}
+             * @type {Asyncify<RouteFunction<'/api/auth/verify/mail', 'GET'>>}
              */
-            verifyMailGet(data) {
+            async verifyMailGet(data) {
                 if (!sessionManager) throw new Error();
                 const mailMgr = sessionManager.context.mailSessionManager;
                 if (!mailMgr) throw new Error();
@@ -384,15 +445,27 @@ export function CreateDatabaseManager(context, rcon) {
                 } = data;
                 if (mailMgr.checkVerify(address))
                     mailMgr.expireVerify(address);
-                const mailvSession = mailMgr.registerVerify(address);
+                const mailvSession = mailMgr.registerVerify(address,
+                    Temporal.Duration.from({ minutes: 15 })
+                );
                 if (!mailvSession) return {
                     success: false,
                     e: 'unexpected'
                 };
-                // TODO - send mail
-                return {
+                const res = await sendMail(address, 'KONNECT: 이메일 인증 메일',
+                    mailTemplate('KONNECT: 이메일 인증 메일', `
+                        이메일 주소 인증을 위해 발송된 이메일입니다.<br>
+                        인증 코드는 아래와 같습니다.<br>
+                        <b>${mailvSession.code}</b><br>
+                        <br>
+                        이 코드는 15분 뒤에 만료됩니다.
+                    `));
+                return res? {
                     success: true,
                     expires_at: mailvSession.expires_at
+                }: {
+                    success: false,
+                    e: 'send_mail_failed'
                 };
             },
             
