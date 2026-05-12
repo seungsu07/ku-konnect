@@ -19,4 +19,13 @@ content-type: application/json
 ###
 
 GET https://api.konnect.hydv.kr/api/auth/verify/mail?address=mangchya069@gmail.com
+
+###
+
+POST https://api.konnect.hydv.kr/api/auth/verify/mail
 content-type: application/json
+
+{
+    "address": "mangchya069@gmail.com",
+    "code": "105068"
+}
