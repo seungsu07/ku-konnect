@@ -27,6 +27,7 @@ const transporter = nodemailer.createTransport(/** @type {any} */ ({
     port: 587,
     secure: false,
     proxy: 'socks5://127.0.0.1:1080',
+    name: 'hydv.kr',
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
