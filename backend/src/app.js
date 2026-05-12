@@ -655,7 +655,10 @@ export function CreateAppManager(context, rcon) {
         
         async serve(delay=Temporal.Duration.from({ minutes: 3 })) {
             const controller = rcon.inner;
-            app.listen(3000);
+            app.listen(3000, '0.0.0.0', (e) => e?
+                console.error(e):
+                console.log('Express is running')
+            );
             await controller.start();
             
             while (true) {
