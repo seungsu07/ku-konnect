@@ -117,10 +117,10 @@ export function CreateAppManager(context, rcon) {
     }
     
     /**
-     * @template T
-     * @param {TypeGuarder<T, ParseError>[]} gs
+     * @template {TypeGuarder<any, ParseError>[]} T
+     * @param {T} gs
      * @param {string | undefined} msg
-     * @returns {TypeGuarder<T, ParseError>}
+     * @returns {TypeGuarder<{ [K in keyof T]: T[K] extends TypeGuarder<infer U, ParseError>? U: never; }[number], ParseError>}
      */
     function anyGuarder(gs, msg=undefined) {
         return (t) => {
@@ -208,6 +208,16 @@ export function CreateAppManager(context, rcon) {
                 code: (t) =>
                     /[0-9]{6}/.test(t)? String(t):
                     new ParseError('This field needed to be 6-digit code')
+            })
+        },
+        '/api/auth/verify/tel': {
+            GET: gObjectGuarder({ tel: G.s }),
+            POST: gObjectGuarder({
+                tel: G.s,
+                code: (t) =>
+                    /[0-9]{6}/.test(t)? String(t):
+                    new ParseError('This field needed to be 6-digit code'),
+                user: G.id
             })
         },
         '/api/data/user': {
@@ -452,8 +462,49 @@ export function CreateAppManager(context, rcon) {
                 }))
             })
         )),
-        '/api/data/graduationprogress': {},
-        '/api/data/session': {}
+        '/api/data/graduationprogress': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                user: optGuarder(G.id)
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])]),
+                    details: anyGuarder([G.u, gObjectGuarder({
+                        major: anyGuarder([G.u, gObjectGuarder(({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        }))]),
+                        major_required: anyGuarder([G.u, gObjectGuarder({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        })]),
+                        minor: anyGuarder([G.u, gObjectGuarder({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        })]),
+                        minor_required: anyGuarder([G.u, gObjectGuarder({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        })]),
+                        inter: anyGuarder([G.u, gObjectGuarder({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        })]),
+                        inter_required: anyGuarder([G.u, gObjectGuarder({
+                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
+                        })])
+                    })])
+                })
+            })
+        },
+        '/api/data/session': {
+            GET: gObjectGuarder({ id: optGuarder(G.id) }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    expired: optGuarder(G.b),
+                    expires_at: optGuarder(G.n)
+                })
+            }),
+            DELETE: G.id
+        }
     };
     
     /**

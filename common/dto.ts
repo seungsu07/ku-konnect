@@ -693,13 +693,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/session': {
     GET: {
-      REQ: Partial<Pick<Session,
-        | 'id'
-        | 'data_type'
-        | 'data'
-        | 'expired'
-        | 'expires_at'
-      >>;
+      REQ: Partial<Pick<Session, 'id'>>;
       
       RES: {
         success: true;
@@ -711,7 +705,10 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     PATCH: {
-      REQ: Partial<Pick<Session, 'expired' | 'expires_at'>>;
+      REQ: {
+        id: EntityID<'session'>;
+        data: Partial<Pick<Session, 'expired' | 'expires_at'>>;
+      }
       
       RES: {
         success: true;
@@ -802,3 +799,5 @@ export function arrayGuarder<E>(e: E): TypeGuarder<any[], E> {
 export function objectGuarder<E = any>(e: E): TypeGuarder<object, E> {
   return (t) => typeof t == 'object'? t === null? e: t: e;
 }
+
+type A<U> = U extends TypeGuarder<infer V, any>? V: never;
