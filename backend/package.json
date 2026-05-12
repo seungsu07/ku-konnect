@@ -15,7 +15,8 @@
     "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
     "lokijs": "^1.5.12",
-    "nodemailer": "^8.0.7"
+    "nodemailer": "^8.0.7",
+    "socks": "^2.8.9"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.0"

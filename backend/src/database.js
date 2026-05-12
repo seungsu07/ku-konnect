@@ -7,6 +7,7 @@
 
 import loki from 'lokijs';
 import nodemailer from 'nodemailer';
+import socks from 'socks';
 import { Temporal } from '@js-temporal/polyfill';
 import crypto from 'node:crypto';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
@@ -21,15 +22,18 @@ import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type
 // SMTP
 // ====================
 
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport(/** @type {any} */ ({
     host: 'smtp-relay.gmail.com',
     port: 587,
     secure: false,
+    proxy: 'socks5://127.0.0.1:1080',
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
     }
-});
+}));
+
+transporter.set('proxy_socks_module', socks);
 
 /**
  * @param {string} to
