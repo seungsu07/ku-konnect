@@ -264,41 +264,37 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 } = data;
                 const mailSession = mailMgr.check(token, address);
-                if (!mailSession.valid)
-                    return {
-                        success: false,
-                        e: 'mail_not_verified'
-                    };
+                if (!mailSession.valid) return {
+                    success: false,
+                    e: 'mail_not_verified'
+                };
                 mailMgr.expire(token);
                 const campus = dbm.findEntity({
                     id: campus_id,
                     type: 'campus'
                 }).at(0);
-                if (!campus)
-                    return {
-                        success: false,
-                        e: 'campus_doesnt_exist'
-                    };
+                if (!campus) return {
+                    success: false,
+                    e: 'campus_doesnt_exist'
+                };
                 const college = dbm.findEntity({
                     type: 'college',
                     id: college_id,
                     campus: campus.id
                 }).at(0);
-                if (!college)
-                    return {
-                        success: false,
-                        e: 'college_doesnt_exist'
-                    };
+                if (!college) return {
+                    success: false,
+                    e: 'college_doesnt_exist'
+                };
                 const major = dbm.findEntity({
                     type: 'department',
                     id: department_id,
                     college: college.id
                 }).at(0);
-                if (!major)
-                    return {
-                        success: false,
-                        e: 'department_doesnt_exist'
-                    }
+                if (!major) return {
+                    success: false,
+                    e: 'department_doesnt_exist'
+                }
                 const { hash, salt } = makehash(password);
                 /** @type {WithoutID<User>} */
                 const param = {
@@ -319,14 +315,12 @@ export function CreateDatabaseManager(context, rcon) {
                     mail: null,
                 };
                 const user = dbm.createEntity(param);
-                return user?
-                    {
-                        success: true
-                    }:
-                    {
-                        success: false,
-                        e: 'unexpected'
-                    };
+                return user? {
+                    success: true
+                }: {
+                    success: false,
+                    e: 'unexpected'
+                };
             },
             
             /**
@@ -346,17 +340,15 @@ export function CreateDatabaseManager(context, rcon) {
                     type: 'user',
                     login_id: id
                 }).at(0);
-                if (!user)
-                    return {
-                        success: false,
-                        e: 'user_doesnt_exist'
-                    };
+                if (!user) return {
+                    success: false,
+                    e: 'user_doesnt_exist'
+                };
                 const { hash } = makehash(password, user.login_salt);
-                if (user.login_hash != hash)
-                    return {
-                        success: false,
-                        e: 'user_doesnt_exist'
-                    };
+                if (user.login_hash != hash) return {
+                    success: false,
+                    e: 'user_doesnt_exist'
+                };
                 const { hash: n_hash, salt } = makehash(password);
                 user.login_hash = n_hash;
                 user.login_salt = salt;
@@ -367,11 +359,10 @@ export function CreateDatabaseManager(context, rcon) {
                     };
                 const dur = duration({ days: 30 });
                 const reg = loginMgr.register(user.id, dur);
-                if (!reg)
-                    return {
-                        success: false,
-                        e: 'unexpected'
-                    };
+                if (!reg) return {
+                    success: false,
+                    e: 'unexpected'
+                };
                 return {
                     success: true,
                     expires_at: reg.expires_at,
@@ -394,11 +385,10 @@ export function CreateDatabaseManager(context, rcon) {
                 if (mailMgr.checkVerify(address))
                     mailMgr.expireVerify(address);
                 const mailvSession = mailMgr.registerVerify(address);
-                if (!mailvSession)
-                    return {
-                        success: false,
-                        e: 'unexpected'
-                    };
+                if (!mailvSession) return {
+                    success: false,
+                    e: 'unexpected'
+                };
                 // TODO - send mail
                 return {
                     success: true,
@@ -420,23 +410,20 @@ export function CreateDatabaseManager(context, rcon) {
                     code
                 } = data;
                 const mailvSession = mailMgr.checkVerify(address);
-                if (!mailvSession.valid)
-                    return {
-                        success: false,
-                        e: 'try_get_verifying_code'
-                    };
-                if (code != mailvSession.code)
-                    return {
-                        success: false,
-                        e: 'code_doesnt_match'
-                    };
+                if (!mailvSession.valid) return {
+                    success: false,
+                    e: 'try_get_verifying_code'
+                };
+                if (code != mailvSession.code) return {
+                    success: false,
+                    e: 'code_doesnt_match'
+                };
                 mailMgr.expireVerify(address);
                 const mailSession = mailMgr.register(address);
-                if (!mailSession)
-                    return {
-                        success: false,
-                        e: 'unexpected'
-                    };
+                if (!mailSession) return {
+                    success: false,
+                    e: 'unexpected'
+                };
                 return {
                     success: true,
                     token: mailSession.token,
@@ -445,28 +432,170 @@ export function CreateDatabaseManager(context, rcon) {
             },
             
             /**
-             * /api/data/timetable
-             * @method POST
-             * @type {RouteFunction<'/api/data/timetable', 'GET', User>}
+             * /api/auth/verify/tel
+             * @method GET
+             * @type {RouteFunction<'/api/auth/verify/tel', 'GET'>}
              */
-            dataTimetable(data, user) {
+            verifyTelGet(data) {
+                // TODO
+                return;
+            },
+            
+            /**
+             * /api/auth/verify/tel
+             * @method GET
+             * @type {RouteFunction<'/api/auth/verify/tel', 'POST'>}
+             */
+            verifyTelPost(data) {
+                // TODO
+                return;
+            },
+            
+            /**
+             * /api/data/user
+             * @method GET
+             * @type {RouteFunction<'/api/data/user', 'GET', User>}
+             */
+            dataUser(data, user) {
                 const { id } = data;
-                const timetable = dbm.getByID(id);
-                if (!timetable)
-                    return {
-                        success: false,
-                        e: 'timetable_doesnt_exist'
-                    };
-                if (timetable.user != user.id)
-                    return {
-                        success: false,
-                        e: 'timetable_doesnt_exist'
-                    };
+                const t = dbm.findEntity({ type: 'user', 'login_id': id }).at(0);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                if (id != user.login_id) return {
+                    success: false,
+                    e: 'no_permission'
+                };
                 return {
                     success: true,
-                    data: timetable
+                    data: {
+                        id: t.id,
+                        login_id: t.login_id,
+                        name: t.name,
+                        student_id: t.student_id,
+                        campus: t.campus,
+                        college: t.college,
+                        department: t.department,
+                        univ_mail: t.univ_mail,
+                        mail: t.mail
+                    }
                 };
-            }
+            },
+            
+            /**
+             * /api/data/user
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/user', 'PATCH', User>}
+             */
+            dataUserFetch(data, user) {
+                const {
+                    id,
+                    data: {
+                        name,
+                        student_id,
+                        campus,
+                        college,
+                        department,
+                        mail,
+                        univ_mail,
+                        password
+                    }
+                } = data;
+                if (id != user.id) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const t = dbm.getByID(id);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                /** @type {Record<string, boolean>} */
+                const modified = {};
+                /**
+                 * @template {keyof User} T
+                 * @param {T} k
+                 * @param {any} v
+                 */
+                const modify = (k, v) => {
+                    if (!v) return;
+                    t[k] = v;
+                    modified[k] = true;
+                };
+                modify('name', name);
+                modify('student_id', student_id);
+                modify('campus', campus);
+                modify('college', college);
+                modify('department', department);
+                if (mail) ifb: {
+                    if (!sessionManager) break ifb;
+                    const res = sessionManager.context.mailSessionManager
+                        ?.check(mail.token, mail.address);
+                    if (!res?.valid) break ifb;
+                    modify('mail', mail.address);
+                }
+                if (univ_mail) ifb: {
+                    if (!sessionManager) break ifb;
+                    const res = sessionManager.context.mailSessionManager
+                        ?.check(univ_mail.token, univ_mail.address);
+                    if (!res?.valid) break ifb;
+                    modify('univ_mail', univ_mail.address);
+                }
+                if (password) ifb: {
+                    const { before, after } = password;
+                    const { hash: bh } = makehash(before, t.login_salt);
+                    if (bh != t.login_hash) break ifb;
+                    const { hash, salt } = makehash(after);
+                    modify('login_hash', hash);
+                    modify('login_salt', salt);
+                }
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified
+                };
+            },
+            
+            /**
+             * /api/data/user
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/user', 'DELETE', User>}
+             */
+            dataUserDelete(data, user) {
+                const { id, password } = data;
+                const t = dbm.findEntity({ type: 'user', 'login_id': id }).at(0);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                if (id != user.login_id) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const { hash } = makehash(password, t.login_salt);
+                if (hash != t.login_hash) return {
+                    success: false,
+                    e: 'unauthorized'
+                };
+                t.id = crypto.randomUUID();
+                t.login_id = `${crypto.randomBytes(8).toHex()}DEL_${t.login_id}`;
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    deleted_at: Temporal.Now.instant().epochMilliseconds
+                };
+            },
+            
+            //TODO
         },
 
         /**

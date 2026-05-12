@@ -196,7 +196,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/user': {
     GET: {
-      REQ: Partial<Pick<User, 'id'>>;
+      REQ: {
+        id: string;
+      };
       
       RES: {
         success: true;
@@ -235,7 +237,10 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
             address: string;
             token: EntityID<'session'>;
           };
-          password?: string;
+          password?: {
+            before: string;
+            after: string;
+          };
         };
       };
       

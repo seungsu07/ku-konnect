@@ -1,4 +1,3 @@
-
 /**
  * @import { RequestHandler } from 'express'
  * @import { RunningController } from './controller'
@@ -222,7 +221,7 @@ export function CreateAppManager(context, rcon) {
         },
         '/api/data/user': {
             GET: gObjectGuarder({
-                id: optGuarder(G.id)
+                id: G.s
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
@@ -255,7 +254,10 @@ export function CreateAppManager(context, rcon) {
                             new ParseError('This field needed to be \'korea.ac.kr\' email address'),
                         token: G.id
                     })]),
-                    password: optGuarder(G.s)
+                    password: anyGuarder([G.u, gObjectGuarder({
+                        before: G.s,
+                        after: G.s
+                    })])
                 })
             }),
             DELETE: gObjectGuarder({
@@ -569,6 +571,41 @@ export function CreateAppManager(context, rcon) {
         }
     );
     
+    app.get(...makeHandler('/api/auth/verify/mail', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.verifyMailGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/auth/verify/mail', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.verifyMailPost(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/auth/verify/tel', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.verifyTelGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/auth/verify/tel', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.verifyTelPost(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.authSignup(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
     app.post(...makeHandler('/api/auth/login', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -592,12 +629,7 @@ export function CreateAppManager(context, rcon) {
         }
     }));
     
-    app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
-        if (!context.databaseManager) throw new Error();
-        const data = req.body;
-        const result = context.databaseManager.API.authSignup(data);
-        res.status(result.success? 200: 400).json(result);
-    }));
+    // TODO
     
     app.get(...makeHandler('/api/data/timetable', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
