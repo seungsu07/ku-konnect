@@ -12,7 +12,7 @@ content-type: application/json
     "password": "human",
     "univ_mail": {
         "address": "mangchya069@korea.ac.kr",
-        "token": "33e36d04-5720-48e2-a542-7b0e3acdd033"
+        "token": "9ce58530-3518-4919-bee8-0992dd4a3d01"
     }
 }
 
@@ -27,5 +27,5 @@ content-type: application/json
 
 {
     "address": "mangchya069@korea.ac.kr",
-    "code": "863741"
+    "code": "244670"
 }

@@ -235,7 +235,7 @@ export function CreateMailSessionManager(context, rcon) {
             if (
                 session?.type != 'session' ||
                 session.expired ||
-                session.data_type != 'MAIL_VERIFY' ||
+                session.data_type != 'MAIL' ||
                 session.data != (address ?? session.data)
             ) return { valid: false };
             const now = Temporal.Now.instant().epochMilliseconds;
