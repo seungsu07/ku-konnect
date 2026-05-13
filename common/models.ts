@@ -96,12 +96,23 @@ export type SolvedNestedID<T> =
     { [K in keyof T]: SolvedNestedID<T[K]> }:
   T;
 
+export type RemovedID<T> =
+  T extends EntityID<EntityType>?
+    EntityID<EntityType>:
+  T extends object?
+    { [K in keyof T]: RemovedID<T[K]> }:
+  T;
+
+export type BoolRecord<T> =
+  T extends string | number | boolean | bigint | symbol | null | undefined? boolean:
+  boolean | { [K in keyof T]: BoolRecord<T[K]>; };
+
 export interface Entity<T extends EntityType> {
   id: EntityID<T>;
   type: T
 }
 
-export type WithoutID<T extends Entity<EntityType>> = Omit<T, 'id'>;
+export type WithoutID<T extends TypeEntity<EntityType>> = Omit<T, 'id'>;
 
 /** 유저 */
 export interface User extends Entity<'user'> {
@@ -262,7 +273,7 @@ export interface Comment extends Entity<'comment'> {
   /** 게시글 */
   post: EntityID<'post'>;
   /** 작성자 */
-  author: EntityID<'user'>;
+  author: EntityID<'user_profile'>;
   /** 내용 */
   content: string;
   /** 생성 시간 */
@@ -278,7 +289,7 @@ export interface Post extends Entity<'post'> {
   /** 게시판 */
   board: EntityID<'board'>;
   /** 작성자 */
-  author: EntityID<'user'>;
+  author: EntityID<'user_profile'>;
   /** 제목 */
   title: string;
   /** 내용 */

@@ -1,5 +1,5 @@
 /**
- * @import { WithoutID, EntityID, Session } from '../../common/models'
+ * @import { WithoutID, EntityID, Session, EntityType } from '../../common/models'
  * @import { RunningController, MonoController } from './controller'
  * @import { ServerContext } from './server'
  * @import { DatabaseManager } from './database.js'
@@ -31,13 +31,14 @@ export function CreateLoginSessionManager(context, rcon) {
         controller: rcon.outer,
 
         /**
-         * @param {EntityID<'user'>} user_id
+         * @param {EntityID<EntityType>} user_id
          * @param {Temporal.Duration} duration
          * @returns {{ token: EntityID<'session'>; expires_at: number }?}
          */
         register(user_id, duration = Temporal.Duration.from({ days: 7 })) {
             dbManager = context.dbManager;
             if (!dbManager) throw new Error();
+            if (dbManager.getByID(user_id)?.type != 'user') return null;
             const expires_at = Temporal.Now
                 .zonedDateTimeISO()
                 .add(duration)
@@ -56,15 +57,17 @@ export function CreateLoginSessionManager(context, rcon) {
         },
         
         /**
-         * @param {EntityID<'session'>} token
-         * @param {EntityID<'user'> | undefined} user_id
+         * @param {EntityID<EntityType>} token
+         * @param {EntityID<EntityType> | undefined} user_id
          * @returns {{ valid: false; } | { valid: true; limit: number; token: EntityID<'session'>, user_id: EntityID<'user'> }}
          */
         check(token, user_id=undefined) {
             if (!dbManager) throw new Error();
+            if (!user_id || dbManager.getByID(user_id)?.type != 'user')
+                return { valid: false };
             const session = dbManager.getByID(token);
             if (
-                !session ||
+                session?.type != 'session' ||
                 session.expired ||
                 session.data_type != 'LOGIN' ||
                 session.data != (user_id ?? session.data)
@@ -77,20 +80,20 @@ export function CreateLoginSessionManager(context, rcon) {
             return {
                 valid: true,
                 limit: session.expired? -1: session.expires_at - now,
-                token,
+                token: session.id,
                 user_id: session.data
             };
         },
 
         /**
-         * @param {EntityID<'session'>} token
+         * @param {EntityID<EntityType>} token
          * @returns {void}
          */
         expire(token) {
             if (!dbManager) throw new Error();
             const session = dbManager.getByID(token);
             if (
-                !session ||
+                session?.type != 'session' ||
                 session.expired ||
                 session.data_type != 'LOGIN'
             ) return;
@@ -222,7 +225,7 @@ export function CreateMailSessionManager(context, rcon) {
         },
         
         /**
-         * @param {EntityID<'session'>} token
+         * @param {EntityID<EntityType>} token
          * @param {string | undefined} address
          * @returns {{ valid: false; } | { valid: true; limit: number; token: EntityID<'session'>; address: string; }}
          */
@@ -230,7 +233,7 @@ export function CreateMailSessionManager(context, rcon) {
             if (!dbManager) throw new Error();
             const session = dbManager.getByID(token);
             if (
-                !session ||
+                session?.type != 'session' ||
                 session.expired ||
                 session.data_type != 'MAIL_VERIFY' ||
                 session.data != (address ?? session.data)
@@ -243,7 +246,7 @@ export function CreateMailSessionManager(context, rcon) {
             return {
                 valid: true,
                 limit: session.expired? -1: session.expires_at - now,
-                token,
+                token: session.id,
                 address: session.data
             };
         },
@@ -258,7 +261,7 @@ export function CreateMailSessionManager(context, rcon) {
                 type: 'session',
                 data_type: 'MAIL_VERIFY',
                 expired: false,
-                data: address
+                'data.address': address
             }).at(0);
             if (
                 !session ||
@@ -269,14 +272,14 @@ export function CreateMailSessionManager(context, rcon) {
         },
 
         /**
-         * @param {EntityID<'session'>} token
+         * @param {EntityID<EntityType>} token
          * @returns {void}
          */
         expire(token) {
             if (!dbManager) throw new Error();
             const session = dbManager.getByID(token);
             if (
-                !session ||
+                session?.type != 'session' ||
                 session.expired ||
                 session.data_type != 'MAIL'
             ) return;

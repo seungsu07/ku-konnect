@@ -1,5 +1,5 @@
 /**
- * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session } from '../../common/models.js'
+ * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session, UserProfile, Professor, BoolRecord, Comment } from '../../common/models.js'
  * @import { RouteFunction, Scheme } from '../../common/dto.js'
  * @import { RunningController, MonoController } from './controller.js'
  * @import { ServerContext } from './server.js'
@@ -85,6 +85,8 @@ function mailTemplate(title, content) {
  * @template {(...args: any[]) => any} T
  * @typedef {(...args: Parameters<T>) => Promise<ReturnType<Awaited<T>>>} Asyncify
  */
+
+const NO_USER = '0-0-0-0-0';
 
 /** @typedef {ReturnType<typeof CreateDatabaseManager>} DatabaseManager */
 
@@ -196,6 +198,54 @@ export function CreateDatabaseManager(context, rcon) {
         }
     }
     
+    /**
+     * @template {Record<string, any>} T
+     * @param {T} obj
+     * @return {{ [K in keyof T as T[K] extends undefined? never: K]: T[K]; }}
+     */
+    function removeEmpty(obj) {
+        return /** @type {any} */ (Object.fromEntries(
+            Object.entries(obj)
+                .filter(([_, v]) => v !== undefined)
+        ));
+    }
+    
+    /**
+     * @template {Record<string, any>} T
+     * @template {{ [K in keyof T]?: any; }} U
+     * @param {T} modified
+     * @param {U} modifier
+     * @returns {BoolRecord<U>}
+     */
+    function getModified(modified, modifier) {
+        return (
+            Object.fromEntries(
+                Object.entries(modifier)
+                .map(([k, v]) => {
+                    const n = modified[k];
+                    if (Array.isArray(n) && Array.isArray(v))
+                        return [k, Array.from({
+                            .../** @type {any} */(getModified(n, v)),
+                            length: v.length
+                        })];
+                    if (
+                        typeof n == 'object' &&
+                        n !== null &&
+                        typeof v == 'object' &&
+                        v !== null
+                    ) return [k, getModified(n, v)];
+                    if (
+                        typeof n == 'object' &&
+                        n !== null ||
+                        typeof v == 'object' &&
+                        v !== null
+                    ) return [k, false];
+                    return [k, v === n];
+                })
+            )
+        );
+    }
+    
     /** @type {Map<string | EntityID<EntityType>, WeakRef<any>>} */
     const idMap = new Map();
 
@@ -227,10 +277,9 @@ export function CreateDatabaseManager(context, rcon) {
         collectIDMap() {/* TODO */},
         
         /**
-         * @template {EntityType} T
-         * @template {TypeEntity<T>} U
-         * @param {WithoutID<U>} param
-         * @returns {U | undefined}
+         * @template {TypeEntity<EntityType>} T
+         * @param {WithoutID<T>} param
+         * @returns {T | undefined}
          */
         createEntity(param) {
             const idparam = {
@@ -259,12 +308,15 @@ export function CreateDatabaseManager(context, rcon) {
         
         /**
          * @template {EntityType} T
-         * @param {LokiQuery<TypeEntity<T>> & { type: T }} query
+         * @param {LokiQuery<TypeEntity<T>> & { type: T } & { [K: `${string}.${string}`]: any; }} query
+         * @param {{ limit?: number, offset?: number }} options
          * @returns {TypeEntity<T>[]}
          */
-        findEntity(query) {
+        findEntity(query, options={}) {
             return collection.chain()
                 .find(query)
+                .offset(options.offset?? 0)
+                .limit(options.limit?? 1000)
                 .map(e => ({ id: e.id }))
                 .data({
                     forceClones: false,
@@ -392,7 +444,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/auth/login
              * @method POST
-             * @type {RouteFunction<'/api/auth/login', 'POST', undefined, { success: false; } | { success: true; token: EntityID<'session'>; }>}
+             * @type {RouteFunction<'/api/auth/login', 'POST', [], { success: false; } | { success: true; token: EntityID<'session'>; }>}
              */
             authLogin(data) {
                 if (!sessionManager) throw new Error();
@@ -514,27 +566,27 @@ export function CreateDatabaseManager(context, rcon) {
              * @method GET
              * @type {RouteFunction<'/api/auth/verify/tel', 'GET'>}
              */
-            verifyTelGet(data) {
-                // TODO
-                return;
-            },
+            // verifyTelGet(data) {
+            //     // TODO
+            //     return;
+            // },
             
             /**
              * /api/auth/verify/tel
              * @method GET
              * @type {RouteFunction<'/api/auth/verify/tel', 'POST'>}
              */
-            verifyTelPost(data) {
-                // TODO
-                return;
-            },
+            // verifyTelPost(data) {
+            //     // TODO
+            //     return;
+            // },
             
             /**
              * /api/data/user
              * @method GET
-             * @type {RouteFunction<'/api/data/user', 'GET', User>}
+             * @type {RouteFunction<'/api/data/user', 'GET', [User]>}
              */
-            dataUser(data, user) {
+            dataUserGet(data, user) {
                 const { id } = data;
                 const t = dbm.findEntity({ type: 'user', 'login_id': id }).at(0);
                 if (!t) return {
@@ -564,9 +616,9 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/user
              * @method PATCH
-             * @type {RouteFunction<'/api/data/user', 'PATCH', User>}
+             * @type {RouteFunction<'/api/data/user', 'PATCH', [User]>}
              */
-            dataUserFetch(data, user) {
+            dataUserPatch(data, user) {
                 const {
                     id,
                     data: {
@@ -589,45 +641,40 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
-                /** @type {Record<string, boolean>} */
-                const modified = {};
-                /**
-                 * @template {keyof User} T
-                 * @param {T} k
-                 * @param {any} v
-                 */
-                const modify = (k, v) => {
-                    if (!v) return;
-                    t[k] = v;
-                    modified[k] = true;
+                if (t.type != 'user') return {
+                    success: false,
+                    e: 'user_doesnt_exist'
                 };
-                modify('name', name);
-                modify('student_id', student_id);
-                modify('campus', campus);
-                modify('college', college);
-                modify('department', department);
+                const modifier = removeEmpty({
+                    name,
+                    student_id,
+                    campus,
+                    college,
+                    department
+                });
                 if (mail) ifb: {
                     if (!sessionManager) break ifb;
                     const res = sessionManager.context.mailSessionManager
                         ?.check(mail.token, mail.address);
                     if (!res?.valid) break ifb;
-                    modify('mail', mail.address);
+                    modifier['mail'] = mail.address;
                 }
                 if (univ_mail) ifb: {
                     if (!sessionManager) break ifb;
                     const res = sessionManager.context.mailSessionManager
                         ?.check(univ_mail.token, univ_mail.address);
                     if (!res?.valid) break ifb;
-                    modify('univ_mail', univ_mail.address);
+                    modifier['univ_mail'] = univ_mail.address;
                 }
                 if (password) ifb: {
                     const { before, after } = password;
                     const { hash: bh } = makehash(before, t.login_salt);
                     if (bh != t.login_hash) break ifb;
                     const { hash, salt } = makehash(after);
-                    modify('login_hash', hash);
-                    modify('login_salt', salt);
+                    modifier['login_hash'] = hash;
+                    modifier['login_salt'] = salt;
                 }
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
                 const res = dbm.updateEntity(t);
                 if (!res) return {
                     success: false,
@@ -635,14 +682,14 @@ export function CreateDatabaseManager(context, rcon) {
                 };
                 return {
                     success: true,
-                    modified
+                    modified: getModified(res, modifier)
                 };
             },
             
             /**
              * /api/data/user
              * @method DELETE
-             * @type {RouteFunction<'/api/data/user', 'DELETE', User>}
+             * @type {RouteFunction<'/api/data/user', 'DELETE', [User]>}
              */
             dataUserDelete(data, user) {
                 const { id, password } = data;
@@ -672,6 +719,583 @@ export function CreateDatabaseManager(context, rcon) {
                     deleted_at: Temporal.Now.instant().epochMilliseconds
                 };
             },
+            
+            /**
+             * /api/data/userprofile
+             * @method GET
+             * @type {RouteFunction<'/api/data/userprofile', 'GET', [User]>}
+             */
+            dataUserProfileGet(data, user) {
+                const {
+                    id,
+                    user: u,
+                    nickname
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'user_profile',
+                    ...removeEmpty({
+                        id,
+                        u,
+                        nickname
+                    })
+                }).at(0);
+                if (!t) return {
+                    success: false,
+                    e: 'profile_doesnt_exist'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        nickname: t.nickname,
+                        image: t.image,
+                        user: t.user
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/userprofile
+             * @method POST
+             * @type {RouteFunction<'/api/data/userprofile', 'POST', [User]>}
+             */
+            dataUserProfilePost(data, user) {
+                const { nickname, image } = data;
+                /** @type {WithoutID<UserProfile>} */
+                const param = {
+                    type: 'user_profile',
+                    user: user.id,
+                    nickname,
+                    image
+                };
+                const t = dbm.createEntity(param);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        image: t.image,
+                        nickname: t.nickname,
+                        user: t.user
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/userprofile
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/userprofile', 'PATCH', [User]>}
+             */
+            dataUserProfilePatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        nickname,
+                        image
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'user_profile' ||
+                    t.user != user.id
+                ) return {
+                    success: false,
+                    e: 'profile_doesnt_exist'
+                };
+                const modifier = removeEmpty({
+                    nickname,
+                    image
+                });
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/data/userprofile
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/userprofile', 'DELETE', [User]>}
+             */
+            dataUserProfileDelete(data, user) {
+                const { id } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'user_profile' ||
+                    t.user != user.id
+                ) return {
+                    success: false,
+                    e: 'profile_doesnt_exist'
+                };
+                const res = dbm.deleteEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/data/professor
+             * @method GET
+             * @type {RouteFunction<'/api/data/professor', 'GET'>}
+             */
+            dataProfessorGet(data) {
+                const {
+                    id,
+                    name,
+                    tel,
+                    mail
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'professor',
+                    ...removeEmpty({
+                        id,
+                        name,
+                        tel,
+                        mail
+                    })
+                }).at(0);
+                if (!t) return {
+                    success: false,
+                    e: 'professor_doesnt_exist'
+                };
+                return {
+                    success: true,
+                    data: {
+                        name: t.name,
+                        tel: t.tel,
+                        mail: t.mail
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/campus
+             * @method GET
+             * @type {RouteFunction<'/api/data/campus', 'GET'>}
+             */
+            dataCampusGet(data) {
+                const {
+                    id,
+                    name
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'campus',
+                    ...removeEmpty({
+                        id,
+                        name
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(({ id, name }) => ({ id, name }))
+                };
+            },
+            
+            /**
+             * /api/data/college
+             * @method GET
+             * @type {RouteFunction<'/api/data/college', 'GET'>}
+             */
+            dataCollegeGet(data) {
+                const {
+                    id,
+                    virtual,
+                    code_num,
+                    name,
+                    campus
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'college',
+                    ...removeEmpty({
+                        id,
+                        virtual,
+                        code_num,
+                        name,
+                        campus
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, name, campus, code_num, virtual }) =>
+                        ({ id, name, campus, code_num, virtual })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/department
+             * @method GET
+             * @type {RouteFunction<'/api/data/department', 'GET'>}
+             */
+            dataDepartmentGet(data) {
+                const {
+                    id,
+                    code,
+                    name,
+                    college
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'department',
+                    ...removeEmpty({
+                        id,
+                        code,
+                        name,
+                        college
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, name, code, college }) =>
+                        ({ id, name, code, college })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/course
+             * @method GET
+             * @type {RouteFunction<'/api/data/course', 'GET'>}
+             */
+            dataCourseGet(data) {
+                const {
+                    id,
+                    code,
+                    name,
+                    course_type,
+                    department
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'course',
+                    ...removeEmpty({
+                        id,
+                        code,
+                        name,
+                        course_type,
+                        department
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, name, code, course_type, department }) =>
+                        ({ id, name, code, course_type, department })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/lecture
+             * @method GET
+             * @type {RouteFunction<'/api/data/lecture', 'GET'>}
+             */
+            dataLectureGet(data) {
+                const {
+                    id,
+                    course,
+                    ay,
+                    sem,
+                    professor,
+                    hours,
+                    lab_hours,
+                    credit
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'lecture',
+                    ...removeEmpty({
+                        id,
+                        course,
+                        ay,
+                        sem,
+                        professor,
+                        hours,
+                        lab_hours,
+                        credit
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, course, ay, sem, professor, hours, lab_hours, credit }) =>
+                        ({ id, course, ay, sem, professor, hours, lab_hours, credit })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/lectureclass
+             * @method GET
+             * @type {RouteFunction<'/api/data/lectureclass', 'GET'>}
+             */
+            dataLectureClassGet(data) {
+                const {
+                    id,
+                    code,
+                    lecture
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'lecture_class',
+                    ...removeEmpty({
+                        id,
+                        code,
+                        lecture
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, code, lecture, periods }) =>
+                        ({ id, code, lecture, periods })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/building
+             * @method GET
+             * @type {RouteFunction<'/api/data/building', 'GET'>}
+             */
+            dataBuildingGet(data) {
+                const {
+                    id,
+                    name,
+                    location
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'building',
+                    ...removeEmpty({
+                        id,
+                        name,
+                        location
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, name, location }) =>
+                        ({ id, name, location })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/classroom
+             * @method GET
+             * @type {RouteFunction<'/api/data/classroom', 'GET'>}
+             */
+            dataClassRoomGet(data) {
+                const {
+                    id,
+                    building,
+                    room
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'class_room',
+                    ...removeEmpty({
+                        id,
+                        building,
+                        room
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, building, room }) =>
+                        ({ id, building, room })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/comment
+             * @method GET
+             * @type {RouteFunction<'/api/data/comment', 'GET', [User | null]>}
+             */
+            dataCommentGet(data, user) {
+                const {
+                    id,
+                    post,
+                    page
+                } = data;
+                const limit = 50;
+                const t = dbm.findEntity({
+                    type: 'comment',
+                    ...removeEmpty({
+                        id,
+                        post
+                    })
+                }, {
+                    limit,
+                    offset: limit * (page?? 0)
+                });
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, post, content, created_at, updated_at, visible, author }) =>
+                        visible || profiles.includes(author)?
+                            ({ id, post, content, created_at, updated_at, visible, author }):
+                            ({ id: NO_USER, post, content: '', created_at, updated_at, visible, author: NO_USER })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/comment
+             * @method POST
+             * @type {RouteFunction<'/api/data/comment', 'POST', [User]>}
+             */
+            dataCommentPost(data, user) {
+                const {
+                    post,
+                    content,
+                    profile,
+                    visible
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user.id
+                ) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const p = dbm.getByID(post);
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (
+                    p?.type != 'post' ||
+                    !p.visible && !profiles.includes(p.author)
+                ) return {
+                    success: false,
+                    e: 'post_doesnt_exist'
+                };
+                const now = Temporal.Now.instant().epochMilliseconds;
+                /** @type {WithoutID<Comment>} */
+                const param = {
+                    type: 'comment',
+                    post: p.id,
+                    author: pf.id,
+                    content,
+                    created_at: now,
+                    updated_at: now,
+                    visible
+                };
+                const t = dbm.createEntity(param);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        post: t.post,
+                        content: t.content,
+                        author: t.author,
+                        visible: t.visible,
+                        created_at: t.created_at,
+                        updated_at: t.updated_at
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/comment
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/comment', 'PATCH', [User]>}
+             */
+            dataCommentPatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        content,
+                        visible
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (t?.type != 'comment') return {
+                    success: false,
+                    e: 'comment_doesnt_exist'
+                };
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (!profiles.includes(t.author)) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const modifier = removeEmpty({
+                    content,
+                    visible
+                });
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/data/comment
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/comment', 'DELETE', [User]>}
+             */
+            dataCommentDelete(data, user) {
+                const { id } = data;
+                const t = dbm.getByID(id);
+                if (t?.type != 'comment') return {
+                    success: false,
+                    e: 'comment_doesnt_exist'
+                };
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (!profiles.includes(t.author)) return {
+                    success: false,
+                    e: 'comment_doesnt_exist'
+                };
+                const res = dbm.deleteEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            
             
             //TODO
         },

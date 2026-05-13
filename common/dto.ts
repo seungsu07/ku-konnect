@@ -18,20 +18,28 @@ import {
   type TimeTable,
   type User,
   type CourseType,
-  type RGB
+  type RGB,
+  type BoolRecord,
+  RemovedID
 } from './models.ts';
 
 export type ErrorString =
   | 'bad_request'
-  | 'campus_doesnt_exist'
-  | 'department_doesnt_exist'
-  | 'college_doesnt_exist'
   | 'mail_not_verified'
   | 'send_mail_failed'
   | 'try_get_verifying_code'
   | 'code_doesnt_match'
+  | 'campus_doesnt_exist'
+  | 'department_doesnt_exist'
+  | 'college_doesnt_exist'
   | 'user_doesnt_exist'
   | 'timetable_doesnt_exist'
+  | 'profile_doesnt_exist'
+  | 'professor_doesnt_exist'
+  | 'course_doesnt_exist'
+  | 'building_doesnt_exist'
+  | 'post_doesnt_exist'
+  | 'comment_doesnt_exist'
   | 'unauthorized'
   | 'no_permission'
   | 'unexpected';
@@ -247,7 +255,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        modified: { [K in keyof User]?: boolean };
+        modified: BoolRecord<Partial<User>>;
       } | {
         success: false;
         e: ErrorString;
@@ -272,11 +280,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/userprofile': {
     GET: {
-      REQ: Partial<Pick<UserProfile, 'id' | 'user' | 'nickname'>>;
+      REQ: Partial<Pick<UserProfile,
+        | 'id'
+        | 'user'
+        | 'nickname'
+      >>;
       
       RES: {
         success: true;
-        data: UserProfile;
+        data: Pick<UserProfile,
+          | 'id'
+          | 'image'
+          | 'nickname'
+          | 'user'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -284,11 +301,19 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     POST: {
-      REQ: Pick<UserProfile, 'nickname' | 'image'>;
+      REQ: Pick<UserProfile,
+        | 'nickname'
+        | 'image'
+      >;
       
       RES: {
         success: true;
-        data: UserProfile;
+        data: Pick<UserProfile,
+          | 'id'
+          | 'image'
+          | 'nickname'
+          | 'user'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -298,12 +323,15 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     PATCH: {
       REQ: {
         id: EntityID<'user_profile'>;
-        data: Partial<Pick<UserProfile, 'nickname' | 'image'>>;
+        data: Partial<Pick<UserProfile,
+          | 'nickname'
+          | 'image'
+        >>;
       };
       
       RES: {
         success: true;
-        modified: { [K in keyof UserProfile]?: boolean };
+        modified: BoolRecord<Partial<UserProfile>>;
       } | {
         success: false;
         e: ErrorString;
@@ -311,7 +339,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     DELETE: {
-      REQ: EntityID<'user_profile'>;
+      REQ: {
+        id: EntityID<'user_profile'>;
+      };
       
       RES: {
         success: true;
@@ -324,11 +354,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/professor': {
     GET: {
-      REQ: Partial<Pick<Professor, 'id' | 'name' | 'tel' | 'mail'>>;
+      REQ: Partial<Pick<Professor,
+        | 'id'
+        | 'name'
+        | 'tel'
+        | 'mail'
+      >>;
       
       RES: {
         success: true;
-        data: Pick<Professor, 'name' | 'tel' | 'mail'>;
+        data: Pick<Professor,
+          | 'name'
+          | 'tel'
+          | 'mail'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -338,11 +377,17 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/campus': {
     GET: {
-      REQ: Partial<Pick<Campus, 'id' | 'name'>>;
+      REQ: Partial<Pick<Campus,
+        | 'id'
+        | 'name'
+      >>;
       
       RES: {
         success: true;
-        data: Campus[];
+        data: Pick<Campus,
+          | 'id'
+          | 'name'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -352,11 +397,23 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/college': {
     GET: {
-      REQ: Partial<Pick<College, 'id' | 'virtual' | 'code_num' | 'name' | 'campus'>>;
+      REQ: Partial<Pick<College,
+        | 'id'
+        | 'virtual'
+        | 'code_num'
+        | 'name'
+        | 'campus'
+      >>;
       
       RES: {
         success: true;
-        data: College[];
+        data: Pick<College,
+          | 'id'
+          | 'name'
+          | 'campus'
+          | 'code_num'
+          | 'virtual'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -366,11 +423,21 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/department': {
     GET: {
-      REQ: Partial<Pick<Department, 'id' | 'code' | 'name' | 'college'>>;
+      REQ: Partial<Pick<Department,
+        | 'id'
+        | 'code'
+        | 'name'
+        | 'college'
+      >>;
       
       RES: {
         success: true;
-        data: Department;
+        data: Pick<Department,
+          | 'id'
+          | 'name'
+          | 'code'
+          | 'college'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -380,11 +447,23 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/course': {
     GET: {
-      REQ: Partial<Pick<Course, 'id' | 'code' | 'name' | 'course_type' | 'department'>>;
+      REQ: Partial<Pick<Course,
+        | 'id'
+        | 'code'
+        | 'name'
+        | 'course_type'
+        | 'department'
+      >>;
       
       RES: {
         success: true;
-        data: Course;
+        data: Pick<Course,
+          | 'id'
+          | 'name'
+          | 'code'
+          | 'course_type'
+          | 'department'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -407,7 +486,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        data: Lecture;
+        data: Pick<Lecture,
+          | 'id'
+          | 'course'
+          | 'ay'
+          | 'sem'
+          | 'professor'
+          | 'hours'
+          | 'lab_hours'
+          | 'credit'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -417,11 +505,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/lectureclass': {
     GET: {
-      REQ: Partial<Pick<LectureClass, 'id' | 'code' | 'lecture'>>;
+      REQ: Partial<Pick<LectureClass,
+        | 'id'
+        | 'code'
+        | 'lecture'
+      >>;
       
       RES: {
         success: true;
-        data: LectureClass
+        data: Pick<LectureClass,
+          | 'id'
+          | 'code'
+          | 'lecture'
+          | 'periods'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -431,11 +528,19 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/building': {
     GET: {
-      REQ: Partial<Pick<Building, 'id' | 'name' | 'location'>>;
+      REQ: Partial<Pick<Building,
+        | 'id'
+        | 'name'
+        | 'location'
+      >>;
       
       RES: {
         success: true;
-        data: Building;
+        data: Pick<Building,
+          | 'id'
+          | 'name'
+          | 'location'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -445,11 +550,19 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/classroom': {
     GET: {
-      REQ: Partial<Pick<ClassRoom, 'id' | 'building' | 'room'>>;
+      REQ: Partial<Pick<ClassRoom,
+        | 'id'
+        | 'building'
+        | 'room'
+      >>;
       
       RES: {
         success: true;
-        data: ClassRoom;
+        data: Pick<ClassRoom,
+          | 'id'
+          | 'building'
+          | 'room'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -459,8 +572,12 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/comment': {
     GET: {
-      REQ: Partial<Pick<Comment, 'id' | 'post'>>
-        & { page?: number; };
+      REQ: Partial<Pick<Comment,
+        | 'id'
+        | 'post'
+      >> & {
+        page?: number;
+      };
       
       RES: {
         success: true;
@@ -471,7 +588,8 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'created_at'
           | 'updated_at'
           | 'visible'
-        > & Partial<Pick<Comment, 'author'>>;
+          | 'author'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -483,11 +601,21 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         | 'post'
         | 'content'
         | 'visible'
-      >;
+      > & {
+        profile: EntityID<'user_profile'>;
+      };
       
       RES: {
         success: true;
-        data: Comment;
+        data: Pick<Comment,
+          | 'id'
+          | 'post'
+          | 'content'
+          | 'author'
+          | 'visible'
+          | 'created_at'
+          | 'updated_at'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -497,12 +625,15 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     PATCH: {
       REQ: {
         id: EntityID<'comment'>;
-        data: Partial<Pick<Comment, 'content' | 'visible'>>;
+        data: Partial<Pick<Comment,
+          | 'content'
+          | 'visible'
+        >>;
       };
       
       RES: {
         success: true;
-        modified: { [K in keyof Comment]?: boolean };
+        modified: BoolRecord<Partial<Comment>>;
       } | {
         success: false;
         e: ErrorString;
@@ -510,7 +641,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     DELETE: {
-      REQ: EntityID<'comment'>;
+      REQ: {
+        id: EntityID<'comment'>;
+      };
       
       RES: {
         success: true;
@@ -528,7 +661,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         | 'board'
         | 'title'
         | 'content'
-      >> & { page?: number; };
+      >> & {
+        page?: number;
+      };
       
       RES: {
         success: true;
@@ -542,7 +677,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'created_at'
           | 'updated_at'
           | 'visible'
-        > & Partial<Pick<Post, 'author'>>;
+        > & Partial<Pick<Post,
+          | 'author'
+        >>;
       } | {
         success: false;
         e: ErrorString;
@@ -559,7 +696,18 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        data: Post;
+        data: Pick<Post,
+          | 'id'
+          | 'board'
+          | 'title'
+          | 'content'
+          | 'visible'
+          | 'author'
+          | 'comment_count'
+          | 'created_at'
+          | 'updated_at'
+          | 'view_count'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -578,7 +726,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        modified: { [K in keyof Post]?: boolean };
+        modified: BoolRecord<Partial<Post>>;
       } | {
         success: false;
         e: ErrorString;
@@ -586,7 +734,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     DELETE: {
-      REQ: EntityID<'post'>;
+      REQ: {
+        id: EntityID<'post'>;
+      };
       
       RES: {
         success: true;
@@ -599,11 +749,19 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/board': {
     GET: {
-      REQ: Partial<Pick<Board, 'id' | 'name'>>;
+      REQ: Partial<Pick<Board,
+        | 'id'
+        | 'name'
+      >>;
       
       RES: {
         success: true;
-        data: Board;
+        data: Pick<Board,
+          | 'id'
+          | 'description'
+          | 'name'
+          | 'post_count'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -613,11 +771,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/timetable': {
     GET: {
-      REQ: Partial<Pick<TimeTable, 'id' | 'user'>>;
+      REQ: Partial<Pick<TimeTable,
+        | 'id'
+        | 'user'
+      >>;
       
       RES: {
         success: true;
-        data: TimeTable
+        data: Pick<TimeTable,
+          | 'id'
+          | 'days'
+          | 'name'
+          | 'selected'
+          | 'user'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -633,7 +800,13 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        data: TimeTable;
+        data: Pick<TimeTable,
+          | 'id'
+          | 'days'
+          | 'name'
+          | 'selected'
+          | 'user'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -648,7 +821,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        modified: { [K in keyof TimeTable]?: boolean };
+        modified: BoolRecord<Partial<TimeTable>>;
       } | {
         success: false;
         e: ErrorString;
@@ -656,7 +829,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     DELETE: {
-      REQ: EntityID<'time_table'>;
+      REQ: {
+        id: EntityID<'time_table'>;
+      };
       
       RES: {
         success: true;
@@ -669,11 +844,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/graduationprogress': {
     GET: {
-      REQ: Partial<Pick<GraduationProgress, 'id' | 'user'>>;
+      REQ: Partial<Pick<GraduationProgress,
+        | 'id'
+        | 'user'
+      >>;
       
       RES: {
         success: true;
-        data: GraduationProgress;
+        data: Pick<GraduationProgress,
+          | 'id'
+          | 'color'
+          | 'details'
+          | 'user'
+          | 'value'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -683,13 +867,16 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     PATCH: {
       REQ: {
         id: EntityID<'graduation_progress'>;
-        data: Partial<Pick<GraduationProgress, 'color'>>
-          & { details?: { [K in CourseType]?: { color?: RGB; } } };
+        data: Partial<Pick<GraduationProgress,
+          | 'color'
+        >> & {
+          details?: { [K in CourseType]?: { color?: RGB; } }
+        };
       };
       
       RES: {
         success: true;
-        modified: { [K in keyof GraduationProgress]?: boolean };
+        modified: BoolRecord<Partial<GraduationProgress>>;
       } | {
         success: false;
         e: ErrorString;
@@ -703,7 +890,13 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       
       RES: {
         success: true;
-        data: Session;
+        data: Pick<Session,
+          | 'id'
+          | 'data'
+          | 'data_type'
+          | 'expired'
+          | 'expires_at'
+        >;
       } | {
         success: false;
         e: ErrorString;
@@ -713,12 +906,15 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     PATCH: {
       REQ: {
         id: EntityID<'session'>;
-        data: Partial<Pick<Session, 'expired' | 'expires_at'>>;
+        data: Partial<Pick<Session,
+          | 'expired'
+          | 'expires_at'
+        >>;
       }
       
       RES: {
         success: true;
-        modified: { [K in keyof Session]?: boolean };
+        modified: BoolRecord<Partial<Session>>;
       } | {
         success: false;
         e: ErrorString;
@@ -726,7 +922,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
     
     DELETE: {
-      REQ: EntityID<'session'>;
+      REQ: {
+        id: EntityID<'session'>;
+      };
       
       RES: {
         success: true;
@@ -752,12 +950,10 @@ export type Scheme<
 export type RouteFunction<
   T extends Path,
   U extends MethodOf<T>,
-  V = undefined,
+  V extends any[] = [],
   W = {}
 > =
-  V extends undefined? (data: Scheme<T, U, 'REQ'>) => Scheme<T, U, 'RES'> & W:
-  V extends any[]? (data: Scheme<T, U, 'REQ'>, ...args: V) => Scheme<T, U, 'RES'> & W:
-  (data: Scheme<T, U, 'REQ'>, arg: V) => Scheme<T, U, 'RES'> & W;
+  (data: RemovedID<Scheme<T, U, 'REQ'>>, ...args: V) => Scheme<T, U, 'RES'> & W;
 
 export type TypeGuardObject<T, E = never> =
   // T extends string | number | boolean | bigint | symbol | null | undefined? TypeGuarder<T, E>:

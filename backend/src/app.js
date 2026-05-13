@@ -287,7 +287,9 @@ export function CreateAppManager(context, rcon) {
                     )
                 })
             }),
-            DELETE: G.id
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         },
         '/api/data/professor': {
             GET: gObjectGuarder({
@@ -386,7 +388,8 @@ export function CreateAppManager(context, rcon) {
             POST: gObjectGuarder({
                 post: G.id,
                 content: G.s,
-                visible: G.b
+                visible: G.b,
+                profile: G.id
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
@@ -395,7 +398,9 @@ export function CreateAppManager(context, rcon) {
                     visible: G.b
                 })
             }),
-            DELETE: G.id
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         },
         '/api/data/post': {
             GET: gObjectGuarder({
@@ -418,7 +423,9 @@ export function CreateAppManager(context, rcon) {
                     visible: optGuarder(G.b)
                 })
             }),
-            DELETE: G.id
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         },
         '/api/data/board': {
             GET: gObjectGuarder({
@@ -444,7 +451,9 @@ export function CreateAppManager(context, rcon) {
                     days: daysg
                 })
             }),
-            DELETE: G.id
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         }))(((dayg) => gObjectGuarder({
             sun: optGuarder(dayg),
             mon: optGuarder(dayg),
@@ -505,7 +514,9 @@ export function CreateAppManager(context, rcon) {
                     expires_at: optGuarder(G.n)
                 })
             }),
-            DELETE: G.id
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         }
     };
     
