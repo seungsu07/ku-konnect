@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authApi } from '../api/auth';
 import styles from './Signup.module.css';
 
 function Signup() {
@@ -12,17 +13,103 @@ function Signup() {
     const [major, setMajor] = useState('');
     const [email, setEmail] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
+    const [name, setName] = useState('');
     const [userid, setUserid] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
+    const [mailToken, setMailToken] = useState<string | null>(null);
+    const [isEmailSent, setIsEmailSent] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const nextStep = () => setStep((prev) => prev + 1);
     const prevStep = () => setStep((prev) => prev - 1);
 
-    const handleSignup = (e: React.FormEvent) => {
+    const handleSendCode = async () => {
+        if (!email) return alert('이메일을 입력해주세요.');
+        setIsLoading(true);
+        try {
+            const res = await authApi.sendMailCode(email);
+            if (res.success) {
+                setIsEmailSent(true);
+                alert('인증코드가 발송되었습니다.');
+            } else {
+                alert(`발송 실패: ${res.e}`);
+            }
+        } catch (error) {
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleVerifyCode = async () => {
+        if (!verificationCode) return alert('인증코드를 입력해주세요.');
+        setIsLoading(true);
+        try {
+            const res = await authApi.verifyMailCode(email, verificationCode);
+            if (res.success) {
+                setIsEmailVerified(true);
+                setMailToken(res.token);
+                alert('이메일 인증이 완료되었습니다.');
+            } else {
+                alert(`인증 실패: ${res.e}`);
+            }
+        } catch (error) {
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Signup complete", { campus, studentId, college, major, email, userid });
-        navigate('/login');
+        if (password !== passwordConfirm) return alert('비밀번호가 일치하지 않습니다.');
+        if (!mailToken) return alert('이메일 인증이 필요합니다.');
+
+        // ID mapping for backend UUID requirements
+        const campusMap: Record<string, string> = {
+            'seoul': '646566e0-d5b9-437e-95db-45c7d71a5783',
+            'sejong': 'e730f6f3-c8aa-44c0-8469-9674765b6b44'
+        };
+
+        const collegeMap: Record<string, string> = {
+            '정보대학': '35f63daa-0447-48d1-a66a-d21c796bb816'
+        };
+
+        const majorMap: Record<string, string> = {
+            '컴퓨터학과': 'ce4ed2e7-0454-4694-bc76-63817dd2a9c9',
+            '데이터과학과': '3dc282ed-cb8d-44e6-96ae-e420901400db',
+            '인공지능학과': '81f3db42-e0da-4dd4-9d94-8dab8fc700ec'
+        };
+
+        setIsLoading(true);
+        try {
+            const res = await authApi.signup({
+                campus: campus as any,
+                college: (collegeMap[college] || college) as any,
+                department: (majorMap[major] || major) as any,
+                student_id: studentId,
+                name,
+                login_id: userid,
+                password,
+                univ_mail: {
+                    address: email,
+                    token: mailToken as any
+                }
+            });
+
+            if (res.success) {
+                alert('회원가입이 완료되었습니다!');
+                navigate('/login');
+            } else {
+                alert(`회원가입 실패: ${res.e}`);
+            }
+        } catch (error) {
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const collegeData = {
@@ -46,15 +133,15 @@ function Signup() {
                         <div className={styles['campus-selection']}>
                             <button 
                                 type="button"
-                                className={`${styles['campus-btn']} ${campus === 'seoul' ? styles.selected : ''}`}
-                                onClick={() => setCampus('seoul')}
+                                className={`${styles['campus-btn']} ${campus === '646566e0-d5b9-437e-95db-45c7d71a5783' ? styles.selected : ''}`}
+                                onClick={() => setCampus('646566e0-d5b9-437e-95db-45c7d71a5783')}
                             >
                                 서울캠퍼스
                             </button>
                             <button 
                                 type="button"
-                                className={`${styles['campus-btn']} ${campus === 'sejong' ? styles.selected : ''}`}
-                                onClick={() => setCampus('sejong')}
+                                className={`${styles['campus-btn']} ${campus === 'e730f6f3-c8aa-44c0-8469-9674765b6b44' ? styles.selected : ''}`}
+                                onClick={() => setCampus('e730f6f3-c8aa-44c0-8469-9674765b6b44')}
                             >
                                 세종캠퍼스
                             </button>
@@ -76,6 +163,17 @@ function Signup() {
                         <h2 className={styles['signup-title']}>학적 정보</h2>
                         <p className={styles['signup-subtitle']}>정확한 정보를 입력해 주세요</p>
                         
+                        <div className={styles['form-group']}>
+                            <label className={styles['form-label']}>이름</label>
+                            <input 
+                                type="text" 
+                                className={styles['form-input']} 
+                                placeholder="실명을 입력해 주세요" 
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+
                         <div className={styles['form-group']}>
                             <label className={styles['form-label']}>학번</label>
                             <input 
@@ -124,7 +222,7 @@ function Signup() {
                             type="button"
                             className={`${styles.btn} ${styles['btn-primary']} ${styles['next-btn']}`} 
                             onClick={nextStep}
-                            disabled={!studentId || !college || !major}
+                            disabled={!name || !studentId || !college || !major}
                         >
                             다음
                         </button>
@@ -145,27 +243,46 @@ function Signup() {
                                     placeholder="example@korea.ac.kr"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    disabled={isEmailVerified}
                                 />
-                                <button type="button" className={styles['btn-outline']}>인증번호 발송</button>
+                                <button 
+                                    type="button" 
+                                    className={styles['btn-outline']}
+                                    onClick={handleSendCode}
+                                    disabled={isLoading || isEmailVerified}
+                                >
+                                    {isEmailSent ? '재발송' : '인증번호 발송'}
+                                </button>
                             </div>
                         </div>
 
                         <div className={styles['form-group']}>
                             <label className={styles['form-label']}>인증번호</label>
-                            <input 
-                                type="text" 
-                                className={styles['form-input']} 
-                                placeholder="인증번호 6자리 입력" 
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value)}
-                            />
+                            <div className={styles['input-with-btn']}>
+                                <input 
+                                    type="text" 
+                                    className={styles['form-input']} 
+                                    placeholder="인증번호 6자리 입력" 
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value)}
+                                    disabled={isEmailVerified}
+                                />
+                                <button 
+                                    type="button" 
+                                    className={styles['btn-outline']}
+                                    onClick={handleVerifyCode}
+                                    disabled={isLoading || isEmailVerified || !isEmailSent}
+                                >
+                                    확인
+                                </button>
+                            </div>
                         </div>
 
                         <button 
                             type="button"
                             className={`${styles.btn} ${styles['btn-primary']} ${styles['next-btn']}`} 
                             onClick={nextStep}
-                            disabled={!email || !verificationCode}
+                            disabled={!email || !verificationCode || !isEmailVerified || isLoading}
                         >
                             다음
                         </button>

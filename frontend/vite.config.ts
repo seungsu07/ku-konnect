@@ -14,6 +14,12 @@ export default defineConfig({
     allowedHosts: [
       'konnect.hydv.kr'
     ],
+    proxy: {
+      '/api': {
+        target: 'https://api.konnect.hydv.kr',
+        changeOrigin: true,
+      }
+    },
     watch: {
       usePolling: true
     }
