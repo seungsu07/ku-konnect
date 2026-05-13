@@ -18,7 +18,7 @@ function Login() {
             const res = await authApi.login({ id, password });
             if (res.success) {
                 alert('로그인 성공!');
-                // Store token/session if needed (assuming cookies or handled by backend)
+                localStorage.setItem('login_id', id);
                 navigate('/');
             } else {
                 alert(`로그인 실패: ${res.e}`);
