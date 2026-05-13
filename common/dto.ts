@@ -20,7 +20,7 @@ import {
   type CourseType,
   type RGB,
   type BoolRecord,
-  RemovedID
+  type RemovedID
 } from './models.ts';
 
 export type ErrorString =
