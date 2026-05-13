@@ -390,7 +390,6 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'mail_not_verified'
                 };
-                mailMgr.expire(token);
                 const campus = dbm.findEntity({
                     id: campus_id,
                     type: 'campus'
@@ -449,6 +448,7 @@ export function CreateDatabaseManager(context, rcon) {
                     color: [255, 255, 255],
                     details: []
                 };
+                mailMgr.expire(token);
                 const gp = dbm.createEntity(gparam);
                 // TODO
                 return {

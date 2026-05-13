@@ -197,12 +197,12 @@ export function CreateAppManager(context, rcon) {
         '/api/auth/verify/mail': {
             GET: gObjectGuarder({
                 address: (t) =>
-                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
                     new ParseError('This field needed to be email address')
             }),
             POST: gObjectGuarder({
                 address:  (t) =>
-                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
                     new ParseError('This field needed to be email address'),
                 code: (t) =>
                     /[0-9]{6}/.test(t)? String(t):
@@ -300,7 +300,7 @@ export function CreateAppManager(context, rcon) {
                     new ParseError('This field needed to be telephone number')
                 ),
                 mail: optGuarder((t) =>
-                    /^.+@[0-9A-Za-z]+\.[0-9A-Za-z]{2,6}$/.test(t)? String(t):
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
                     new ParseError('This field needed to be email address')
                 )
             })

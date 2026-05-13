@@ -12,13 +12,13 @@ content-type: application/json
     "password": "human",
     "univ_mail": {
         "address": "mangchya069@korea.ac.kr",
-        "token": "12345678-1234-1234-1234-123456789abc"
+        "token": "33e36d04-5720-48e2-a542-7b0e3acdd033"
     }
 }
 
 ###
 
-GET https://api.konnect.hydv.kr/api/auth/verify/mail?address=mangchya069@gmail.com
+GET https://api.konnect.hydv.kr/api/auth/verify/mail?address=mangchya069@korea.ac.kr
 
 ###
 
@@ -26,6 +26,6 @@ POST https://api.konnect.hydv.kr/api/auth/verify/mail
 content-type: application/json
 
 {
-    "address": "mangchya069@gmail.com",
-    "code": "129293"
+    "address": "mangchya069@korea.ac.kr",
+    "code": "863741"
 }
