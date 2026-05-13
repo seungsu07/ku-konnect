@@ -40,6 +40,10 @@ export type ErrorString =
   | 'building_doesnt_exist'
   | 'post_doesnt_exist'
   | 'comment_doesnt_exist'
+  | 'board_doesnt_exist'
+  | 'classroom_doesnt_exist'
+  | 'graduationprogress_doesnt_exist'
+  | 'id_exists'
   | 'unauthorized'
   | 'no_permission'
   | 'unexpected';
@@ -64,8 +68,7 @@ export type Path =
   | '/api/data/post'
   | '/api/data/board'
   | '/api/data/timetable'
-  | '/api/data/graduationprogress'
-  | '/api/data/session';
+  | '/api/data/graduationprogress';
 
 export type Method =
   | 'GET'
@@ -677,9 +680,8 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'created_at'
           | 'updated_at'
           | 'visible'
-        > & Partial<Pick<Post,
           | 'author'
-        >>;
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -692,7 +694,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         | 'title'
         | 'content'
         | 'visible'
-      >;
+      > & {
+        profile: EntityID<'user_profile'>;
+      };
       
       RES: {
         success: true;
@@ -761,7 +765,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'description'
           | 'name'
           | 'post_count'
-        >;
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -774,17 +778,20 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       REQ: Partial<Pick<TimeTable,
         | 'id'
         | 'user'
-      >>;
+      >> & {
+        page?: number;
+      };
       
       RES: {
         success: true;
         data: Pick<TimeTable,
           | 'id'
-          | 'days'
+          | 'periods'
           | 'name'
           | 'selected'
           | 'user'
-        >;
+          | 'visible'
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -795,17 +802,19 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       REQ: Pick<TimeTable,
         | 'name'
         | 'selected'
-        | 'days'
+        | 'periods'
+        | 'visible'
       >;
       
       RES: {
         success: true;
         data: Pick<TimeTable,
           | 'id'
-          | 'days'
+          | 'periods'
           | 'name'
           | 'selected'
           | 'user'
+          | 'visible'
         >;
       } | {
         success: false;
@@ -816,7 +825,12 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     PATCH: {
       REQ: {
         id: EntityID<'time_table'>;
-        data: Partial<Pick<TimeTable, 'name' | 'selected' | 'days'>>;
+        data: Partial<Pick<TimeTable,
+          | 'name'
+          | 'selected'
+          | 'periods'
+          | 'visible'
+        >>;
       };
       
       RES: {
@@ -844,10 +858,9 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/graduationprogress': {
     GET: {
-      REQ: Partial<Pick<GraduationProgress,
-        | 'id'
-        | 'user'
-      >>;
+      REQ: {
+        user: EntityID<'user'>;
+      };
       
       RES: {
         success: true;
@@ -869,65 +882,13 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         id: EntityID<'graduation_progress'>;
         data: Partial<Pick<GraduationProgress,
           | 'color'
-        >> & {
-          details?: { [K in CourseType]?: { color?: RGB; } }
-        };
+          | 'details'
+        >>;
       };
       
       RES: {
         success: true;
         modified: BoolRecord<Partial<GraduationProgress>>;
-      } | {
-        success: false;
-        e: ErrorString;
-      };
-    };
-  };
-  
-  '/api/data/session': {
-    GET: {
-      REQ: Partial<Pick<Session, 'id'>>;
-      
-      RES: {
-        success: true;
-        data: Pick<Session,
-          | 'id'
-          | 'data'
-          | 'data_type'
-          | 'expired'
-          | 'expires_at'
-        >;
-      } | {
-        success: false;
-        e: ErrorString;
-      };
-    };
-    
-    PATCH: {
-      REQ: {
-        id: EntityID<'session'>;
-        data: Partial<Pick<Session,
-          | 'expired'
-          | 'expires_at'
-        >>;
-      }
-      
-      RES: {
-        success: true;
-        modified: BoolRecord<Partial<Session>>;
-      } | {
-        success: false;
-        e: ErrorString;
-      };
-    };
-    
-    DELETE: {
-      REQ: {
-        id: EntityID<'session'>;
-      };
-      
-      RES: {
-        success: true;
       } | {
         success: false;
         e: ErrorString;

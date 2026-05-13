@@ -238,11 +238,13 @@ export interface LectureClass extends Entity<'lecture_class'> {
   /** 강의 */
   lecture: EntityID<'lecture'>;
   /** 교시 */
-  periods: TimeTableDay[];
+  periods: Period[];
 }
 
 /** 교시 */
 export interface Period {
+  /** 요일 */
+  day: Day;
   /** 교시 번호 */
   time: number;
   /** 교실 */
@@ -373,15 +375,9 @@ export interface TimeTable extends Entity<'time_table'> {
   user: EntityID<'user'>;
   /** 주 시간표 여부 */
   selected: boolean;
-  /** 일 */
-  days: {
-    [K in Day]?: TimeTableDay
-  };
-}
-
-/** 시간표 일 */
-export interface TimeTableDay {
-  day: Day;
+  /** 공개 여부 */
+  visible: boolean;
+  /** 교시 */
   periods: Period[];
 }
 
@@ -397,11 +393,10 @@ export interface GraduationProgress extends Entity<'graduation_progress'> {
   user: EntityID<'user'>;
   color: RGB;
   details: {
-    [K in CourseType]: {
-      value: Fraction;
-      color: RGB;
-    };
-  };
+    course: CourseType;
+    value: Fraction;
+    color: RGB;
+  }[];
 }
 
 export type SessionDataType =

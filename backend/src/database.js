@@ -1,5 +1,5 @@
 /**
- * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session, UserProfile, Professor, BoolRecord, Comment } from '../../common/models.js'
+ * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session, UserProfile, Professor, BoolRecord, Comment, Post, TimeTable, Period, GraduationProgress } from '../../common/models.js'
  * @import { RouteFunction, Scheme } from '../../common/dto.js'
  * @import { RunningController, MonoController } from './controller.js'
  * @import { ServerContext } from './server.js'
@@ -86,7 +86,7 @@ function mailTemplate(title, content) {
  * @typedef {(...args: Parameters<T>) => Promise<ReturnType<Awaited<T>>>} Asyncify
  */
 
-const NO_USER = '0-0-0-0-0';
+const NO_ID = '0-0-0-0-0';
 
 /** @typedef {ReturnType<typeof CreateDatabaseManager>} DatabaseManager */
 
@@ -381,6 +381,10 @@ export function CreateDatabaseManager(context, rcon) {
                         token
                     }
                 } = data;
+                if (dbm.findEntity({ type: 'user', login_id }).length) return {
+                    success: false,
+                    e: 'id_exists'
+                };
                 const mailSession = mailMgr.check(token, address);
                 if (!mailSession.valid) return {
                     success: false,
@@ -433,11 +437,22 @@ export function CreateDatabaseManager(context, rcon) {
                     mail: null,
                 };
                 const user = dbm.createEntity(param);
-                return user? {
-                    success: true
-                }: {
+                if (!user) return {
                     success: false,
                     e: 'unexpected'
+                };
+                /** @type {WithoutID<GraduationProgress>} */
+                const gparam = {
+                    type: 'graduation_progress',
+                    user: user.id,
+                    value: [0, 1],
+                    color: [255, 255, 255],
+                    details: []
+                };
+                const gp = dbm.createEntity(gparam);
+                // TODO
+                return {
+                    success: true
                 };
             },
             
@@ -1149,11 +1164,9 @@ export function CreateDatabaseManager(context, rcon) {
                     }).map(({ id }) => id): [];
                 return {
                     success: true,
-                    data: t.map(
+                    data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
                         ({ id, post, content, created_at, updated_at, visible, author }) =>
-                        visible || profiles.includes(author)?
-                            ({ id, post, content, created_at, updated_at, visible, author }):
-                            ({ id: NO_USER, post, content: '', created_at, updated_at, visible, author: NO_USER })
+                        ({ id, post, content, created_at, updated_at, visible, author })
                     )
                 };
             },
@@ -1295,9 +1308,385 @@ export function CreateDatabaseManager(context, rcon) {
                 };
             },
             
+            /**
+             * /api/data/post
+             * @method GET
+             * @type {RouteFunction<'/api/data/post', 'GET', [User]>}
+             */
+            dataPostGet(data, user) {
+                const {
+                    id,
+                    board,
+                    title,
+                    content,
+                    page
+                } = data;
+                const limit = 50;
+                const t = dbm.findEntity({
+                    type: 'post',
+                    ...removeEmpty({
+                        id,
+                        board,
+                        title,
+                        content
+                    })
+                }, {
+                    limit,
+                    offset: limit * (page?? 0)
+                });
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                return {
+                    success: true,
+                    data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
+                        ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author }) =>
+                        ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author })
+                    )
+                };
+            },
             
+            /**
+             * /api/data/post
+             * @method POST
+             * @type {RouteFunction<'/api/data/post', 'POST', [User]>}
+             */
+            dataPostPost(data, user) {
+                const {
+                    board,
+                    title,
+                    content,
+                    visible,
+                    profile
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user.id
+                ) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const b = dbm.getByID(board);
+                if (b?.type != 'board') return {
+                    success: false,
+                    e: 'board_doesnt_exist'
+                };
+                const now = Temporal.Now.instant().epochMilliseconds;
+                /** @type {WithoutID<Post>} */
+                const param = {
+                    type: 'post',
+                    board: b.id,
+                    author: pf.id,
+                    title,
+                    content,
+                    view_count: 0,
+                    comment_count: 0,
+                    created_at: now,
+                    updated_at: now,
+                    visible
+                };
+                const t = dbm.createEntity(param);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        board: t.board,
+                        title: t.title,
+                        content: t.content,
+                        visible: t.visible,
+                        author: t.author,
+                        comment_count: t.comment_count,
+                        created_at: t.created_at,
+                        updated_at: t.updated_at,
+                        view_count: t.view_count
+                    }
+                };
+            },
             
-            //TODO
+            /**
+             * /api/data/post
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/post', 'PATCH', [User]>}
+             */
+            dataPostPatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        title,
+                        content,
+                        visible
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (t?.type != 'post') return {
+                    success: false,
+                    e: 'post_doesnt_exist'
+                };
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (!profiles.includes(t.author)) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const modifier = removeEmpty({
+                    title,
+                    content,
+                    visible
+                });
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/data/post
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/post', 'DELETE', [User]>}
+             */
+            dataPostDelete(data, user) {
+                const { id } = data;
+                const t = dbm.getByID(id);
+                if (t?.type != 'post') return {
+                    success: false,
+                    e: 'post_doesnt_exist'
+                };
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (!profiles.includes(t.author)) return {
+                    success: false,
+                    e: 'post_doesnt_exist'
+                };
+                const res = dbm.deleteEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/data/board
+             * @method GET
+             * @type {RouteFunction<'/api/data/board', 'GET'>}
+             */
+            dataBoardGet(data) {
+                const {
+                    id,
+                    name
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'board',
+                    ...removeEmpty({
+                        id,
+                        name
+                    })
+                });
+                return {
+                    success: true,
+                    data: t.map(
+                        ({ id, description, name, post_count }) =>
+                        ({ id, description, name, post_count })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/timetable
+             * @method GET
+             * @type {RouteFunction<'/api/data/timetable', 'GET', [User]>}
+             */
+            dataTimeTableGet(data, user) {
+                const {
+                    id,
+                    user: u,
+                    page
+                } = data;
+                const limit = 50;
+                const t = dbm.findEntity({
+                    type: 'time_table',
+                    ...removeEmpty({
+                        id,
+                        user: u
+                    })
+                }, {
+                    limit,
+                    offset: limit * (page?? 0)
+                });
+                return {
+                    success: true,
+                    data: t.filter(({ visible, user: u }) => visible || u == user.id).map(
+                        ({ id, periods, name, selected, user: u, visible }) =>
+                        ({ id, periods, name, selected, user: u, visible })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/timetable
+             * @method POST
+             * @type {RouteFunction<'/api/data/timetable', 'POST', [User]>}
+             */
+            dataTimeTablePost(data, user) {
+                const {
+                    name,
+                    selected,
+                    periods,
+                    visible
+                } = data;
+                if (!periods.every(({ room }) =>
+                    dbm.getByID(room)?.type == 'class_room'
+                )) return {
+                    success: false,
+                    e: 'classroom_doesnt_exist'
+                };
+                /** @type {WithoutID<TimeTable>} */
+                const param = {
+                    type: 'time_table',
+                    name,
+                    user: user.id,
+                    selected,
+                    visible,
+                    /** @type {any} */
+                    periods
+                };
+                const t = dbm.createEntity(param);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        periods: t.periods,
+                        name: t.name,
+                        selected: t.selected,
+                        user: t.user,
+                        visible: t.visible
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/timetable
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/timetable', 'PATCH', [User]>}
+             */
+            dataTimeTablePatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        name,
+                        selected,
+                        periods,
+                        visible
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'time_table' ||
+                    t.user != user.id
+                ) return {
+                    success: false,
+                    e: 'timetable_doesnt_exist'
+                };
+                const modifier = removeEmpty({
+                    name,
+                    selected,
+                    visible,
+                    periods
+                });
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/data/timetable
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/timetable', 'DELETE', [User]>}
+             */
+            dataTimeTableDelete(data, user) {
+                const { id } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'time_table' ||
+                    t.user != user.id
+                ) return {
+                    success: false,
+                    e: 'timetable_doesnt_exist'
+                };
+                const res = dbm.deleteEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/data/graduationprogress
+             * @method GET
+             * @type {RouteFunction<'/api/data/graduationprogress', 'GET', [User]>}
+             */
+            dataGraduationProgressGet(data, user) {
+                const {
+                    user: u
+                } = data;
+                if (u != user.id) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const t = dbm.findEntity({
+                    type: 'graduation_progress',
+                    user: u
+                }).at(0);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        color: t.color,
+                        details: t.details,
+                        user: t.user,
+                        value: t.value
+                    }
+                };
+            }
         },
 
         /**

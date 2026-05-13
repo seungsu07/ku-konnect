@@ -3,7 +3,7 @@
  * @import { RunningController } from './controller'
  * @import { ServerContext } from './server'
  * @import { Path, Scheme, TypeGuarder, TypeGuardObject, MethodOf, ErrorString, PickIndices } from '../../common/dto'
- * @import { CourseType, Day, Semester, TimeTableDay, User } from '../../common/models'
+ * @import { CourseType, Day, Semester, Period, User } from '../../common/models'
  */
 
 import express from 'express';
@@ -413,7 +413,8 @@ export function CreateAppManager(context, rcon) {
                 board: G.id,
                 title: G.s,
                 content: G.s,
-                visible: G.b
+                visible: G.b,
+                profile: G.id
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
@@ -433,89 +434,59 @@ export function CreateAppManager(context, rcon) {
                 name: optGuarder(G.s)
             })
         },
-        '/api/data/timetable': ((daysg) => ({
+        '/api/data/timetable': {
             GET: gObjectGuarder({
                 id: optGuarder(G.id),
-                user: optGuarder(G.id)
+                user: optGuarder(G.id),
+                page: optGuarder(G.n)
             }),
             POST: gObjectGuarder({
                 name: G.s,
                 selected: G.b,
-                days: daysg
+                periods: gArrayGuarder(gObjectGuarder({
+                    day: (t) =>
+                        /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)? /** @type {Day} */ (String(t)):
+                        new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
+                    time: G.n,
+                    room: G.id
+                })),
+                visible: G.b
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
                 data: gObjectGuarder({
                     name: optGuarder(G.s),
                     selected: optGuarder(G.b),
-                    days: daysg
+                    periods: anyGuarder([G.u, gArrayGuarder(gObjectGuarder({
+                        day: (t) =>
+                            /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)? /** @type {Day} */ (String(t)):
+                            new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
+                        time: G.n,
+                        room: G.id
+                    }))]),
+                    visible: optGuarder(G.b)
                 })
             }),
             DELETE: gObjectGuarder({
                 id: G.id
             })
-        }))(((dayg) => gObjectGuarder({
-            sun: optGuarder(dayg),
-            mon: optGuarder(dayg),
-            tue: optGuarder(dayg),
-            wed: optGuarder(dayg),
-            thu: optGuarder(dayg),
-            fri: optGuarder(dayg),
-            sat: optGuarder(dayg),
-        }))(gObjectGuarder({
-                day: (t) =>
-                    /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)?
-                        /** @type {Day} */ (String(t)):
-                        new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
-                periods: gArrayGuarder(gObjectGuarder({
-                    time: G.n,
-                    room: G.id
-                }))
-            })
-        )),
+        },
         '/api/data/graduationprogress': {
             GET: gObjectGuarder({
-                id: optGuarder(G.id),
-                user: optGuarder(G.id)
+                user: G.id
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
                 data: gObjectGuarder({
                     color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])]),
-                    details: anyGuarder([G.u, gObjectGuarder({
-                        major: anyGuarder([G.u, gObjectGuarder(({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        }))]),
-                        major_required: anyGuarder([G.u, gObjectGuarder({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        })]),
-                        minor: anyGuarder([G.u, gObjectGuarder({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        })]),
-                        minor_required: anyGuarder([G.u, gObjectGuarder({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        })]),
-                        inter: anyGuarder([G.u, gObjectGuarder({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        })]),
-                        inter_required: anyGuarder([G.u, gObjectGuarder({
-                            color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])])
-                        })])
-                    })])
+                    details: anyGuarder([G.u, gArrayGuarder(gObjectGuarder({
+                        course: (t) =>
+                            /^(?:major|general|inter)(?:_required)?$/.test(t)? /** @type {any} */ (String(t)):
+                            new ParseError('This field needed to be course type'),
+                        value: gObjectGuarder([G.n, G.n]),
+                        color: gObjectGuarder([G.n, G.n, G.n])
+                    }))])
                 })
-            })
-        },
-        '/api/data/session': {
-            GET: gObjectGuarder({ id: optGuarder(G.id) }),
-            PATCH: gObjectGuarder({
-                id: G.id,
-                data: gObjectGuarder({
-                    expired: optGuarder(G.b),
-                    expires_at: optGuarder(G.n)
-                })
-            }),
-            DELETE: gObjectGuarder({
-                id: G.id
             })
         }
     };
