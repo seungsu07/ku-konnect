@@ -11,12 +11,12 @@ import PostDetail from './pages/PostDetail';
 import Home from './pages/Home';
 
 import Kommunity from './pages/Kommunity';
-const Study = () => <h2>Study Page</h2>;
+import Study from './pages/Study';
 
 const AppContent = () => {
   const location = useLocation();
   const showNavbar = location.pathname !== '/login' && location.pathname !== '/signup';
-  const showFooter = showNavbar && location.pathname !== '/kommunity';
+  const showFooter = showNavbar && location.pathname !== '/kommunity' && location.pathname !== '/study';
 
   return (
     <>
