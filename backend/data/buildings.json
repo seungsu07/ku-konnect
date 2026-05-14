@@ -1,0 +1,20 @@
+[
+    {
+        "id": "df601e24-b9de-45a8-89c4-1cf381f6ffbf",
+        "type": "building",
+        "name": "정보통신관",
+        "location": [0, 0]
+    },
+    {
+        "id": "13c489a8-7be7-4496-b1f7-c6d17c4c1afd",
+        "type": "building",
+        "name": "정운오IT교양관",
+        "location": [0, 0]
+    },
+    {
+        "id": "f7ae6ea6-ae22-4c68-be6b-10aae4970558",
+        "type": "building",
+        "name": "애기능생활관",
+        "location": [0, 0]
+    }
+]

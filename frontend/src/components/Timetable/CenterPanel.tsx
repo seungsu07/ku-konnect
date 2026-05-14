@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, AlertTriangle, ChevronDown, Plus } from 'lucide-react';
 import styles from './CenterPanel.module.css';
-import type { CourseType, Day, EntityID, TimeTable } from '../../../../common/models';
+import type { TimeTable } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { getCourse, getProfessor, getBuilding, getClassRoom, getLecture, getLectureClass } from '../../api/data';
 
 const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
 interface CenterPanelProps {
-  timeTable: TimeTable;
+  timeTable: TimeTable & { renderableClasses?: any[] };
   mode?: 'view' | 'create';
   
   // For Create Mode
@@ -16,6 +15,7 @@ interface CenterPanelProps {
   totalAlternatives?: number;
   onPrev?: () => void;
   onNext?: () => void;
+  onSave?: (timeTable: TimeTable) => void;
   
   // For View Mode
   savedTimetables?: TimeTable[];
@@ -36,11 +36,14 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
   onNext,
   savedTimetables = [],
   onSelectTimetable,
-  onCreateNew
+  onCreateNew,
+  onSave
 }) => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const renderableClasses = timeTable.renderableClasses || [];
 
   useEffect(() => {
     // Update current time every minute
@@ -130,6 +133,13 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
               >
                 <ChevronRight size={20} />
               </button>
+              <button 
+                className={styles.saveBtn} 
+                onClick={() => onSave?.(timeTable)}
+                style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '6px', background: '#ef4444', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '14px', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)' }}
+              >
+                💾 저장하기
+              </button>
             </div>
           </>
         )}
@@ -201,75 +211,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
           })()}
 
           {/* 시간표 카드 */}
-          {(() => {
-            const grouped = new Map<EntityID<'lecture_class'>, {
-              lecture: EntityID<'lecture'>;
-              courseName: string;
-              courseCode: string;
-              courseType: CourseType;
-              credit: number;
-              profName: string;
-              day: Day;
-              start: number;
-              end: number;
-              location: string;
-              warning: boolean;
-            }[]>();
-            
-            Object.values(timeTable.classes).forEach(classId => {
-              const lectureClass = getLectureClass({ id: classId });
-              if (!lectureClass) return;
-              const lecture = getLecture({ id: lectureClass.lecture });
-              if (!lecture) return;
-              const duration = lectureClass ? lecture.hours / lectureClass.periods.length : 1.5;
-
-              const course = getCourse({ id: lecture.course });
-              const professor = getProfessor({ id: lecture.professor });
-              
-              lectureClass.periods.forEach(period => {
-                const room = getClassRoom({ id: period.room });
-                const building = room ? getBuilding({ id: room.building }) : undefined;
-
-                const startTime = period.time;
-                const endTime = period.time + duration;
-
-                grouped.set(lectureClass.id, (grouped.get(lectureClass.id) ?? []).concat({
-                  lecture: lecture.id,
-                  courseName: course?.name || '알 수 없음',
-                  courseCode: course?.code || '----',
-                  courseType: course?.course_type || 'major',
-                  credit: lecture.credit,
-                  profName: professor?.name || '미지정',
-                  day: period.day,
-                  start: startTime,
-                  end: endTime,
-                  location: `${building?.name || ''} ${room?.room || ''}`.trim(),
-                  warning: course?.name === '인공지능'
-                }));
-              });
-            });
-
-            // Group and Merge contiguous periods
-            const renderableClasses: any[] = [];
-
-            grouped.forEach(list => {
-              list.sort((a, b) => a.start - b.start);
-              let current = list[0];
-              for (let i = 1; i < list.length; i++) {
-                const next = list[i];
-                // If next class starts within 0.3 hours (18 minutes) of current class ending, merge them
-                // This accounts for standard 15-minute breaks between periods
-                if (next.start - current.end <= 0.3) {
-                  current.end = next.end;
-                } else {
-                  renderableClasses.push(current);
-                  current = next;
-                }
-              }
-              renderableClasses.push(current);
-            });
-
-            return renderableClasses.map(cls => {
+          {renderableClasses.map(cls => {
               const warningHoverText = cls.warning 
                 ? `이전 수업 위치에서 ${cls.location}까지 도보 약 15분이 예상되어 지각 위험이 있습니다.` 
                 : '';
@@ -338,8 +280,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
                   )}
                 </div>
               );
-            });
-          })()}
+          })}
         </div>
       </div>
     </div>

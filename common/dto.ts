@@ -367,10 +367,11 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       RES: {
         success: true;
         data: Pick<Professor,
+          | 'id'
           | 'name'
           | 'tel'
           | 'mail'
-        >;
+        >[];
       } | {
         success: false;
         e: ErrorString;

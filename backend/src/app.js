@@ -581,6 +581,7 @@ export function CreateAppManager(context, rcon) {
         const data = req.body;
         const raw = context.databaseManager.API.authLogin(data);
         if (raw.success) {
+            /** @type {any} */
             const result = {
                 success: raw.success,
                 expires_at: raw.expires_at
@@ -591,11 +592,10 @@ export function CreateAppManager(context, rcon) {
             });
             res.status(200).json(result);
         } else {
-            const result = {
+            res.status(400).json(/** @type {any} */ ({
                 success: raw.success,
-                e: raw.e
-            }
-            res.status(400).json(result);
+                e: /** @type {any} */ (raw).e
+            }));
         }
     }));
     
@@ -836,6 +836,10 @@ export function CreateAppManager(context, rcon) {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
         const result = context.databaseManager.API.dataTimeTableGet(data, user);
         res.status(result.success? 200: 400).json(result);
     }));

@@ -1,0 +1,72 @@
+[
+    {
+        "id": "2b6accfd-5ff6-4370-9b7f-324e6f7efe4e",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "박성빈",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "e0722819-275e-4465-a2b3-255ba4efe8a4",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "유주연",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "91105226-3fb2-46f9-bfea-0348a9d86e5b",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "정원기",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "428cf535-9a0f-452b-aae6-16e19b8255a3",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "김동선",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "58af28f5-304c-46a2-aa1c-c83cebc0727f",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "전유석",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "9a4bd765-7d7c-4f6e-a348-11325781b19a",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "유용재",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    },
+    {
+        "id": "4a47ca8e-0a52-4af2-a792-0490e48fffbb",
+        "type": "professor",
+        "login_id": "kim_prof",
+        "login_hash": "a1b2c3d4...",
+        "login_salt": "random_salt",
+        "name": "이도길",
+        "tel": "02-1234-5678",
+        "mail": "kim@korea.ac.kr"
+    }
+]

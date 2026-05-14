@@ -1,13 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Sparkles, ShoppingCart, Plus, X, ChevronRight, Zap, Home, GraduationCap, CalendarDays, Maximize2, Map as MapIcon, Coffee, HelpCircle } from 'lucide-react';
+import { GripVertical, Sparkles, ShoppingCart, X, ChevronRight, Zap, Home, GraduationCap, CalendarDays, Maximize2, Map as MapIcon, Coffee, HelpCircle } from 'lucide-react';
 import styles from './LeftPanel.module.css';
-import type { Lecture, Preferences } from '../../../../common/models';
+import type { Lecture, Preferences, Course } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { getCourse } from '../../api/data';
+import { getCourse, getCourses } from '../../api/data';
+import { Search } from 'lucide-react';
 
 const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
+
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', margin: '20px', fontFamily: 'monospace' }}>
+          <h3>💥 LeftPanel 렌더링 에러 발생</h3>
+          <p><strong>{String(this.state.error)}</strong></p>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '11px', marginTop: '10px' }}>{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 //파스텔 색깔
 
@@ -55,11 +81,10 @@ const TUTORIAL_STEPS = [
   }
 ];
 
-const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, banned: Record<string, boolean>) => void }> = ({ onGenerate }) => {
+const LeftPanelInner: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, banned: Record<string, boolean>) => void }> = ({ onGenerate }) => {
   const [subjects, setSubjects] = useState<Lecture[]>([]);
   const [bannedCells, setBannedCells] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [nextId, setNextId] = useState<number>(1);
 
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -90,7 +115,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
       const el = document.querySelector(`.${styles.highlighted}`) as HTMLElement;
       if (el && svgMaskHoleRef.current && glowOutlineRef.current && popupRef.current) {
         const r = el.getBoundingClientRect();
-        
+
         svgMaskHoleRef.current.setAttribute('x', String(r.left));
         svgMaskHoleRef.current.setAttribute('y', String(r.top));
         svgMaskHoleRef.current.setAttribute('width', String(Math.max(0, r.width)));
@@ -126,7 +151,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
       const initialLoop = () => {
         updateDOM();
         loopCount++;
-        if (loopCount < 45) { 
+        if (loopCount < 45) {
           rafId = requestAnimationFrame(initialLoop);
         }
       };
@@ -134,8 +159,8 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
     }
 
     window.addEventListener('resize', scheduleUpdate);
-    window.addEventListener('scroll', scheduleUpdate, true); 
-    
+    window.addEventListener('scroll', scheduleUpdate, true);
+
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', scheduleUpdate);
@@ -149,13 +174,83 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
-  const handleAddSubject = () => {
-    const newId = `lect-${nextId + 100}`;
-    setNextId(n => n + 1);
-    const mockLecture: Lecture = {
-      id: newId as any, type: 'lecture', course: 'UNKNOWN' as any, ay: 2026, sem: 'first', professor: 'prof-unknown' as any, hours: 3, lab_hours: 0, credit: 3
+  // 과목 검색 및 캐시 상태
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Course[]>([]);
+  const [, setIsSearching] = useState(false);
+  const [courseMap, setCourseMap] = useState<Record<string, Course>>({});
+
+  // 과목 정보 비동기 로드
+  useEffect(() => {
+    const fetchMissingCourses = async () => {
+      const missingIds = subjects
+        .map(s => s.course as unknown as string)
+        .filter(id => id !== 'UNKNOWN' && !courseMap[id]);
+
+      if (missingIds.length === 0) return;
+
+      const newEntries: Record<string, Course> = { ...courseMap };
+      await Promise.all(
+        missingIds.map(async (id) => {
+          try {
+            const course = await getCourse({ id: id as any });
+            if (course) {
+              newEntries[id] = course;
+            }
+          } catch (e) {
+            console.error('Failed to fetch course:', id, e);
+          }
+        })
+      );
+      setCourseMap(newEntries);
     };
-    setSubjects([...subjects, mockLecture]);
+
+    fetchMissingCourses();
+  }, [subjects]);
+
+  // 검색 로직
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const courses = await getCourses({ name: searchQuery });
+        if (courses && Array.isArray(courses)) {
+          setSearchResults(courses);
+        }
+      } catch (e) {
+        console.error('Search failed:', e);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSelectCourse = (course: Course) => {
+    const newId = `lect-${Date.now()}`;
+    const newLecture: Lecture = {
+      id: newId as any,
+      type: 'lecture',
+      course: course.id,
+      ay: 2026,
+      sem: 'first',
+      professor: 'prof-unknown' as any,
+      hours: 3,
+      lab_hours: 0,
+      credit: 3
+    };
+    
+    setCourseMap(prev => ({ ...prev, [course.id]: course }));
+    setSubjects(prev => [...prev, newLecture]);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   const handleDeleteSubject = (id: string) => {
@@ -268,11 +363,37 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
           </button>
         </div>
         <div className={styles.modalBody}>
+          {/* 과목 검색 영역 */}
+          <div className={styles.searchContainer}>
+            <div className={styles.searchInputWrapper}>
+              <Search size={18} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="과목명 또는 과목코드로 검색..."
+                className={styles.searchInput}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            {searchResults.length > 0 && (
+              <div className={styles.searchResultsList}>
+                {searchResults.map(course => (
+                  <div 
+                    key={course.id} 
+                    className={styles.searchResultItem}
+                    onClick={() => handleSelectCourse(course)}
+                  >
+                    <span className={styles.searchResultName}>{course.name}</span>
+                    <span className={styles.searchResultMeta}>{course.code} · {course.course_type}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className={styles.modalSectionHeader}>
             <span className={styles.modalSectionTitle}>우선순위 순서 (드래그로 변경)</span>
-            <button className={styles.addBtn} onClick={handleAddSubject}>
-              <Plus size={14} /> 과목 추가
-            </button>
           </div>
           <div className={styles.dndWithNumbers}>
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -284,8 +405,8 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
                     ref={provided.innerRef}
                   >
                     {subjects.map((item, index) => {
-                      const course = getCourse({ id: item.course });
-                      const color = getColor(course?.code || 'unknown');
+                      const course = courseMap[item.course as unknown as string];
+                      const color = getColor(course?.code || item.id);
                       return (
                         <Draggable key={item.id} draggableId={`modal-${item.id}`} index={index}>
                           {(provided, snapshot) => (
@@ -304,7 +425,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
                                 className={styles.modalPill}
                                 style={{ background: color.bg, color: color.text }}
                               >
-                                {course?.name || '새로운 과목'}
+                                {course?.name || ((item.course as string) === 'UNKNOWN' ? '새로운 과목' : '불러오는 중...')}
                               </span>
                               <div className={styles.modalItemDetails}>
                                 <span className={styles.modalItemCode}>{course?.code || '----'} · {item.credit}학점</span>
@@ -331,9 +452,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
             <div className={styles.emptyBasket}>
               <ShoppingCart size={36} opacity={0.3} />
               <p>장바구니가 비어있습니다</p>
-              <button className={styles.addBtnLarge} onClick={handleAddSubject}>
-                <Plus size={16} /> 과목 추가하기
-              </button>
+              <p style={{ fontSize: '12px', marginTop: '-8px', opacity: 0.7 }}>위 검색창에서 과목을 찾아 추가해 보세요!</p>
             </div>
           )}
         </div>
@@ -350,7 +469,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
           </mask>
         </defs>
       </svg>
-      
+
       <div style={{
         position: 'absolute', inset: 0,
         background: 'rgba(0,0,0,0.5)',
@@ -374,7 +493,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
       <div ref={popupRef} className={styles.tutorialPopup} style={{ pointerEvents: 'auto' }}>
         <div className={styles.tutorialHeader}>
           <h4>{TUTORIAL_STEPS[tutorialStep - 1].title}</h4>
-          <button onClick={() => setTutorialStep(0)}><X size={16}/></button>
+          <button onClick={() => setTutorialStep(0)}><X size={16} /></button>
         </div>
         <p>{TUTORIAL_STEPS[tutorialStep - 1].content}</p>
         <div className={styles.tutorialFooter}>
@@ -414,15 +533,15 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
         <div className={styles.basketPreview} onClick={() => setIsModalOpen(true)}>
           <div className={styles.pillRow}>
             {previewSubjects.map(s => {
-              const course = getCourse({ id: s.course });
-              const color = getColor(course?.code || 'unknown');
+              const course = courseMap[s.course as unknown as string];
+              const color = getColor(course?.code || s.id);
               return (
                 <span
                   key={s.id}
                   className={styles.pillBadge}
                   style={{ background: color.bg, color: color.text }}
                 >
-                  {course?.name || '새로운 과목'}
+                  {course?.name || ((s.course as string) === 'UNKNOWN' ? '새로운 과목' : '...')}
                 </span>
               );
             })}
@@ -471,7 +590,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
         <div className={styles.sectionTitleFlex}>
           <span>AI 가중치 조절</span>
         </div>
-        
+
         {renderSlider(
           "시간표 압축도 (연강 vs 우주공강)",
           <Maximize2 size={14} style={{ marginRight: 6, opacity: 0.8 }} />,
@@ -503,7 +622,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
       {/* 세부 조건 설정 */}
       <div className={`${styles.section} ${tutorialStep === 4 ? styles.highlighted : ''}`} style={{ borderRadius: 12 }}>
         <div className={styles.sectionTitle}>상세 선호 조건</div>
-        
+
         <div className={styles.preferenceBox}>
           <div className={styles.prefTitle}><CalendarDays size={14} /> 공강 요일 만들기</div>
           <div className={styles.daysSelector}>
@@ -525,16 +644,16 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
         <div className={styles.preferenceRow}>
           <div className={styles.prefLeft}>
             <label className={styles.switch}>
-              <input 
-                type="checkbox" 
-                checked={prefs.lunch_time_preserve.value} 
+              <input
+                type="checkbox"
+                checked={prefs.lunch_time_preserve.value}
                 onChange={(e) => {
                   const val = e.target.checked;
                   setPrefs(prev => ({
                     ...prev,
                     lunch_time_preserve: { value: val, priority: { value: 1, lock: val } }
                   }));
-                }} 
+                }}
               />
               <span className={styles.slider}></span>
             </label>
@@ -585,4 +704,10 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
   );
 };
 
-export default LeftPanel;
+export default function LeftPanel(props: { onGenerate: (basket: Lecture[], prefs: Preferences, banned: Record<string, boolean>) => void }) {
+  return (
+    <ErrorBoundary>
+      <LeftPanelInner {...props} />
+    </ErrorBoundary>
+  );
+}

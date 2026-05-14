@@ -13,6 +13,12 @@ import crypto from 'node:crypto';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
 import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
 import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
+import JSON_BUILDINGS from '../data/buildings.json' with { type: 'json' };
+import JSON_CLASSROOMS from '../data/classroom.json' with { type: 'json' };
+import JSON_COURSES from '../data/courses.json' with { type: 'json' };
+import JSON_LECTURES from '../data/lecture.json' with { type: 'json' };
+import JSON_LECTURECLASSES from '../data/lectureclass.json' with { type: 'json' };
+import JSON_PROFESSORS from '../data/professor.json' with { type: 'json' };
 
 
 
@@ -118,9 +124,12 @@ export function CreateDatabaseManager(context, rcon) {
         collection = db.getCollection('entities') ??
         (() => {
             const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
-            col.insert(JSON_CAMPUSES);
-            col.insert(JSON_COLLEGES);
-            col.insert(JSON_DEPARTMENTS);
+            col.insert(JSON_BUILDINGS);
+            col.insert(JSON_CLASSROOMS);
+            col.insert(JSON_COURSES);
+            col.insert(JSON_LECTURES);
+            col.insert(JSON_LECTURECLASSES);
+            col.insert(JSON_PROFESSORS);
             console.log('Created collection');
             return col;
         })();
@@ -880,32 +889,17 @@ export function CreateDatabaseManager(context, rcon) {
              * @type {RouteFunction<'/api/data/professor', 'GET'>}
              */
             dataProfessorGet(data) {
-                const {
-                    id,
-                    name,
-                    tel,
-                    mail
-                } = data;
-                const t = dbm.findEntity({
+                const { id, name, tel, mail } = data;
+                
+                const t = /** @type {import('../../common/models.js').Professor[]} */ (/** @type {any} */ (dbm.findEntity(/** @type {any} */ ({
                     type: 'professor',
-                    ...removeEmpty({
-                        id,
-                        name,
-                        tel,
-                        mail
-                    })
-                }).at(0);
-                if (!t) return {
-                    success: false,
-                    e: 'professor_doesnt_exist'
-                };
+                    ...removeEmpty({ id, tel, mail }),
+                    ...(name ? { name: { $regex: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } } : {})
+                }))));
+                
                 return {
                     success: true,
-                    data: {
-                        name: t.name,
-                        tel: t.tel,
-                        mail: t.mail
-                    }
+                    data: t.map(({ id, name, mail, tel }) => ({ id, name, mail, tel }))
                 };
             },
             
@@ -994,6 +988,8 @@ export function CreateDatabaseManager(context, rcon) {
                 };
             },
             
+
+            
             /**
              * /api/data/course
              * @method GET
@@ -1007,16 +1003,15 @@ export function CreateDatabaseManager(context, rcon) {
                     course_type,
                     department
                 } = data;
-                const t = dbm.findEntity({
+                
+                /** @type {import('../../common/models.js').Course[]} */
+                const t = /** @type {any} */ (dbm.findEntity(/** @type {any} */ ({
                     type: 'course',
-                    ...removeEmpty({
-                        id,
-                        code,
-                        name,
-                        course_type,
-                        department
-                    })
-                });
+                    ...removeEmpty({ id, course_type, department }),
+                    ...(code ? { code: { $regex: new RegExp(code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } } : {}),
+                    ...(name ? { name: { $regex: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } } : {})
+                })));
+                
                 return {
                     success: true,
                     data: t.map(
@@ -1569,7 +1564,7 @@ export function CreateDatabaseManager(context, rcon) {
                     visible
                 } = data;
                 if (!classes.every(c =>
-                    dbm.getByID(c)?.type == 'class_room'
+                    dbm.getByID(c)?.type == 'lecture_class'
                 )) return {
                     success: false,
                     e: 'classroom_doesnt_exist'

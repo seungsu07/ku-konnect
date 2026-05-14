@@ -15,9 +15,14 @@ export default defineConfig({
       'konnect.hydv.kr'
     ],
     proxy: {
+      '^/api/data/(professor|course|lecture|lectureclass|building|classroom)': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'https://api.konnect.hydv.kr',
         changeOrigin: true,
+        cookieDomainRewrite: '',
       }
     },
     watch: {

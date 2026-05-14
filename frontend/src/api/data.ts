@@ -9,6 +9,7 @@ async function fetchData<T extends keyof PATH_ROUTE>(
 ) {
     const options: RequestInit = {
         method,
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -105,3 +106,4 @@ export const getClassRoom = dataApi.getClassRoom;
 export const getBuildings = dataApi.getBuildings;
 export const getBuilding = dataApi.getBuilding;
 export const createTimeTable = dataApi.createTimeTable;
+export const getTimeTables = dataApi.getTimeTables;
