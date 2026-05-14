@@ -18,6 +18,12 @@ const LUNCH_MAX = 14.0;
 const MOVEMENT_THRESHOLD = 20; // Example threshold
 const NULL_ID = '0-0-0-0-0';
 
+/** 교시 번호 → 실제 시각(hour) 변환. 고려대 교시 기준
+ *  1교시=09:00, 2교시=10:30, 3교시=12:00, 4교시=13:30,
+ *  5교시=15:00, 6교시=16:30, 7교시=18:00 */
+const periodToHour = (period: number): number => 9 + (period - 1) * 1.5;
+
+
 function cartesianProduct<T>(arrays: T[][]): T[][] {
   if (arrays.length === 0) return [[]];
   return arrays.reduce<T[][]>((a, b) => a.flatMap(x => b.map(y => [...x, y])), [[]]);
@@ -159,7 +165,11 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     }
 
     if (prefs.lunch_time_preserve.priority.lock) {
-      if (periods.some(p => p.time >= LUNCH_MIN && p.time < LUNCH_MAX)) {
+      if (periods.some(p => {
+        const hStart = periodToHour(p.time);
+        const hEnd = hStart + p.duration;
+        return (hStart < LUNCH_MAX && hEnd > LUNCH_MIN);
+      })) {
         deadEndCounts.lunch++;
         return;
       }
@@ -167,9 +177,9 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 
     if (periods.some(p => {
       const dayIdx = DISPLAY_DAYS.indexOf(p.day);
-      const tStart = Math.floor(p.time);
-      const tEnd = Math.floor(p.time + (p as any).duration - 0.01);
-      for (let t = tStart; t <= tEnd; t++) {
+      const hourStart = periodToHour(p.time);
+      const hourEnd = Math.floor(hourStart + p.duration - 0.01);
+      for (let t = Math.floor(hourStart); t <= hourEnd; t++) {
         const cellKey = `${dayIdx}-${t}`;
         if (bannedCells[cellKey]) return true;
       }
@@ -203,16 +213,17 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       if (dayP.length === 0) return;
 
       dayP.forEach(p => {
-        if (p.time < 10) morningPenalty += 10;
-        else if (p.time < 11.5) morningPenalty += 5;
-        else if (p.time < 13) morningPenalty += 1;
+        const hour = periodToHour(p.time);
+        if (hour < 10) morningPenalty += 10;       // 9시대 (1교시)
+        else if (hour < 11) morningPenalty += 5;    // 10시대 (2교시)
+        else if (hour < 12) morningPenalty += 1;    // 11시대 (3교시)
       });
 
       for (let i = 0; i < dayP.length - 1; i++) {
         const current = dayP[i];
         const next = dayP[i + 1];
 
-        const gap = next.time - current.time - 1.5;
+        const gap = next.time - (current.time + current.duration);
         if (gap > 0.1) {
           compactPenalty += gap;
         }
@@ -309,8 +320,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
           credit: lecture.credit,
           profName: professor?.name || '미지정',
           day: period.day,
-          start: period.time,
-          end: period.time + duration,
+          start: periodToHour(period.time),
+          end: periodToHour(period.time) + duration,
           location: `${building?.name || ''} ${room?.room || ''}`.trim(),
           warning: false
         };

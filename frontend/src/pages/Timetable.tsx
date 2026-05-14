@@ -98,7 +98,7 @@ const Timetable: React.FC = () => {
                 <div className={styles.loadingContainer}>
                   <Loader2 className={styles.spinner} size={48} />
                   <h3 className={styles.loadingTitle}>AI 최적 시간표 생성 중...</h3>
-                  <p className={styles.loadingDesc}>15,302개의 조합을 탐색하고 있습니다.</p>
+                  <p className={styles.loadingDesc}>최적의 시간표를 탐색하고 있습니다.</p>
                 </div>
               ) : !hasGenerated ? (
                 <div className={styles.emptyContainer}>
