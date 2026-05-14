@@ -1,0 +1,172 @@
+.footer {
+  background: #0f111a;
+  color: #94a3b8;
+  padding: 80px 24px 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 10;
+}
+
+:global(body.light-mode) .footer {
+  background: #ffffff;
+  color: #64748b;
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 60px;
+  margin-bottom: 60px;
+}
+
+.brandSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-decoration: none;
+}
+
+:global(body.light-mode) .logo {
+  color: #1a1a1a;
+}
+
+.logoDot {
+  color: #ff3131;
+}
+
+.description {
+  line-height: 1.6;
+  font-size: 0.95rem;
+  max-width: 300px;
+}
+
+.linkGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.groupTitle {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+:global(body.light-mode) .groupTitle {
+  color: #1a1a1a;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: #ff3131;
+}
+
+.socialLinks {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.socialIcon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+:global(body.light-mode) .socialIcon {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a1a;
+}
+
+.socialIcon:hover {
+  background: #ff3131;
+  color: #fff;
+  transform: translateY(-4px);
+}
+
+.bottom {
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+:global(body.light-mode) .bottom {
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+.copyright {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.heart {
+  color: #ff3131;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@media (max-width: 900px) {
+  .top {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+  .brandSection {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .top {
+    grid-template-columns: 1fr;
+  }
+  .brandSection {
+    grid-column: span 1;
+  }
+  .bottom {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+}

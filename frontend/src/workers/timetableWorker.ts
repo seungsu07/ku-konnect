@@ -261,14 +261,15 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   const top3 = candidates.slice(0, 3);
 
   const timetables: TimeTable[] = top3.map((cand, idx) => {
-    const timeTable = createTimeTable({
+    return {
+      id: crypto.randomUUID() as any,
+      type: 'time_table',
       name: `AI 추천 ${idx + 1}순위 (패널티: ${Math.floor(cand.penalty)})`,
       selected: idx === 0,
       classes: cand.classes,
+      user: NULL_ID as any, // Will be set when saving
       visible: false
-    });
-
-    return timeTable as TimeTable; // NULL 방어 로직 필요
+    };
   });
 
   self.postMessage({ timetables });

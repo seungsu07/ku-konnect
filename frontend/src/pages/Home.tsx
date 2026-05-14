@@ -11,7 +11,7 @@ const PASTEL_COLORS = [
   { bg: '#fef9c3', text: '#854d0e' },
   { bg: '#ede9fe', text: '#4c1d95' },
   { bg: '#ffedd5', text: '#9a3412' },
-  { bg: '#d1fae5', text: '#065f46' },
+  { bg: '#d1f8fa', text: '#255759' },
   { bg: '#e0e7ff', text: '#3730a3' },
 ];
 

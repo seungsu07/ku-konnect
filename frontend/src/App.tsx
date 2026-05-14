@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -8,12 +9,13 @@ import Timetable from './pages/Timetable';
 
 import Home from './pages/Home';
 
-const Kommunity = () => <h2>Kommunity Page</h2>;
+import Kommunity from './pages/Kommunity';
 const Study = () => <h2>Study Page</h2>;
 
 const AppContent = () => {
   const location = useLocation();
   const showNavbar = location.pathname !== '/login' && location.pathname !== '/signup';
+  const showFooter = showNavbar && location.pathname !== '/kommunity';
 
   return (
     <>
@@ -27,6 +29,7 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
       </Routes>
+      {showFooter && <Footer />}
     </>
   );
 };

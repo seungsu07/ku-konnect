@@ -18,7 +18,7 @@ const PASTEL_COLORS = [
   { bg: '#fef9c3', text: '#854d0e' },
   { bg: '#ede9fe', text: '#4c1d95' },
   { bg: '#ffedd5', text: '#9a3412' },
-  { bg: '#d1fae5', text: '#065f46' },
+  { bg: '#d1f8fa', text: '#255759' },
   { bg: '#e0e7ff', text: '#3730a3' },
 ];
 
@@ -56,10 +56,10 @@ const TUTORIAL_STEPS = [
 ];
 
 const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, banned: Record<string, boolean>) => void }> = ({ onGenerate }) => {
-  const [subjects, setSubjects] = useState<Lecture[]>(INITIAL_CART_LECTURES);
+  const [subjects, setSubjects] = useState<Lecture[]>([]);
   const [bannedCells, setBannedCells] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [nextId, setNextId] = useState<number>(INITIAL_CART_LECTURES.length + 1);
+  const [nextId, setNextId] = useState<number>(1);
 
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
