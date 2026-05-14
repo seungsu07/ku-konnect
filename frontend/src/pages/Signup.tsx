@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import styles from './Signup.module.css';
+import type { EntityID } from '../../../common/models';
 
 function Signup() {
     const navigate = useNavigate();
@@ -68,16 +69,16 @@ function Signup() {
         if (!mailToken) return alert('이메일 인증이 필요합니다.');
 
         // ID mapping for backend UUID requirements
-        const campusMap: Record<string, string> = {
+        const campusMap: Record<string, EntityID<'campus'>> = {
             'seoul': '646566e0-d5b9-437e-95db-45c7d71a5783',
             'sejong': 'e730f6f3-c8aa-44c0-8469-9674765b6b44'
         };
 
-        const collegeMap: Record<string, string> = {
+        const collegeMap: Record<string, EntityID<'college'>> = {
             '정보대학': '35f63daa-0447-48d1-a66a-d21c796bb816'
         };
 
-        const majorMap: Record<string, string> = {
+        const majorMap: Record<string, EntityID<'department'>> = {
             '컴퓨터학과': 'ce4ed2e7-0454-4694-bc76-63817dd2a9c9',
             '데이터과학과': '3dc282ed-cb8d-44e6-96ae-e420901400db',
             '인공지능학과': '81f3db42-e0da-4dd4-9d94-8dab8fc700ec'
@@ -87,8 +88,8 @@ function Signup() {
         try {
             const res = await authApi.signup({
                 campus: campus as any,
-                college: college as any,
-                department: major as any,
+                college: collegeMap[college],
+                department: majorMap[major],
                 student_id: studentId,
                 name,
                 login_id: userid,
