@@ -18,6 +18,7 @@ export const authApi = {
   async verifyMailCode(address: string, code: string) {
     const response = await fetch(`${BASE_URL}/api/auth/verify/mail`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address, code }),
     });
@@ -30,6 +31,7 @@ export const authApi = {
   async signup(data: PATH_ROUTE['/api/auth/signup']['POST']['REQ']) {
     const response = await fetch(`${BASE_URL}/api/auth/signup`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
@@ -42,6 +44,7 @@ export const authApi = {
   async login(data: PATH_ROUTE['/api/auth/login']['POST']['REQ']) {
     const response = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });

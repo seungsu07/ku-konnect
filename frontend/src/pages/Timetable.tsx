@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
 import type { TimeTable, Lecture, Preferences } from '../../../common/models';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
+import {  } from '../api/data';
 
 const Timetable: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -60,6 +61,20 @@ const Timetable: React.FC = () => {
     }
   };
 
+  const handleSaveTimetable = async (timeTable: TimeTable) => {
+    const customName = prompt('저장할 시간표의 이름을 입력해주세요:', timeTable.name);
+    if (!customName) return;
+
+    // Local save for session (UI only, backend logic removed per user request)
+    saveTimetable(prev => {
+      const newSaved = [...prev, { ...timeTable, name: customName, id: crypto.randomUUID() as any }];
+      setActiveSavedIndex(newSaved.length - 1);
+      return newSaved;
+    });
+    setMode('view');
+    alert('시간표가 성공적으로 저장되었습니다! (로컬 세션 전용)');
+  };
+
   const handleNextAlternative = () => {
     if (currentAlternativeIndex < generatedTimetables.length - 1) {
       setCurrentAlternativeIndex(prev => prev + 1);
@@ -83,7 +98,7 @@ const Timetable: React.FC = () => {
                 <div className={styles.loadingContainer}>
                   <Loader2 className={styles.spinner} size={48} />
                   <h3 className={styles.loadingTitle}>AI 최적 시간표 생성 중...</h3>
-                  <p className={styles.loadingDesc}>15,302개의 조합을 탐색하고 있습니다.</p>
+                  <p className={styles.loadingDesc}>최적의 시간표를 탐색하고 있습니다.</p>
                 </div>
               ) : !hasGenerated ? (
                 <div className={styles.emptyContainer}>
@@ -109,6 +124,7 @@ const Timetable: React.FC = () => {
                     totalAlternatives={generatedTimetables.length}
                     onPrev={handlePrevAlternative}
                     onNext={handleNextAlternative}
+                    onSave={handleSaveTimetable}
                   />
               )}
             </div>

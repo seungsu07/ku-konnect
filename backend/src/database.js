@@ -13,7 +13,13 @@ import crypto from 'node:crypto';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
 import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
 import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
-import JSON_COURSES from '../../common/default/courses.json' with { type: 'json' };
+import JSON_BUILDINGS from '../data/buildings.json' with { type: 'json' };
+import JSON_CLASSROOMS from '../data/classroom.json' with { type: 'json' };
+import JSON_COURSES from '../data/courses.json' with { type: 'json' };
+import JSON_COURSES_BASE from '../../common/default/courses.json' with { type: 'json' };
+import JSON_LECTURES from '../data/lecture.json' with { type: 'json' };
+import JSON_LECTURECLASSES from '../data/lectureclass.json' with { type: 'json' };
+import JSON_PROFESSORS from '../data/professor.json' with { type: 'json' };
 
 
 
@@ -122,7 +128,13 @@ export function CreateDatabaseManager(context, rcon) {
             col.insert(JSON_CAMPUSES);
             col.insert(JSON_COLLEGES);
             col.insert(JSON_DEPARTMENTS);
+            col.insert(JSON_BUILDINGS);
+            col.insert(JSON_CLASSROOMS);
             col.insert(JSON_COURSES);
+            col.insert(JSON_COURSES_BASE);
+            col.insert(JSON_LECTURES);
+            col.insert(JSON_LECTURECLASSES);
+            col.insert(JSON_PROFESSORS);
             console.log('Created collection');
             return col;
         })();
@@ -617,29 +629,22 @@ export function CreateDatabaseManager(context, rcon) {
              * @type {RouteFunction<'/api/data/user', 'GET', [User | null]>}
              */
             dataUserGet(data, user) {
-                const { id } = data;
-                const t = dbm.findEntity({ type: 'user', 'login_id': id }).at(0);
-                if (!t) return {
-                    success: false,
-                    e: 'unexpected'
-                };
-                if (id != user?.login_id) return {
-                    success: false,
-                    e: 'no_permission'
-                };
+                const {
+                    id,
+                    login_id
+                } = data;
+                const t = dbm.findEntity({
+                    type: 'user',
+                    ...removeEmpty({
+                        id,
+                        login_id
+                    })
+                });
                 return {
                     success: true,
-                    data: {
-                        id: t.id,
-                        login_id: t.login_id,
-                        name: t.name,
-                        student_id: t.student_id,
-                        campus: t.campus,
-                        college: t.college,
-                        department: t.department,
-                        univ_mail: t.univ_mail,
-                        mail: t.mail
-                    }
+                    data: t.map(({ id, login_id, name, student_id, campus, college, department, univ_mail, mail }) =>
+                        id == user?.id? ({ id, login_id, name, student_id, campus, college, department, univ_mail, mail }):
+                        ({ id, login_id }))
                 };
             },
             
@@ -768,19 +773,11 @@ export function CreateDatabaseManager(context, rcon) {
                         u,
                         nickname
                     })
-                }).at(0);
-                if (!t) return {
-                    success: false,
-                    e: 'profile_doesnt_exist'
-                };
+                });
                 return {
                     success: true,
-                    data: {
-                        id: t.id,
-                        nickname: t.nickname,
-                        image: t.image,
-                        user: t.user
-                    }
+                    data: t.map(({ id, nickname, image, user }) =>
+                        ({ id, nickname, image, user }))
                 };
             },
             
@@ -896,18 +893,11 @@ export function CreateDatabaseManager(context, rcon) {
                         tel,
                         mail
                     })
-                }).at(0);
-                if (!t) return {
-                    success: false,
-                    e: 'professor_doesnt_exist'
-                };
+                });
                 return {
                     success: true,
-                    data: {
-                        name: t.name,
-                        tel: t.tel,
-                        mail: t.mail
-                    }
+                    data: t.map(({ id, name, tel, mail }) =>
+                        ({ id, name, tel, mail }))
                 };
             },
             
@@ -1571,7 +1561,7 @@ export function CreateDatabaseManager(context, rcon) {
                     visible
                 } = data;
                 if (!classes.every(c =>
-                    dbm.getByID(c)?.type == 'class_room'
+                    dbm.getByID(c)?.type == 'lecture_class'
                 )) return {
                     success: false,
                     e: 'classroom_doesnt_exist'
@@ -1686,20 +1676,11 @@ export function CreateDatabaseManager(context, rcon) {
                 const t = dbm.findEntity({
                     type: 'graduation_progress',
                     user: u
-                }).at(0);
-                if (!t) return {
-                    success: false,
-                    e: 'unexpected'
-                };
+                });
                 return {
                     success: true,
-                    data: {
-                        id: t.id,
-                        color: t.color,
-                        details: t.details,
-                        user: t.user,
-                        value: t.value
-                    }
+                    data: t.map(({ id, color, details, user, value }) =>
+                        ({ id, color, details, user, value }))
                 };
             },
             

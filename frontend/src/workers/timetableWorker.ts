@@ -1,5 +1,5 @@
 import type { Lecture, Preferences, TimeTable, Day, EntityID, Period } from '../../../common/models';
-import { getLectureClass, getClassRoom, getBuilding, getLectures, getLectureClasses, getLecture, createTimeTable } from '../api/data';
+import { getClassRoom, getBuilding, getLectures, getLectureClasses, getCourse, getProfessor } from '../api/data';
 
 export interface WorkerInput {
   basket: Lecture[];
@@ -18,6 +18,12 @@ const LUNCH_MAX = 14.0;
 const MOVEMENT_THRESHOLD = 20; // Example threshold
 const NULL_ID = '0-0-0-0-0';
 
+/** 교시 번호 → 실제 시각(hour) 변환. 고려대 교시 기준
+ *  1교시=09:00, 2교시=10:30, 3교시=12:00, 4교시=13:30,
+ *  5교시=15:00, 6교시=16:30, 7교시=18:00 */
+const periodToHour = (period: number): number => 9 + (period - 1) * 1.5;
+
+
 function cartesianProduct<T>(arrays: T[][]): T[][] {
   if (arrays.length === 0) return [[]];
   return arrays.reduce<T[][]>((a, b) => a.flatMap(x => b.map(y => [...x, y])), [[]]);
@@ -31,7 +37,7 @@ const getWeight = (val: number) => {
   return 10;
 };
 
-self.onmessage = (e: MessageEvent<WorkerInput>) => {
+self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   const { basket, prefs, bannedCells } = e.data;
 
   const courseGroups = new Map<EntityID<'course'>, Lecture[]>();
@@ -48,15 +54,56 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
   const uniqueCourseIds = Array.from(courseGroups.keys());
 
-  const classArrays: EntityID<'lecture_class'>[][] = uniqueCourseIds.map(cid => {
-    // Collect ALL lectures for this course, not just the ones explicitly in the basket
-    const lectures = getLectures({ course: cid });
-    const classIds = lectures.flatMap(l => getLectureClasses({ lecture: l.id }).map(({ id }) => id));
-    return [NULL_ID, ...classIds];
-  });
+  // === 1. PRE-FETCH CACHING PHASE ===
+  const lectureMap = new Map<EntityID<'lecture'>, Lecture>();
+  const classMap = new Map<EntityID<'lecture_class'>, import('../../../common/models').LectureClass>();
+  const roomMap = new Map<EntityID<'class_room'>, import('../../../common/models').ClassRoom>();
+  const buildingMap = new Map<EntityID<'building'>, import('../../../common/models').Building>();
+  const courseMap = new Map<EntityID<'course'>, import('../../../common/models').Course>();
+  const professorMap = new Map<EntityID<'professor'>, import('../../../common/models').Professor>();
 
+  const classArrays: EntityID<'lecture_class'>[][] = [];
+
+  for (const cid of uniqueCourseIds) {
+    const course = await getCourse({ id: cid });
+    if (course) courseMap.set(cid, course);
+
+    const lectures = await getLectures({ course: cid });
+    const classIds: EntityID<'lecture_class'>[] = [];
+
+    for (const l of lectures) {
+      lectureMap.set(l.id, l);
+
+      if (l.professor && !professorMap.has(l.professor)) {
+        const prof = await getProfessor({ id: l.professor });
+        if (prof) professorMap.set(l.professor, prof);
+      }
+
+      const classes = await getLectureClasses({ lecture: l.id });
+      for (const cls of classes) {
+        classMap.set(cls.id, cls);
+        classIds.push(cls.id);
+
+        for (const p of cls.periods) {
+          if (!roomMap.has(p.room)) {
+            const room = await getClassRoom({ id: p.room });
+            if (room) {
+              roomMap.set(room.id, room);
+              if (!buildingMap.has(room.building)) {
+                const bld = await getBuilding({ id: room.building });
+                if (bld) buildingMap.set(bld.id, bld);
+              }
+            }
+          }
+        }
+      }
+    }
+    classArrays.push([NULL_ID as EntityID<'lecture_class'>, ...classIds]);
+  }
+
+  // === 2. COMBINATION & FILTERING PHASE ===
   interface Candidate {
-    classes: EntityID<'lecture_class'>[]; // lecture_class IDs (excluding NULL_ID)
+    classes: EntityID<'lecture_class'>[];
     penalty: number;
   }
 
@@ -71,81 +118,79 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
     hardCampus: 0,
   };
 
+  // 데카르트 곱(Cartesian Product)으로 모든 분반 경우의 수 생성
   const combinations = cartesianProduct(classArrays);
 
   combinations.forEach(classCombo => {
     let isValid = true;
     let periods: (Period & { duration: number })[] = [];
-    const scheduledByDay: Record<string, {start: number, end: number}[]> = {
+    const scheduledByDay: Record<string, { start: number, end: number }[]> = {
       sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
     };
     const activeClasses = classCombo.filter(id => id !== NULL_ID);
 
-    if (activeClasses.length === 0) return; // Skip completely empty timetables
+    if (activeClasses.length === 0) return;
 
-    // Extract periods for this combination
     for (const clsId of activeClasses) {
-        const cls = getLectureClass({ id: clsId });
-        if (!cls) continue;
-        
-        const lecture = getLecture({ id: cls.lecture });
-        const duration = lecture ? lecture.hours / cls.periods.length : 1.5;
+      const cls = classMap.get(clsId);
+      if (!cls) continue;
 
-        for (const p of cls.periods) {
-          const start = p.time;
-          const end = start + duration;
-          
-          const collision = scheduledByDay[p.day].some(existing => 
-            (start < existing.end && end > existing.start)
-          );
-          
-          if (collision) {
-            isValid = false;
-            deadEndCounts.overlap++;
-            break;
-          }
-          scheduledByDay[p.day].push({ start, end });
-          periods.push({ ...p, duration });
+      const lecture = lectureMap.get(cls.lecture);
+      const duration = lecture ? lecture.hours / cls.periods.length : 1.5;
+
+      for (const p of cls.periods) {
+        const start = p.time;
+        const end = start + duration;
+
+        const collision = scheduledByDay[p.day].some(existing =>
+          (start < existing.end && end > existing.start)
+        );
+
+        if (collision) {
+          isValid = false;
+          deadEndCounts.overlap++;
+          break;
         }
-        if (!isValid) break;
+        scheduledByDay[p.day].push({ start, end });
+        periods.push({ ...p, duration });
       }
-      if (!isValid) return;
+      if (!isValid) break;
+    }
+    if (!isValid) return;
 
-      // Check Days Off
-      const daysOffSet = new Set(Object.keys(prefs.days_off.value).filter(k => prefs.days_off.value[k as Day]));
-      if (periods.some(p => daysOffSet.has(p.day))) {
-        deadEndCounts.dayOff++;
-        return;
-      }
+    const daysOffSet = new Set(Object.keys(prefs.days_off.value).filter(k => prefs.days_off.value[k as Day]));
+    if (periods.some(p => daysOffSet.has(p.day))) {
+      deadEndCounts.dayOff++;
+      return;
+    }
 
-      // Check Lunch Time Preserve
-      if (prefs.lunch_time_preserve.priority.lock) {
-        if (periods.some(p => p.time >= LUNCH_MIN && p.time < LUNCH_MAX)) {
-          deadEndCounts.lunch++;
-          return;
-        }
-      }
-
-      // Check Banned Cells
-      // a class takes roughly 1.25 hours, so check all hours it spans
+    if (prefs.lunch_time_preserve.priority.lock) {
       if (periods.some(p => {
-        const dayIdx = DISPLAY_DAYS.indexOf(p.day);
-        const tStart = Math.floor(p.time);
-        const tEnd = Math.floor(p.time + p.duration - 0.01);
-        for (let t = tStart; t <= tEnd; t++) {
-          const cellKey = `${dayIdx}-${t}`;
-          if (bannedCells[cellKey]) return true;
-        }
-        return false;
+        const hStart = periodToHour(p.time);
+        const hEnd = hStart + p.duration;
+        return (hStart < LUNCH_MAX && hEnd > LUNCH_MIN);
       })) {
-        deadEndCounts.banned++;
+        deadEndCounts.lunch++;
         return;
       }
+    }
 
-      // Penalty Calculation
-      let penalty = 0;
+    if (periods.some(p => {
+      const dayIdx = DISPLAY_DAYS.indexOf(p.day);
+      const hourStart = periodToHour(p.time);
+      const hourEnd = Math.floor(hourStart + p.duration - 0.01);
+      for (let t = Math.floor(hourStart); t <= hourEnd; t++) {
+        const cellKey = `${dayIdx}-${t}`;
+        if (bannedCells[cellKey]) return true;
+      }
+      return false;
+    })) {
+      deadEndCounts.banned++;
+      return;
+    }
 
-    // Course Missing Penalty (Soft)
+    let penalty = 0;
+
     classCombo.forEach((clsId, courseIndex) => {
       if (clsId === NULL_ID) {
         const cid = uniqueCourseIds[courseIndex];
@@ -154,74 +199,68 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
       }
     });
 
-      // Group periods by day
-      const dayPeriods: Record<Day, Period[]> = {
-        sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
-      };
-      periods.forEach(p => dayPeriods[p.day].push(p));
+    const dayPeriods: Record<Day, (Period & { duration: number })[]> = {
+      sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
+    };
+    periods.forEach(p => dayPeriods[p.day].push(p));
 
-      // Calculate Compactness, Campus Closeness, Avoid Morning
-      let compactPenalty = 0;
-      let campusPenalty = 0;
-      let morningPenalty = 0;
+    let compactPenalty = 0;
+    let campusPenalty = 0;
+    let morningPenalty = 0;
 
-      DISPLAY_DAYS.forEach(day => {
-        const dayP = dayPeriods[day].sort((a, b) => a.time - b.time);
-        if (dayP.length === 0) return;
+    DISPLAY_DAYS.forEach(day => {
+      const dayP = dayPeriods[day].sort((a, b) => a.time - b.time);
+      if (dayP.length === 0) return;
 
-        // Morning
-        dayP.forEach(p => {
-          if (p.time < 10) morningPenalty += 10;
-          else if (p.time < 11.5) morningPenalty += 5;
-          else if (p.time < 13) morningPenalty += 1;
-        });
+      dayP.forEach(p => {
+        const hour = periodToHour(p.time);
+        if (hour < 10) morningPenalty += 10;       // 9시대 (1교시)
+        else if (hour < 11) morningPenalty += 5;    // 10시대 (2교시)
+        else if (hour < 12) morningPenalty += 1;    // 11시대 (3교시)
+      });
 
-        // Compactness & Campus
-        for (let i = 0; i < dayP.length - 1; i++) {
-          const current = dayP[i];
-          const next = dayP[i+1];
-          
-          // Gap
-          const gap = next.time - current.time - 1.5; // Approximate 1.5hr per class
-          if (gap > 0.1) {
-            compactPenalty += gap;
-          }
+      for (let i = 0; i < dayP.length - 1; i++) {
+        const current = dayP[i];
+        const next = dayP[i + 1];
 
-          // Campus
-          const room1 = getClassRoom({ room: current.room });
-          const room2 = getClassRoom({ room: next.room });
-          if (room1 && room2) {
-            const b1 = getBuilding({ id: room1.building });
-            const b2 = getBuilding({ id: room2.building });
-            if (b1 && b2) {
-              const dx = b1.location[0] - b2.location[0];
-              const dy = b1.location[1] - b2.location[1];
-              const dist = Math.sqrt(dx*dx + dy*dy);
-              if (dist > MOVEMENT_THRESHOLD) {
-                campusPenalty += (dist - MOVEMENT_THRESHOLD);
-              }
+        const gap = next.time - (current.time + current.duration);
+        if (gap > 0.1) {
+          compactPenalty += gap;
+        }
+
+        const room1 = roomMap.get(current.room);
+        const room2 = roomMap.get(next.room);
+        if (room1 && room2) {
+          const b1 = buildingMap.get(room1.building);
+          const b2 = buildingMap.get(room2.building);
+          if (b1 && b2) {
+            const dx = b1.location[0] - b2.location[0];
+            const dy = b1.location[1] - b2.location[1];
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > MOVEMENT_THRESHOLD) {
+              campusPenalty += (dist - MOVEMENT_THRESHOLD);
             }
           }
         }
-      });
+      }
+    });
 
-      // Apply Weights & Check Hard Constraints at extremes
-      if (prefs.avoid_morning.value === 5 && morningPenalty > 0) {
-        deadEndCounts.hardMorning++;
-        return;
-      }
-      if (prefs.compactness.value === 5 && compactPenalty > 0) {
-        deadEndCounts.hardCompact++;
-        return;
-      }
-      if (prefs.campus_closeness.value === 5 && campusPenalty > 0) {
-        deadEndCounts.hardCampus++;
-        return;
-      }
+    if (prefs.avoid_morning.value === 5 && morningPenalty > 0) {
+      deadEndCounts.hardMorning++;
+      return;
+    }
+    if (prefs.compactness.value === 5 && compactPenalty > 0) {
+      deadEndCounts.hardCompact++;
+      return;
+    }
+    if (prefs.campus_closeness.value === 5 && campusPenalty > 0) {
+      deadEndCounts.hardCampus++;
+      return;
+    }
 
-      penalty += morningPenalty * getWeight(prefs.avoid_morning.value);
-      penalty += compactPenalty * getWeight(prefs.compactness.value);
-      penalty += campusPenalty * getWeight(prefs.campus_closeness.value);
+    penalty += morningPenalty * getWeight(prefs.avoid_morning.value);
+    penalty += compactPenalty * getWeight(prefs.compactness.value);
+    penalty += campusPenalty * getWeight(prefs.campus_closeness.value);
 
     candidates.push({
       classes: activeClasses,
@@ -230,7 +269,6 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   });
 
   if (candidates.length === 0) {
-    // Determine the biggest reason
     let maxReason = '알 수 없는 이유';
     let maxCount = -1;
     for (const [key, val] of Object.entries(deadEndCounts)) {
@@ -256,19 +294,75 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
     return;
   }
 
-  // Sort and pick top 3
   candidates.sort((a, b) => a.penalty - b.penalty);
   const top3 = candidates.slice(0, 3);
 
-  const timetables: TimeTable[] = top3.map((cand, idx) => {
+  const timetables: any[] = top3.map((cand, idx) => {
+    const grouped = new Map<EntityID<'lecture_class'>, any[]>();
+
+    cand.classes.forEach(classId => {
+      const cls = classMap.get(classId)!;
+      const lecture = lectureMap.get(cls.lecture)!;
+      const duration = lecture.hours / cls.periods.length;
+      const course = courseMap.get(lecture.course);
+      const professor = lecture.professor ? professorMap.get(lecture.professor) : undefined;
+
+      cls.periods.forEach(period => {
+        const room = roomMap.get(period.room);
+        const building = room ? buildingMap.get(room.building) : undefined;
+
+        const entry = {
+          id: `${classId}-${period.day}-${period.time}`,
+          lectureId: lecture.id,
+          courseName: course?.name || '알 수 없음',
+          courseCode: course?.code || '----',
+          courseType: course?.course_type || 'major',
+          credit: lecture.credit,
+          profName: professor?.name || '미지정',
+          day: period.day,
+          start: periodToHour(period.time),
+          end: periodToHour(period.time) + duration,
+          location: `${building?.name || ''} ${room?.room || ''}`.trim(),
+          warning: false
+        };
+        if (!grouped.has(classId)) grouped.set(classId, []);
+        grouped.get(classId)!.push(entry);
+      });
+    });
+
+    const renderableClasses: any[] = [];
+    grouped.forEach(list => {
+      const dayGroups = new Map<Day, any[]>();
+      list.forEach(entry => {
+        if (!dayGroups.has(entry.day)) dayGroups.set(entry.day, []);
+        dayGroups.get(entry.day)!.push(entry);
+      });
+
+      dayGroups.forEach(dayList => {
+        dayList.sort((a, b) => a.start - b.start);
+        let current = dayList[0];
+        for (let i = 1; i < dayList.length; i++) {
+          const next = dayList[i];
+          if (next.start - current.end <= 0.3) {
+            current.end = next.end;
+          } else {
+            renderableClasses.push(current);
+            current = next;
+          }
+        }
+        renderableClasses.push(current);
+      });
+    });
+
     return {
       id: crypto.randomUUID() as any,
       type: 'time_table',
-      name: `AI 추천 ${idx + 1}순위 (패널티: ${Math.floor(cand.penalty)})`,
+      name: `AI 추천 ${idx + 1}순위`,
       selected: idx === 0,
       classes: cand.classes,
-      user: NULL_ID as any, // Will be set when saving
-      visible: false
+      user: NULL_ID as any,
+      visible: false,
+      renderableClasses
     };
   });
 

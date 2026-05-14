@@ -1,0 +1,45 @@
+[
+    {
+        "id": "878a3034-74aa-45cb-815f-1e330a1eb248",
+        "type": "class_room",
+        "building": "df601e24-b9de-45a8-89c4-1cf381f6ffbf",
+        "room": "202"
+    },
+    {
+        "id": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c",
+        "type": "class_room",
+        "building": "df601e24-b9de-45a8-89c4-1cf381f6ffbf",
+        "room": "205"
+    },
+    {
+        "id": "cdc81c17-1066-4af6-813a-34fa6e413272",
+        "type": "class_room",
+        "building": "df601e24-b9de-45a8-89c4-1cf381f6ffbf",
+        "room": "B101"
+    },
+    {
+        "id": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58",
+        "type": "class_room",
+        "building": "13c489a8-7be7-4496-b1f7-c6d17c4c1afd",
+        "room": "609"
+    },
+    {
+        "id": "e07f970c-6edc-4fbb-abc8-697022f3b3fd",
+        "type": "class_room",
+        "building": "13c489a8-7be7-4496-b1f7-c6d17c4c1afd",
+        "room": "B103"
+    },
+    {
+        "id": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc",
+        "type": "class_room",
+        "building": "13c489a8-7be7-4496-b1f7-c6d17c4c1afd",
+        "room": "B102"
+    },
+    {
+        "id": "47695912-2e96-4c16-85da-b5def12381d3",
+        "type": "class_room",
+        "building": "f7ae6ea6-ae22-4c68-be6b-10aae4970558",
+        "room": "302"
+    }
+
+]

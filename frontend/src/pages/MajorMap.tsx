@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Cpu, Target, Rocket, Compass, Zap, ArrowRight, RefreshCcw } from 'lucide-react';
+import { Sparkles, Target, Rocket, Compass, Zap, ArrowRight, RefreshCcw } from 'lucide-react';
 import styles from './MajorMap.module.css';
 
 type Subject = {

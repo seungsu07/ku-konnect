@@ -208,15 +208,17 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/user': {
     GET: {
-      REQ: {
-        id: string;
-      };
+      REQ: Pick<User,
+        | 'id'
+        | 'login_id'
+      >;
       
       RES: {
         success: true;
-        data: Pick<User,
+        data: (Pick<User,
           | 'id'
           | 'login_id'
+        > & Partial<Pick<User,
           | 'name'
           | 'student_id'
           | 'campus'
@@ -224,7 +226,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'department'
           | 'univ_mail'
           | 'mail'
-        >;
+        >>)[];
       } | {
         success: false;
         e: ErrorString;
@@ -296,7 +298,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'image'
           | 'nickname'
           | 'user'
-        >;
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -367,10 +369,11 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       RES: {
         success: true;
         data: Pick<Professor,
+          | 'id'
           | 'name'
           | 'tel'
           | 'mail'
-        >;
+        >[];
       } | {
         success: false;
         e: ErrorString;
@@ -870,7 +873,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'details'
           | 'user'
           | 'value'
-        >;
+        >[];
       } | {
         success: false;
         e: ErrorString;
