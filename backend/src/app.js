@@ -599,9 +599,15 @@ export function CreateAppManager(context, rcon) {
         }
     }));
     
-    // TODO
+    app.get(...makeHandler('/api/data/user', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataUserGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
     
-    app.get(...makeHandler('/api/data/timetable', 'GET', (req, res) => {
+    app.patch(...makeHandler('/api/data/user', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
@@ -609,10 +615,291 @@ export function CreateAppManager(context, rcon) {
             res.status(400).json({ success: false, e: 'unauthorized' });
             return;
         }
-        const result = context.databaseManager.API.dataTimetable(data, user);
+        const result = context.databaseManager.API.dataUserPatch(data, user);
         res.status(result.success? 200: 400).json(result);
     }));
-
+    
+    app.delete(...makeHandler('/api/data/user', 'DELETE', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataUserDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/userprofile', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataUserProfileGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/data/userprofile', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataUserProfilePost(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.patch(...makeHandler('/api/data/userprofile', 'PATCH', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataUserProfilePatch(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/userprofile', 'DELETE', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataUserProfileDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/professor', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataProfessorGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/campus', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataCampusGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/college', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataCollegeGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/department', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataDepartmentGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/course', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataCourseGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/lecture', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataLectureGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/lectureclass', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataLectureClassGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/building', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataBuildingGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/classroom', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataClassRoomGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/comment', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataCommentGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/data/comment', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataCommentPost(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.patch(...makeHandler('/api/data/comment', 'PATCH', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataCommentPatch(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/comment', 'DELETE', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataCommentDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/post', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataPostGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/data/post', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataPostPost(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.patch(...makeHandler('/api/data/post', 'PATCH', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataPostPatch(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/post', 'DELETE', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataPostDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/board', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const result = context.databaseManager.API.dataBoardGet(data);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/timetable', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataTimeTableGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.post(...makeHandler('/api/data/timetable', 'POST', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataTimeTablePost(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.patch(...makeHandler('/api/data/timetable', 'PATCH', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataTimeTablePatch(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/timetable', 'DELETE', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataTimeTableDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/graduationprogress', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataGraduationProgressGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.delete(...makeHandler('/api/data/graduationprogress', 'PATCH', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataGraduationProgressPatch(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
     app.use(/** @type {express.ErrorRequestHandler} */
         (err, req, res, next) => {
             res.status(500).json({ e: 'unexpected' });

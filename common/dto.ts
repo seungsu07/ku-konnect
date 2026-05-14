@@ -962,5 +962,3 @@ export function arrayGuarder<E>(e: E): TypeGuarder<any[], E> {
 export function objectGuarder<E = any>(e: E): TypeGuarder<object, E> {
   return (t) => typeof t == 'object'? t === null? e: t: e;
 }
-
-type A<U> = U extends TypeGuarder<infer V, any>? V: never;

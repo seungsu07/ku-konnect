@@ -612,7 +612,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/user
              * @method GET
-             * @type {RouteFunction<'/api/data/user', 'GET', [User]>}
+             * @type {RouteFunction<'/api/data/user', 'GET', [User | null]>}
              */
             dataUserGet(data, user) {
                 const { id } = data;
@@ -621,7 +621,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
-                if (id != user.login_id) return {
+                if (id != user?.login_id) return {
                     success: false,
                     e: 'no_permission'
                 };
@@ -751,9 +751,9 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/userprofile
              * @method GET
-             * @type {RouteFunction<'/api/data/userprofile', 'GET', [User]>}
+             * @type {RouteFunction<'/api/data/userprofile', 'GET'>}
              */
-            dataUserProfileGet(data, user) {
+            dataUserProfileGet(data) {
                 const {
                     id,
                     user: u,
@@ -1187,7 +1187,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/comment
              * @method POST
-             * @type {RouteFunction<'/api/data/comment', 'POST', [User]>}
+             * @type {RouteFunction<'/api/data/comment', 'POST', [User | null]>}
              */
             dataCommentPost(data, user) {
                 const {
@@ -1199,7 +1199,7 @@ export function CreateDatabaseManager(context, rcon) {
                 const pf = dbm.getByID(profile);
                 if (
                     pf?.type != 'user_profile' ||
-                    pf.user != user.id
+                    pf.user != user?.id
                 ) return {
                     success: false,
                     e: 'no_permission'
@@ -1324,7 +1324,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/post
              * @method GET
-             * @type {RouteFunction<'/api/data/post', 'GET', [User]>}
+             * @type {RouteFunction<'/api/data/post', 'GET', [User | null]>}
              */
             dataPostGet(data, user) {
                 const {
@@ -1528,7 +1528,7 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/timetable
              * @method GET
-             * @type {RouteFunction<'/api/data/timetable', 'GET', [User]>}
+             * @type {RouteFunction<'/api/data/timetable', 'GET', [User | null]>}
              */
             dataTimeTableGet(data, user) {
                 const {
@@ -1549,7 +1549,7 @@ export function CreateDatabaseManager(context, rcon) {
                 });
                 return {
                     success: true,
-                    data: t.filter(({ visible, user: u }) => visible || u == user.id).map(
+                    data: t.filter(({ visible, user: u }) => visible || u == user?.id).map(
                         ({ id, classes, name, selected, user: u, visible }) =>
                         ({ id, classes, name, selected, user: u, visible })
                     )
@@ -1698,6 +1698,43 @@ export function CreateDatabaseManager(context, rcon) {
                         user: t.user,
                         value: t.value
                     }
+                };
+            },
+            
+            /**
+             * /api/data/graduationprogress
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/graduationprogress', 'PATCH', [User]>}
+             */
+            dataGraduationProgressPatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        color,
+                        details
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'graduation_progress' ||
+                    t.user != user.id
+                ) return {
+                    success: false,
+                    e: 'graduationprogress_doesnt_exist'
+                };
+                const modifier = removeEmpty({
+                    color,
+                    details
+                });
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
                 };
             }
         },
