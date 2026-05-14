@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   PenSquare, 
@@ -92,6 +93,7 @@ const MOCK_TRENDING = [
 ];
 
 const Kommunity: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -175,7 +177,11 @@ const Kommunity: React.FC = () => {
 
               <div className={styles.postsList}>
                 {MOCK_POSTS.filter(p => p.board === activeBoard?.name || !activeBoard).map(post => (
-                  <article key={post.id} className={styles.postCard}>
+                  <article 
+                    key={post.id} 
+                    className={styles.postCard}
+                    onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                  >
                     <div className={styles.postHeader}>
                       <span className={styles.postBadge}>{post.board}</span>
                       <button className={styles.moreBtn}><MoreHorizontal size={18} color="#94a3b8" /></button>
@@ -257,7 +263,11 @@ const Kommunity: React.FC = () => {
               </div>
               <div className={styles.postsList}>
                 {MOCK_POSTS.map(post => (
-                  <article key={post.id} className={styles.postCard}>
+                  <article 
+                    key={post.id} 
+                    className={styles.postCard}
+                    onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                  >
                     <div className={styles.postHeader}>
                       <span className={styles.postBadge}>{post.board}</span>
                     </div>
@@ -287,13 +297,17 @@ const Kommunity: React.FC = () => {
             </h3>
             <div className={styles.trendingList}>
               {MOCK_TRENDING.map((item, index) => (
-                <a key={item.id} href={`#post-${item.id}`} className={styles.trendingItem}>
+                <div 
+                  key={item.id} 
+                  className={styles.trendingItem}
+                  onClick={() => navigate(`/kommunity/post/${item.id}`)}
+                >
                   <span className={styles.trendingRank}>{index + 1}</span>
                   <div className={styles.trendingContent}>
                     <span className={styles.trendingText}>{item.title}</span>
                     <span className={styles.trendingStats}>조회수 {item.views}</span>
                   </div>
-                </a>
+                </div>
               ))}
             </div>
           </div>

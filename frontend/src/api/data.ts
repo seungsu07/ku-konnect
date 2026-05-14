@@ -39,55 +39,55 @@ async function getMany<T extends keyof PATH_ROUTE>(path: T, query: any) {
 
 export const dataApi = {
     // Courses
-    getCourses: (query: Scheme<'/api/data/course', 'GET', 'REQ'>) => 
+    getCourses: (query: Scheme<'/api/data/course', 'GET', 'REQ'>) =>
         getMany('/api/data/course', query),
-    getCourse: async (query: Scheme<'/api/data/course', 'GET', 'REQ'>) => 
+    getCourse: async (query: Scheme<'/api/data/course', 'GET', 'REQ'>) =>
         (await getMany('/api/data/course', query))[0],
 
     // Professors
-    getProfessors: (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) => 
+    getProfessors: (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) =>
         getMany('/api/data/professor', query),
-    getProfessor: async (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) => 
+    getProfessor: async (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) =>
         (await getMany('/api/data/professor', query))[0],
 
     // Lectures
-    getLectures: (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) => 
+    getLectures: (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) =>
         getMany('/api/data/lecture', query),
-    getLecture: async (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) => 
+    getLecture: async (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) =>
         (await getMany('/api/data/lecture', query))[0],
 
     // Lecture Classes
-    getLectureClasses: (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) => 
+    getLectureClasses: (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) =>
         getMany('/api/data/lectureclass', query),
-    getLectureClass: async (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) => 
+    getLectureClass: async (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) =>
         (await getMany('/api/data/lectureclass', query))[0],
 
     // Classrooms
-    getClassRooms: (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) => 
+    getClassRooms: (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) =>
         getMany('/api/data/classroom', query),
-    getClassRoom: async (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) => 
+    getClassRoom: async (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) =>
         (await getMany('/api/data/classroom', query))[0],
 
     // Buildings
-    getBuildings: (query: Scheme<'/api/data/building', 'GET', 'REQ'>) => 
+    getBuildings: (query: Scheme<'/api/data/building', 'GET', 'REQ'>) =>
         getMany('/api/data/building', query),
-    getBuilding: async (query: Scheme<'/api/data/building', 'GET', 'REQ'>) => 
+    getBuilding: async (query: Scheme<'/api/data/building', 'GET', 'REQ'>) =>
         (await getMany('/api/data/building', query))[0],
 
     // Timetables
-    getTimeTables: (query: Scheme<'/api/data/timetable', 'GET', 'REQ'>) => 
+    getTimeTables: (query: Scheme<'/api/data/timetable', 'GET', 'REQ'>) =>
         getMany('/api/data/timetable', query),
-    createTimeTable: (data: Scheme<'/api/data/timetable', 'POST', 'REQ'>) => 
+    createTimeTable: (data: Scheme<'/api/data/timetable', 'POST', 'REQ'>) =>
         fetchData('/api/data/timetable', 'POST', data),
-    updateTimeTable: (data: Scheme<'/api/data/timetable', 'PATCH', 'REQ'>) => 
+    updateTimeTable: (data: Scheme<'/api/data/timetable', 'PATCH', 'REQ'>) =>
         fetchData('/api/data/timetable', 'PATCH', data),
-    deleteTimeTable: (data: Scheme<'/api/data/timetable', 'DELETE', 'REQ'>) => 
+    deleteTimeTable: (data: Scheme<'/api/data/timetable', 'DELETE', 'REQ'>) =>
         fetchData('/api/data/timetable', 'DELETE', data),
 
     // Graduation Progress
-    getGraduationProgress: (query: Scheme<'/api/data/graduationprogress', 'GET', 'REQ'>) => 
+    getGraduationProgress: (query: Scheme<'/api/data/graduationprogress', 'GET', 'REQ'>) =>
         fetchData('/api/data/graduationprogress', 'GET', query),
-    updateGraduationProgress: (data: Scheme<'/api/data/graduationprogress', 'PATCH', 'REQ'>) => 
+    updateGraduationProgress: (data: Scheme<'/api/data/graduationprogress', 'PATCH', 'REQ'>) =>
         fetchData('/api/data/graduationprogress', 'PATCH', data),
 };
 
