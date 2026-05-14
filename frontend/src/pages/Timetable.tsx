@@ -17,7 +17,7 @@ const Timetable: React.FC = () => {
 
   // View/Create modes
   const [mode, setMode] = useState<'view' | 'create'>('view');
-  const [savedTimetables] = useState<TimeTable[]>(SAVED_TIMETABLES);
+  const [savedTimetables, saveTimetable] = useState<TimeTable[]>(SAVED_TIMETABLES);
   const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
 
   const workerRef = useRef<Worker | null>(null);

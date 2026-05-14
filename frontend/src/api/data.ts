@@ -1,19 +1,51 @@
 import type { Scheme } from "../../../common/dto";
-import type { Building, ClassRoom, Course, Lecture, LectureClass, Professor, TimeTable, WithoutID } from "../../../common/models";
+import type { Building, ClassRoom, Course, Lecture, LectureClass, Professor, TimeTable } from "../../../common/models";
 
-export declare const getCourse: (query: Scheme<'/api/data/course', 'GET', 'REQ'>) => Course | undefined;
-export declare const getProfessor: (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) => Professor | undefined;
-export declare const getLecture: (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) => Lecture | undefined;
-export declare const getLectureClass: (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) => LectureClass | undefined;
-export declare const getClassRoom: (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) => ClassRoom | undefined;
-export declare const getBuilding: (query: Scheme<'/api/data/building', 'GET', 'REQ'>) => Building | undefined;
+export const getCourse = (query: Scheme<'/api/data/course', 'GET', 'REQ'>) => getCourses(query).at(0);
+export const getProfessor = (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) => getProfessors(query).at(0);
+export const getLecture = (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) => getLectures(query).at(0);
+export const getLectureClass = (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) => getLectureClasses(query).at(0);
+export const getClassRoom = (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) => getClassRooms(query).at(0);
+export const getBuilding = (query: Scheme<'/api/data/building', 'GET', 'REQ'>) => getBuildings(query).at(0);
 
+export function getCourses(
+    query: Scheme<'/api/data/course', 'GET', 'REQ'>
+): Course[] {
+    return null as any;
+};
 
-export declare const getCourses: (query: Scheme<'/api/data/course', 'GET', 'REQ'>) => Course[];
-export declare const getProfessors: (query: Scheme<'/api/data/professor', 'GET', 'REQ'>) => Professor[];
-export declare const getLectures: (query: Scheme<'/api/data/lecture', 'GET', 'REQ'>) => Lecture[];
-export declare const getLectureClasses: (query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>) => LectureClass[];
-export declare const getClassRooms: (query: Scheme<'/api/data/classroom', 'GET', 'REQ'>) => ClassRoom[];
-export declare const getBuildings: (query: Scheme<'/api/data/building', 'GET', 'REQ'>) => Building[];
+export function getProfessors(
+    query: Scheme<'/api/data/professor', 'GET', 'REQ'>
+): Professor[] {
+    return null as any;
+};
 
-export declare const createTimeTable: (param: Scheme<'/api/data/timetable', 'POST', 'REQ'>) => TimeTable | null;
+export function getLectures(
+    query: Scheme<'/api/data/lecture', 'GET', 'REQ'>
+): Lecture[] {
+    return null as any;
+};
+
+export function getLectureClasses(
+    query: Scheme<'/api/data/lectureclass', 'GET', 'REQ'>
+): LectureClass[] {
+    return null as any;
+};
+
+export function getClassRooms(
+    query: Scheme<'/api/data/classroom', 'GET', 'REQ'>
+): ClassRoom[] {
+    return null as any;
+};
+
+export function getBuildings(
+    query: Scheme<'/api/data/building', 'GET', 'REQ'>
+): Building[] {
+    return null as any;
+};
+
+export function createTimeTable(
+    param: Scheme<'/api/data/timetable', 'POST', 'REQ'>
+): TimeTable | null {
+    return null as any;
+};
