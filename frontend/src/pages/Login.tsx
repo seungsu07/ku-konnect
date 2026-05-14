@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authApi } from '../api/auth';
 import logo from '../assets/logo.svg';
 import styles from './Login.module.css';
 
@@ -7,12 +8,26 @@ function Login() {
     const navigate = useNavigate();
     const [id, setId] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // 실제 로그인 로직 처리 (API 등)
-        console.log('Login attempt:', { id, password });
+        setIsLoading(true);
+        try {
+            const res = await authApi.login({ id, password });
+            if (res.success) {
+                alert('로그인 성공!');
+                localStorage.setItem('login_id', id);
+                navigate('/');
+            } else {
+                alert(`로그인 실패: ${res.e}`);
+            }
+        } catch (error) {
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSignUp = () => {
@@ -70,11 +85,14 @@ function Login() {
                     </div>
                     
                     <div className={styles['btn-container']}>
-                        <button type="submit" className={`${styles.btn} ${styles['btn-primary']}`}>로그인</button>
+                        <button type="submit" className={`${styles.btn} ${styles['btn-primary']}`} disabled={isLoading}>
+                            {isLoading ? '로그인 중...' : '로그인'}
+                        </button>
                         <button 
                             type="button" 
                             className={`${styles.btn} ${styles['btn-secondary']}`} 
                             onClick={handleSignUp}
+                            disabled={isLoading}
                         >
                             회원가입
                         </button>

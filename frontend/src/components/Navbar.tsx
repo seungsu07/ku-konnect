@@ -7,6 +7,18 @@ import logoImg from '../assets/logo.svg';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLightMode, setIsLightMode] = useState(true);
+  const [loginId, setLoginId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedId = localStorage.getItem('login_id');
+    setLoginId(storedId);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('login_id');
+    setLoginId(null);
+    window.location.reload();
+  };
 
   // Apply default light mode on mount and synchronize with state
   useEffect(() => {
@@ -52,9 +64,16 @@ const Navbar = () => {
           <button className="theme-toggle" onClick={toggleTheme}>
             {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
           </button>
-          <Link to="/login" className="login-btn">
-            로그인
-          </Link>
+          {loginId ? (
+            <div className="user-actions">
+              <span className="user-id">{loginId}</span>
+              <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
+            </div>
+          ) : (
+            <Link to="/login" className="login-btn">
+              로그인
+            </Link>
+          )}
         </div>
       </div>
 

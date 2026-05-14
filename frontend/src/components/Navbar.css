@@ -133,6 +133,50 @@
   background-color: #c5382e;
 }
 
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-id {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.logout-btn {
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background-color: #f3f4f6;
+  color: #666;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #e5e7eb;
+  color: #1a1a1a;
+}
+
+/* Dark mode overrides */
+body:not(.light-mode) .user-id {
+  color: #ffffff;
+}
+
+body:not(.light-mode) .logout-btn {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+body:not(.light-mode) .logout-btn:hover {
+  background-color: #4b5563;
+  color: #ffffff;
+}
+
 /* =========================================
    모바일 슬라이드 메뉴 기본 스타일 (데스크탑에선 숨김)
    ========================================= */
