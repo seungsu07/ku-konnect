@@ -87,8 +87,8 @@ function Signup() {
         try {
             const res = await authApi.signup({
                 campus: campus as any,
-                college: (collegeMap[college] || college) as any,
-                department: (majorMap[major] || major) as any,
+                college: college as any,
+                department: major as any,
                 student_id: studentId,
                 name,
                 login_id: userid,
