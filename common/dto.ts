@@ -786,7 +786,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         success: true;
         data: Pick<TimeTable,
           | 'id'
-          | 'periods'
+          | 'classes'
           | 'name'
           | 'selected'
           | 'user'
@@ -802,7 +802,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       REQ: Pick<TimeTable,
         | 'name'
         | 'selected'
-        | 'periods'
+        | 'classes'
         | 'visible'
       >;
       
@@ -810,7 +810,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         success: true;
         data: Pick<TimeTable,
           | 'id'
-          | 'periods'
+          | 'classes'
           | 'name'
           | 'selected'
           | 'user'
@@ -828,7 +828,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         data: Partial<Pick<TimeTable,
           | 'name'
           | 'selected'
-          | 'periods'
+          | 'classes'
           | 'visible'
         >>;
       };

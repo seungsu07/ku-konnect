@@ -426,9 +426,9 @@ export const getLectureByClass = (clsId: string) => {
   const cls = getLectureClass(clsId);
   return MOCK_LECTURES.find(l => l.id === cls?.lecture);
 };
-export const getLectureClassByPeriod = (periodId: string) => { const p = getPeriod(periodId); return MOCK_CLASSES.find(cls => cls.periods.includes(p)) };
-export const getLectureByPeriod = (periodId: string) => {
-  const cls = getLectureClassByPeriod(periodId);
+export const getLectureClassByPeriod = (period: Period) => MOCK_CLASSES.find(cls => cls.periods.includes(period));
+export const getLectureByPeriod = (period: Period) => {
+  const cls = getLectureClassByPeriod(period);
   return MOCK_LECTURES.find(l => l.id === cls?.lecture);
 };
 

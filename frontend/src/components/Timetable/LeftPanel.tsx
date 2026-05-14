@@ -5,7 +5,7 @@ import { GripVertical, Sparkles, ShoppingCart, Plus, X, ChevronRight, Zap, Home,
 import styles from './LeftPanel.module.css';
 import type { Lecture, Preferences } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { INITIAL_CART_LECTURES, getCourse } from '../../data/mockData';
+import { getCourse } from '../../api/data';
 
 const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
@@ -59,7 +59,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
   const [subjects, setSubjects] = useState<Lecture[]>(INITIAL_CART_LECTURES);
   const [bannedCells, setBannedCells] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [nextId, setNextId] = useState(INITIAL_CART_LECTURES.length + 1);
+  const [nextId, setNextId] = useState<number>(INITIAL_CART_LECTURES.length + 1);
 
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -75,6 +75,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
     compactness: { value: 3, priority: { value: 1, lock: false } },
     campus_closeness: { value: 3, priority: { value: 1, lock: false } },
     avoid_morning: { value: 3, priority: { value: 1, lock: false } },
+    personal_schedule: { value: [], priority: { value: 1, lock: true } }
   });
 
   const [isPainting, setIsPainting] = useState(false);
@@ -152,7 +153,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
     const newId = `lect-${nextId + 100}`;
     setNextId(n => n + 1);
     const mockLecture: Lecture = {
-      id: newId as any, type: 'lecture', course: 'UNKNOWN' as any, ay: 2026, sem: 'first', professor: 'prof-unknown' as any, classes: [], hours: 3, lab_hours: 0, credit: 3
+      id: newId as any, type: 'lecture', course: 'UNKNOWN' as any, ay: 2026, sem: 'first', professor: 'prof-unknown' as any, hours: 3, lab_hours: 0, credit: 3
     };
     setSubjects([...subjects, mockLecture]);
   };
@@ -283,7 +284,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
                     ref={provided.innerRef}
                   >
                     {subjects.map((item, index) => {
-                      const course = getCourse(item.course);
+                      const course = getCourse({ id: item.course });
                       const color = getColor(course?.code || 'unknown');
                       return (
                         <Draggable key={item.id} draggableId={`modal-${item.id}`} index={index}>
@@ -413,7 +414,7 @@ const LeftPanel: React.FC<{ onGenerate: (basket: Lecture[], prefs: Preferences, 
         <div className={styles.basketPreview} onClick={() => setIsModalOpen(true)}>
           <div className={styles.pillRow}>
             {previewSubjects.map(s => {
-              const course = getCourse(s.course);
+              const course = getCourse({ id: s.course });
               const color = getColor(course?.code || 'unknown');
               return (
                 <span

@@ -6,7 +6,6 @@ import RightPanel from '../components/Timetable/RightPanel';
 import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
 import type { TimeTable, Lecture, Preferences } from '../../../common/models';
-import { SAVED_TIMETABLES } from '../data/mockData';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
 
 const Timetable: React.FC = () => {

@@ -443,13 +443,7 @@ export function CreateAppManager(context, rcon) {
             POST: gObjectGuarder({
                 name: G.s,
                 selected: G.b,
-                periods: gArrayGuarder(gObjectGuarder({
-                    day: (t) =>
-                        /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)? /** @type {Day} */ (String(t)):
-                        new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
-                    time: G.n,
-                    room: G.id
-                })),
+                classes: gArrayGuarder(G.id),
                 visible: G.b
             }),
             PATCH: gObjectGuarder({
@@ -457,13 +451,7 @@ export function CreateAppManager(context, rcon) {
                 data: gObjectGuarder({
                     name: optGuarder(G.s),
                     selected: optGuarder(G.b),
-                    periods: anyGuarder([G.u, gArrayGuarder(gObjectGuarder({
-                        day: (t) =>
-                            /^(?:sun|mon|tue|wed|thu|fri|sat)$/.test(t)? /** @type {Day} */ (String(t)):
-                            new ParseError('This field needed to be one of \'sun\', \'mon\', \'tue\', \'wed\', \'thu\', \'fri\', \'sat\''),
-                        time: G.n,
-                        room: G.id
-                    }))]),
+                    classes: gArrayGuarder(G.id),
                     visible: optGuarder(G.b)
                 })
             }),

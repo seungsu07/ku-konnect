@@ -1550,8 +1550,8 @@ export function CreateDatabaseManager(context, rcon) {
                 return {
                     success: true,
                     data: t.filter(({ visible, user: u }) => visible || u == user.id).map(
-                        ({ id, periods, name, selected, user: u, visible }) =>
-                        ({ id, periods, name, selected, user: u, visible })
+                        ({ id, classes, name, selected, user: u, visible }) =>
+                        ({ id, classes, name, selected, user: u, visible })
                     )
                 };
             },
@@ -1565,11 +1565,11 @@ export function CreateDatabaseManager(context, rcon) {
                 const {
                     name,
                     selected,
-                    periods,
+                    classes,
                     visible
                 } = data;
-                if (!periods.every(({ room }) =>
-                    dbm.getByID(room)?.type == 'class_room'
+                if (!classes.every(c =>
+                    dbm.getByID(c)?.type == 'class_room'
                 )) return {
                     success: false,
                     e: 'classroom_doesnt_exist'
@@ -1582,7 +1582,7 @@ export function CreateDatabaseManager(context, rcon) {
                     selected,
                     visible,
                     /** @type {any} */
-                    periods
+                    classes
                 };
                 const t = dbm.createEntity(param);
                 if (!t) return {
@@ -1593,7 +1593,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: {
                         id: t.id,
-                        periods: t.periods,
+                        classes: t.classes,
                         name: t.name,
                         selected: t.selected,
                         user: t.user,
@@ -1613,7 +1613,7 @@ export function CreateDatabaseManager(context, rcon) {
                     data: {
                         name,
                         selected,
-                        periods,
+                        classes,
                         visible
                     }
                 } = data;
@@ -1629,7 +1629,7 @@ export function CreateDatabaseManager(context, rcon) {
                     name,
                     selected,
                     visible,
-                    periods
+                    classes
                 });
                 Object.entries(modifier).forEach(([k, v]) => t[k] = v);
                 const res = dbm.updateEntity(t);

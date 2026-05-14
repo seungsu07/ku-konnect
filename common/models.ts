@@ -362,7 +362,7 @@ export interface Preferences {
   };
   /** 개인 일정 */
   personal_schedule: {
-    value: { [K in Day]?: number[]; };
+    value: [Day, number][];
     priority: Priority;
   };
 }
@@ -377,8 +377,8 @@ export interface TimeTable extends Entity<'time_table'> {
   selected: boolean;
   /** 공개 여부 */
   visible: boolean;
-  /** 교시 */
-  periods: Period[];
+  /** 강의 */
+  classes: EntityID<'lecture_class'>[];
 }
 
 /** 분수 */

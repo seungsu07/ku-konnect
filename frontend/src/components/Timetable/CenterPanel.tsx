@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, AlertTriangle, ChevronDown, Plus } from 'lucide-react';
 import styles from './CenterPanel.module.css';
-import type { TimeTable } from '../../../../common/models';
+import type { CourseType, Day, EntityID, TimeTable } from '../../../../common/models';
 import { DAY_MAPPING } from '../../../../common/models';
-import { getCourse, getProfessor, getPeriod, getBuilding, getClassRoom, getLectureByPeriod, getLectureClassByPeriod } from '../../data/mockData';
+import { getCourse, getProfessor, getBuilding, getClassRoom, getLecture, getLectureClass } from '../../api/data';
 
 const DISPLAY_DAYS = DAY_MAPPING.filter(d => !['sun', 'sat'].includes(d.id));
 
@@ -202,31 +202,39 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
 
           {/* 시간표 카드 */}
           {(() => {
-            const rawClasses: any[] = [];
+            const grouped = new Map<EntityID<'lecture_class'>, {
+              lecture: EntityID<'lecture'>;
+              courseName: string;
+              courseCode: string;
+              courseType: CourseType;
+              credit: number;
+              profName: string;
+              day: Day;
+              start: number;
+              end: number;
+              location: string;
+              warning: boolean;
+            }[]>();
             
-            Object.values(timeTable.days).forEach(dayData => {
-              if (!dayData) return;
-              dayData.periods.forEach((periodRef: any) => {
-                const period = getPeriod(periodRef.id);
-                if (!period) return;
-                
-                const lecture = getLectureByPeriod(period.id);
-                if (!lecture) return;
+            Object.values(timeTable.classes).forEach(classId => {
+              const lectureClass = getLectureClass({ id: classId });
+              if (!lectureClass) return;
+              const lecture = getLecture({ id: lectureClass.lecture });
+              if (!lecture) return;
+              const duration = lectureClass ? lecture.hours / lectureClass.periods.length : 1.5;
 
-                const lectureClass = getLectureClassByPeriod(period.id);
-                const duration = lectureClass ? lecture.hours / lectureClass.periods.length : 1.5;
-
-                const course = getCourse(lecture.course);
-                const professor = getProfessor(lecture.professor);
-                const room = getClassRoom(period.room);
-                const building = room ? getBuilding(room.building) : undefined;
+              const course = getCourse({ id: lecture.course });
+              const professor = getProfessor({ id: lecture.professor });
+              
+              lectureClass.periods.forEach(period => {
+                const room = getClassRoom({ id: period.room });
+                const building = room ? getBuilding({ id: room.building }) : undefined;
 
                 const startTime = period.time;
                 const endTime = period.time + duration;
 
-                rawClasses.push({
-                  id: `${lecture.id}-${period.id}`,
-                  lectureId: lecture.id,
+                grouped.set(lectureClass.id, (grouped.get(lectureClass.id) ?? []).concat({
+                  lecture: lecture.id,
                   courseName: course?.name || '알 수 없음',
                   courseCode: course?.code || '----',
                   courseType: course?.course_type || 'major',
@@ -237,19 +245,12 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
                   end: endTime,
                   location: `${building?.name || ''} ${room?.room || ''}`.trim(),
                   warning: course?.name === '인공지능'
-                });
+                }));
               });
             });
 
             // Group and Merge contiguous periods
             const renderableClasses: any[] = [];
-            const grouped = new Map<string, any[]>();
-
-            rawClasses.forEach(cls => {
-              const key = `${cls.lectureId}-${cls.day}`;
-              if (!grouped.has(key)) grouped.set(key, []);
-              grouped.get(key)!.push(cls);
-            });
 
             grouped.forEach(list => {
               list.sort((a, b) => a.start - b.start);

@@ -1,6 +1,5 @@
-import type { Lecture, Preferences, TimeTable, Day } from '../../../common/models';
-import { getLectureClass, getClassRoom, getBuilding, asId, getLecturesByCourse, getLectureByClass } from '../data/mockData';
-import type { MockPeriod } from '../data/mockData';
+import type { Lecture, Preferences, TimeTable, Day, EntityID, Period } from '../../../common/models';
+import { getLectureClass, getClassRoom, getBuilding, getLectures, getLectureClasses, getLecture, createTimeTable } from '../api/data';
 
 export interface WorkerInput {
   basket: Lecture[];
@@ -17,6 +16,7 @@ const DISPLAY_DAYS: Day[] = ['mon', 'tue', 'wed', 'thu', 'fri'];
 const LUNCH_MIN = 11.5;
 const LUNCH_MAX = 14.0;
 const MOVEMENT_THRESHOLD = 20; // Example threshold
+const NULL_ID = '0-0-0-0-0';
 
 function cartesianProduct<T>(arrays: T[][]): T[][] {
   if (arrays.length === 0) return [[]];
@@ -34,8 +34,8 @@ const getWeight = (val: number) => {
 self.onmessage = (e: MessageEvent<WorkerInput>) => {
   const { basket, prefs, bannedCells } = e.data;
 
-  const courseGroups = new Map<string, Lecture[]>();
-  const coursePriority = new Map<string, number>();
+  const courseGroups = new Map<EntityID<'course'>, Lecture[]>();
+  const coursePriority = new Map<EntityID<'course'>, number>();
 
   basket.forEach((lect, idx) => {
     const cid = lect.course;
@@ -48,16 +48,15 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
   const uniqueCourseIds = Array.from(courseGroups.keys());
 
-  const classArrays: string[][] = uniqueCourseIds.map(cid => {
+  const classArrays: EntityID<'lecture_class'>[][] = uniqueCourseIds.map(cid => {
     // Collect ALL lectures for this course, not just the ones explicitly in the basket
-    const lectures = getLecturesByCourse(cid);
-    const classIds = lectures.flatMap(l => l.classes);
-    return ['none', ...classIds];
+    const lectures = getLectures({ course: cid });
+    const classIds = lectures.flatMap(l => getLectureClasses({ lecture: l.id }).map(({ id }) => id));
+    return [NULL_ID, ...classIds];
   });
 
   interface Candidate {
-    classes: string[]; // lecture_class IDs (excluding 'none')
-    periods: MockPeriod[];
+    classes: EntityID<'lecture_class'>[]; // lecture_class IDs (excluding NULL_ID)
     penalty: number;
   }
 
@@ -76,23 +75,23 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
   combinations.forEach(classCombo => {
     let isValid = true;
-    let periods: (MockPeriod & { duration: number })[] = [];
+    let periods: (Period & { duration: number })[] = [];
     const scheduledByDay: Record<string, {start: number, end: number}[]> = {
       sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
     };
-    const activeClasses = classCombo.filter(id => id !== 'none');
+    const activeClasses = classCombo.filter(id => id !== NULL_ID);
 
     if (activeClasses.length === 0) return; // Skip completely empty timetables
 
     // Extract periods for this combination
     for (const clsId of activeClasses) {
-        const cls = getLectureClass(clsId);
+        const cls = getLectureClass({ id: clsId });
         if (!cls) continue;
         
-        const lecture = getLectureByClass(clsId);
+        const lecture = getLecture({ id: cls.lecture });
         const duration = lecture ? lecture.hours / cls.periods.length : 1.5;
 
-        for (const p of cls.periods as MockPeriod[]) {
+        for (const p of cls.periods) {
           const start = p.time;
           const end = start + duration;
           
@@ -148,7 +147,7 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
     // Course Missing Penalty (Soft)
     classCombo.forEach((clsId, courseIndex) => {
-      if (clsId === 'none') {
+      if (clsId === NULL_ID) {
         const cid = uniqueCourseIds[courseIndex];
         const rank = coursePriority.get(cid)!;
         penalty += (basket.length - rank) * 1000;
@@ -156,7 +155,7 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
     });
 
       // Group periods by day
-      const dayPeriods: Record<Day, MockPeriod[]> = {
+      const dayPeriods: Record<Day, Period[]> = {
         sun: [], mon: [], tue: [], wed: [], thu: [], fri: [], sat: []
       };
       periods.forEach(p => dayPeriods[p.day].push(p));
@@ -189,11 +188,11 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
           }
 
           // Campus
-          const room1 = getClassRoom(current.room);
-          const room2 = getClassRoom(next.room);
+          const room1 = getClassRoom({ room: current.room });
+          const room2 = getClassRoom({ room: next.room });
           if (room1 && room2) {
-            const b1 = getBuilding(room1.building);
-            const b2 = getBuilding(room2.building);
+            const b1 = getBuilding({ id: room1.building });
+            const b2 = getBuilding({ id: room2.building });
             if (b1 && b2) {
               const dx = b1.location[0] - b2.location[0];
               const dy = b1.location[1] - b2.location[1];
@@ -226,7 +225,6 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
 
     candidates.push({
       classes: activeClasses,
-      periods,
       penalty
     });
   });
@@ -263,24 +261,14 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   const top3 = candidates.slice(0, 3);
 
   const timetables: TimeTable[] = top3.map((cand, idx) => {
-    const days: any = {};
-    DISPLAY_DAYS.forEach(day => {
-      const dayPeriods = cand.periods.filter(p => p.day === day);
-      if (dayPeriods.length > 0) {
-        days[day] = {
-          day,
-          periods: dayPeriods
-        };
-      }
-    });
-
-    return {
-      id: asId(`tt-gen-${Date.now()}-${idx}`),
-      type: 'time_table',
+    const timeTable = createTimeTable({
       name: `AI 추천 ${idx + 1}순위 (패널티: ${Math.floor(cand.penalty)})`,
       selected: idx === 0,
-      days
-    };
+      classes: cand.classes,
+      visible: false
+    });
+
+    return timeTable as TimeTable; // NULL 방어 로직 필요
   });
 
   self.postMessage({ timetables });
