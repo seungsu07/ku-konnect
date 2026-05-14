@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import JSON_CAMPUSES from '../../common/default/campuses.json' with { type: 'json' };
 import JSON_COLLEGES from '../../common/default/colleges.json' with { type: 'json' };
 import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type: 'json' };
+import JSON_COURSES from '../../common/default/courses.json' with { type: 'json' };
 
 
 
@@ -121,6 +122,7 @@ export function CreateDatabaseManager(context, rcon) {
             col.insert(JSON_CAMPUSES);
             col.insert(JSON_COLLEGES);
             col.insert(JSON_DEPARTMENTS);
+            col.insert(JSON_COURSES);
             console.log('Created collection');
             return col;
         })();

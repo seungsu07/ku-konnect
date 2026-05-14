@@ -6,8 +6,7 @@ export type CourseType =
   | 'major_required'    // 전공필수
   | 'general'           // 교양
   | 'general_required'  // 교양필수
-  | 'inter'             // 융합
-  | 'inter_required';   // 융합필수
+  | 'common';           // 학부공통
 
 export const COURSE_TYPE_MAPPING:
   { id: CourseType, label: string }[] = [
@@ -15,8 +14,7 @@ export const COURSE_TYPE_MAPPING:
     { id: 'major_required', label: '전공필수' },
     { id: 'general', label: '교양' },
     { id: 'general_required', label: '교양필수' },
-    { id: 'inter', label: '융합' },
-    { id: 'inter_required', label: '융합필수' }
+    { id: 'common', label: '학부공통' }
   ];
 
 /** 요일 */
