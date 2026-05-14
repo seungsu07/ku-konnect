@@ -2,19 +2,39 @@ POST https://api.konnect.hydv.kr/api/auth/signup HTTP/1.1
 content-type: application/json
 
 {
-    "campus": "12345678-1234-1234-1234-123456789abc",
-    "college": "12345678-1234-1234-1234-123456789abc",
-    "department": "12345678-1234-1234-1234-123456789abc",
+    "campus": "646566e0-d5b9-437e-95db-45c7d71a5783",
+    "college": "35f63daa-0447-48d1-a66a-d21c796bb816",
+    "department": "ce4ed2e7-0454-4694-bc76-63817dd2a9c9",
     "name": "human",
     "login_id": "human",
-    "univ_mail":1,
     "student_id": "2026320165",
     "password": "human",
     "univ_mail": {
         "address": "mangchya069@korea.ac.kr",
-        "token": "9ce58530-3518-4919-bee8-0992dd4a3d01"
+        "token": "e4b631d1-95e1-4158-b05e-0176d733d1f7"
     }
 }
+
+###
+
+POST https://api.konnect.hydv.kr/api/auth/login
+Content-Type: application/json
+
+{
+    "id": "human",
+    "password": "human"
+}
+
+###
+
+GET https://api.konnect.hydv.kr/api/data/user
+Cookie: token=6d855442-95cc-4117-860d-00d2935b96a0; Path=/; Expires=Fri, 12 Jun 2026 10:25:27 GMT; HttpOnly
+Content-Type: application/json
+
+{
+    "id": "human"
+}
+
 
 ###
 
@@ -27,5 +47,5 @@ content-type: application/json
 
 {
     "address": "mangchya069@korea.ac.kr",
-    "code": "244670"
+    "code": "810061"
 }

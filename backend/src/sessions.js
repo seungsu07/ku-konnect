@@ -152,7 +152,8 @@ export function CreateMailSessionManager(context, rcon) {
                 .zonedDateTimeISO()
                 .add(duration)
                 .epochMilliseconds;
-            const code = Math.round(Math.random() * 1000000).toString();
+            const code = Math.round(Math.random() * 1000000)
+                .toString().padStart(6, '0');
             /** @type {WithoutID<Session>} */
             const param = {
                 type: 'session',

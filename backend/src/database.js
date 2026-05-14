@@ -63,8 +63,7 @@ function mailTemplate(title, content) {
             <title>${title}</title>
         <head>
         <body>
-            <h1>${title}</h1>
-            <hr>
+            <h1 style="border-bottom: 1px solid #000000;">${title}</h1>
             ${content}
         </body>
     </html>
@@ -81,12 +80,27 @@ function mailTemplate(title, content) {
 // Database
 // ====================
 
+/** @type {PromiseWithResolvers<void>} */
+const { promise: dbWait, resolve: dbOk } = Promise.withResolvers();
+
+const db = new loki('./database.json', {
+    autoload: true,
+    autoloadCallback: () => {
+        dbOk();
+        console.log('Database loaded');
+    },
+    autosave: true,
+    autosaveInterval: 60000,
+    autosaveCallback: () => {
+        console.log('Database saved');
+    },
+    env: 'NODEJS'
+});
+
 /**
  * @template {(...args: any[]) => any} T
  * @typedef {(...args: Parameters<T>) => Promise<ReturnType<Awaited<T>>>} Asyncify
  */
-
-const NO_ID = '0-0-0-0-0';
 
 /** @typedef {ReturnType<typeof CreateDatabaseManager>} DatabaseManager */
 
@@ -95,28 +109,22 @@ const NO_ID = '0-0-0-0-0';
  * @param {RunningController} rcon
  */
 export function CreateDatabaseManager(context, rcon) {
-    const db = new loki('database.json', {
-        autoload: true,
-        autoloadCallback: () => {
-            console.log('Database loaded');
-        },
-        autosave: true,
-        autosaveInterval: 60000,
-        autosaveCallback: () => {
-            console.log('Database saved');
-        }
-    });
+
+    /** @type {Collection<Entity<EntityType>>?} */
+    let collection = null;
     
-    /** @type {Collection<Entity<EntityType>>} */
-    const collection =
-        db.getCollection('entities') ??
+    (async () => {
+        await dbWait;
+        collection = db.getCollection('entities') ??
         (() => {
             const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
             col.insert(JSON_CAMPUSES);
             col.insert(JSON_COLLEGES);
             col.insert(JSON_DEPARTMENTS);
+            console.log('Created collection');
             return col;
         })();
+    })();
     
     /** @type {ServerContext['sessionManager']} */
     let sessionManager;
@@ -125,14 +133,14 @@ export function CreateDatabaseManager(context, rcon) {
      * @param {string} password
      * @param {string} salt
      */
-    function makehash(password, salt=crypto.randomBytes(8).toHex()) {
+    function makehash(password, salt=crypto.randomBytes(8).toString('hex')) {
         const iterations = 100000;
         const keylen = 64;
         const digest = 'sha512';
         return {
             hash: crypto
                 .pbkdf2Sync(password, salt, iterations, keylen, digest)
-                .toHex(),
+                .toString('hex'),
             salt
         };
     }
@@ -253,7 +261,7 @@ export function CreateDatabaseManager(context, rcon) {
         /** @type {MonoController} */
         controller: rcon.outer,
         context: {
-            collection,
+            db,
             idMap,
             sendMail
         },
@@ -282,6 +290,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {T | undefined}
          */
         createEntity(param) {
+            if (!collection) throw new Error();
             const idparam = {
                 id: crypto.randomUUID(),
                 ...param
@@ -298,6 +307,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {TypeEntity<T> | undefined}
          */
         getByID(id) {
+            if (!collection) throw new Error();
             const ref = this.fromIDMap(id);
             if (ref) return ref;
             const entity = collection.by('id', id);
@@ -313,6 +323,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {TypeEntity<T>[]}
          */
         findEntity(query, options={}) {
+            if (!collection) throw new Error();
             return collection.chain()
                 .find(query)
                 .offset(options.offset?? 0)
@@ -342,6 +353,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {T | undefined}
          */
         updateEntity(entity) {
+            if (!collection) throw new Error();
             const result = collection.update(entity);
             return /** @type {any} */ (result);
         },
@@ -352,6 +364,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {T | undefined}
          */
         deleteEntity(entity) {
+            if (!collection) throw new Error();
             const result = collection.remove(entity);
             if (!result) return undefined;
             idMap.delete(entity.id);
@@ -723,7 +736,7 @@ export function CreateDatabaseManager(context, rcon) {
                     e: 'unauthorized'
                 };
                 t.id = crypto.randomUUID();
-                t.login_id = `${crypto.randomBytes(8).toHex()}DEL_${t.login_id}`;
+                t.login_id = `${crypto.randomBytes(8).toString('hex')}DEL_${t.login_id}`;
                 const res = dbm.updateEntity(t);
                 if (!res) return {
                     success: false,
@@ -1693,6 +1706,7 @@ export function CreateDatabaseManager(context, rcon) {
          * @returns {Promise<void>}
          */
         async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+            await dbWait;
             sessionManager = context.sessionManager;
             if (!sessionManager) throw new Error();
             const controller = rcon.inner;

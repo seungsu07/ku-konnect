@@ -171,7 +171,7 @@ export function CreateAppManager(context, rcon) {
     const guarders = {
         '/api/auth/login': {
             POST: gObjectGuarder({
-                id: G.id,
+                id: G.s,
                 password: G.s
             })
         },
@@ -627,7 +627,7 @@ export function CreateAppManager(context, rcon) {
 
     app.use(/** @type {express.ErrorRequestHandler} */
         (err, req, res, next) => {
-            res.status(500).json({ e: 'unexpected', err });
+            res.status(500).json({ e: 'unexpected' });
             return;
         }
     );
