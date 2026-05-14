@@ -16,6 +16,7 @@ import JSON_DEPARTMENTS from '../../common/default/departments.json' with { type
 import JSON_BUILDINGS from '../data/buildings.json' with { type: 'json' };
 import JSON_CLASSROOMS from '../data/classroom.json' with { type: 'json' };
 import JSON_COURSES from '../data/courses.json' with { type: 'json' };
+import JSON_COURSES_BASE from '../../common/default/courses.json' with { type: 'json' };
 import JSON_LECTURES from '../data/lecture.json' with { type: 'json' };
 import JSON_LECTURECLASSES from '../data/lectureclass.json' with { type: 'json' };
 import JSON_PROFESSORS from '../data/professor.json' with { type: 'json' };
@@ -127,6 +128,7 @@ export function CreateDatabaseManager(context, rcon) {
             col.insert(JSON_BUILDINGS);
             col.insert(JSON_CLASSROOMS);
             col.insert(JSON_COURSES);
+            col.insert(JSON_COURSES_BASE);
             col.insert(JSON_LECTURES);
             col.insert(JSON_LECTURECLASSES);
             col.insert(JSON_PROFESSORS);
