@@ -42,9 +42,17 @@ const getColor = (id: string) => {
   return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length];
 };
 
-// SubjectBoard is imported from AppDataContext
+// Global Board IDs
+const FREE_BOARD_ID = 'f3a27cad-cac8-4164-a2e0-201fad0517c5';
 
-
+const FREE_BOARD_DATA = {
+  id: FREE_BOARD_ID,
+  realBoardId: FREE_BOARD_ID,
+  name: '자유게시판',
+  prof: '자유 소통 공간',
+  code: 'FREE',
+  newPosts: 0
+};
 
 const MOCK_TRENDING = [
   { id: '1', title: '이번 학기 꿀교양 추천 리스트', views: '2.5k' },
@@ -76,7 +84,9 @@ const Kommunity: React.FC = () => {
     };
   }, []);
 
-  const activeBoard = subjectBoards.find(b => b.id === selectedBoardId);
+  const activeBoard = selectedBoardId === FREE_BOARD_ID 
+    ? FREE_BOARD_DATA 
+    : subjectBoards.find(b => b.id === selectedBoardId);
 
   // Fetch posts when board changes
   useEffect(() => {
@@ -249,7 +259,15 @@ const Kommunity: React.FC = () => {
                 <div className={styles.boardIcon}><BookOpen size={18} /></div>
                 내 과목 전체
               </a>
-              <a href="#free" className={styles.boardItem}>
+              <a 
+                href="#free" 
+                className={`${styles.boardItem} ${selectedBoardId === FREE_BOARD_ID ? styles.boardItemActive : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedBoardId(FREE_BOARD_ID);
+                  setIsWriteMode(false);
+                }}
+              >
                 <div className={styles.boardIcon}><MessageSquare size={18} /></div>
                 자유게시판
               </a>
@@ -373,7 +391,9 @@ const Kommunity: React.FC = () => {
                             onClick={() => navigate(`/kommunity/post/${post.id}`)}
                           >
                             <div className={styles.postHeader}>
-                              <span className={styles.postBadge}>{activeBoard?.name}</span>
+                              <span className={styles.postBadge}>
+                                {post.board === FREE_BOARD_ID ? '자유게시판' : (subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판')}
+                              </span>
                               <button className={styles.moreBtn}><MoreHorizontal size={18} color="#94a3b8" /></button>
                             </div>
                             <h3 className={isHot ? `${styles.postTitle} ${styles.postTitleHot}` : styles.postTitle}>
@@ -437,7 +457,9 @@ const Kommunity: React.FC = () => {
                           onClick={() => navigate(`/kommunity/post/${post.id}`)}
                         >
                           <div className={styles.postHeader}>
-                            <span className={styles.postBadge}>{subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판'}</span>
+                            <span className={styles.postBadge}>
+                              {post.board === FREE_BOARD_ID ? '자유게시판' : (subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판')}
+                            </span>
                           </div>
                           <h3 className={styles.postTitle}>{post.title}</h3>
                           <p className={styles.postExcerpt}>{post.content}</p>
@@ -519,7 +541,9 @@ const Kommunity: React.FC = () => {
                           onClick={() => navigate(`/kommunity/post/${post.id}`)}
                         >
                           <div className={styles.postHeader}>
-                            <span className={styles.postBadge}>{subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판'}</span>
+                            <span className={styles.postBadge}>
+                              {post.board === FREE_BOARD_ID ? '자유게시판' : (subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판')}
+                            </span>
                           </div>
                           <h3 className={styles.postTitle}>{post.title}</h3>
                           <p className={styles.postExcerpt}>{post.content}</p>

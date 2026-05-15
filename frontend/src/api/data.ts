@@ -105,6 +105,16 @@ export const dataApi = {
     createUserProfile: (data: Scheme<'/api/data/userprofile', 'POST', 'REQ'>) =>
         fetchData('/api/data/userprofile', 'POST', data),
 
+    // Comments
+    getComments: (query: Scheme<'/api/data/comment', 'GET', 'REQ'>) =>
+        getMany('/api/data/comment', query),
+    createComment: (data: Scheme<'/api/data/comment', 'POST', 'REQ'>) =>
+        fetchData('/api/data/comment', 'POST', data),
+    updateComment: (data: Scheme<'/api/data/comment', 'PATCH', 'REQ'>) =>
+        fetchData('/api/data/comment', 'PATCH', data),
+    deleteComment: (data: Scheme<'/api/data/comment', 'DELETE', 'REQ'>) =>
+        fetchData('/api/data/comment', 'DELETE', data),
+
     // Graduation Progress
     getGraduationProgress: (query: Scheme<'/api/data/graduationprogress', 'GET', 'REQ'>) =>
         fetchData('/api/data/graduationprogress', 'GET', query),

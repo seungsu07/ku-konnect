@@ -23,13 +23,19 @@ const Timetable: React.FC = () => {
   const { savedTimetables, isDataLoading: isLoading, refreshData } = React.useContext(AppDataContext);
   const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
 
-  // When saved timetables load, select the active one
+  // When saved timetables load, select the active one (only if not already set or out of bounds)
   useEffect(() => {
     if (savedTimetables.length > 0 && mode === 'view') {
+      // 만약 현재 선택된 인덱스가 유효하지 않거나 처음 로드된 경우에만 서버 설정에 맞춤
       const selectedIdx = savedTimetables.findIndex(t => t.selected);
-      setActiveSavedIndex(selectedIdx !== -1 ? selectedIdx : 0);
+      const finalIdx = selectedIdx !== -1 ? selectedIdx : 0;
+      
+      // 현재 보고 있는 인덱스가 없거나, 방금 불러온 리스트 범위를 벗어난 경우에만 자동 설정
+      if (activeSavedIndex === undefined || activeSavedIndex >= savedTimetables.length) {
+        setActiveSavedIndex(finalIdx);
+      }
     }
-  }, [savedTimetables, mode]);
+  }, [savedTimetables.length, mode]); // length가 바뀔 때만 (추가/삭제) 체크하도록 변경
 
   const workerRef = useRef<Worker | null>(null);
 
@@ -217,9 +223,31 @@ const Timetable: React.FC = () => {
                 timeTable={savedTimetables[activeSavedIndex]}
                 mode="view"
                 savedTimetables={savedTimetables}
-                onSelectTimetable={(id) => {
+                onSelectTimetable={async (id) => {
                   const idx = savedTimetables.findIndex(t => t.id === id);
-                  if (idx !== -1) setActiveSavedIndex(idx);
+                  if (idx === -1) return;
+
+                  // 1. 즉시 UI에 반영 (로컬 상태 우선 업데이트)
+                  setActiveSavedIndex(idx);
+                  
+                  try {
+                    // 2. 다른 선택된 시간표들 찾기
+                    const otherSelected = savedTimetables.filter(t => t.selected && t.id !== id);
+                    
+                    // 3. 순차적으로 처리하거나 Promise.all로 처리하되, 결과 대기
+                    // 먼저 기존 것들 해제
+                    await Promise.all(otherSelected.map(t => 
+                      dataApi.updateTimeTable({ id: t.id, data: { selected: false } })
+                    ));
+
+                    // 그 다음 새로운 것 선택
+                    await dataApi.updateTimeTable({ id, data: { selected: true } });
+                    
+                    // 4. 데이터 새로고침 (이 때 로딩 스피너가 돌더라도 activeSavedIndex는 유지됨)
+                    await refreshData();
+                  } catch (err) {
+                    console.error('Failed to update selected timetable:', err);
+                  }
                 }}
                 onCreateNew={() => setMode('create')}
               />
