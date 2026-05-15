@@ -1074,6 +1074,7 @@ export function CreateAppManager(context, rcon) {
 
     app.use(/** @type {express.ErrorRequestHandler} */
         (err, req, res, next) => {
+            console.error('GLOBAL ERROR:', err);
             res.status(500).json({ e: 'unexpected' });
             return;
         }

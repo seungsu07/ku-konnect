@@ -13,7 +13,7 @@
   max-width: 1600px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2.5fr 5.0fr 2.5fr;
+  grid-template-columns: 2.5fr 7.5fr;
   height: calc(100vh - 120px);
 }
 
@@ -157,3 +157,34 @@
   margin-bottom: 24px;
   opacity: 0.8;
 }
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .container {
+    padding: 12px;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .wrapper {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 20px;
+  }
+
+  .leftPanel, .centerPanel {
+    height: auto;
+    min-height: 500px;
+    max-height: none;
+  }
+
+  /* Force view mode to take full width if any grid column was set */
+  .centerPanel {
+    grid-column: 1 / -1 !important;
+  }
+
+  .loadingContainer, .emptyContainer {
+    padding: 24px;
+  }
+}
+

@@ -1,16 +1,12 @@
 .container {
-  position: fixed;
-  top: 80px; /* Exact Navbar height */
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  min-height: calc(100vh - 80px);
+  margin-top: 80px;
   background-color: #f8fafc;
-  overflow: hidden; /* Lock the entire page */
 }
 
 .wrapper {
   max-width: 1400px;
-  height: 100%;
   margin: 0 auto;
   padding: 0 20px;
   display: grid;
@@ -18,12 +14,13 @@
   gap: 24px;
 }
 
-/* Sidebar */
 .sidebar {
   padding-top: 24px;
-  height: 100%;
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 104px;
+  height: fit-content;
 }
 
 .boardCard {
@@ -32,9 +29,6 @@
   padding: 20px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   border: 1px solid #e2e8f0;
-  max-height: calc(100% - 40px);
-  overflow-y: auto;
-  scrollbar-width: none;
 }
 
 .sidebarTitle {
@@ -96,14 +90,11 @@
   gap: 20px;
   padding-top: 24px;
   padding-bottom: 60px;
-  height: 100%;
-  overflow-y: auto; /* THE ONLY ACTIVE SCROLL AREA */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .mainFeed::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 .feedHeader {
@@ -353,9 +344,9 @@
   flex-direction: column;
   gap: 24px;
   padding-top: 24px;
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
+  position: sticky;
+  top: 104px;
+  height: fit-content;
 }
 
 .rightSidebar::-webkit-scrollbar {
@@ -438,6 +429,7 @@
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -494,8 +486,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .editorHeader {
@@ -640,6 +639,7 @@
   .wrapper {
     grid-template-columns: 240px 1fr;
   }
+
   .rightSidebar {
     display: none;
   }
@@ -649,6 +649,7 @@
   .wrapper {
     grid-template-columns: 1fr;
   }
+
   .sidebar {
     display: none;
   }

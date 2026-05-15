@@ -20,16 +20,16 @@ export async function generate(input) {
     },
   ];
   const config = {
-    thinkingConfig: {
-      thinkingLevel: ThinkingLevel.MINIMAL,
-    },
+    // thinkingConfig: {
+    //   thinkingLevel: ThinkingLevel.MINIMAL,
+    // },
     tools,
     responseMimeType: 'application/json',
     responseSchema: {
         type: Type.ARRAY,
         items: {
             type: Type.OBJECT,
-            required: ["name", "score", "reason", "LimitOff", "code"],
+            required: ["name", "score", "reason", "limitoff", "code"],
             properties: {
                 name: {
                     type: Type.STRING,
@@ -53,11 +53,12 @@ export async function generate(input) {
         {
           text: `You are an Academic Advising Agent assisting university students with designing their major roadmaps. 
 
-Based on the user's input, analyze the curriculum tree and select the top 10 most highly recommended courses for the user. 
+Based on the user's input, analyze the curriculum tree and select the top 10 most highly recommended elective courses for the user. 
 
 [Selection Rules]
 1. Exclude Mandatory Courses: Do NOT include any courses where the major requirement status is '0' or '3'. These are strictly mandatory courses that the student must take anyway, so they should not take up the 10 recommendation slots.
 2. Consider Offering Frequency: When determining the importance \`score\`, you must carefully consider the course's offering frequency over the last 5 years. Courses with a low offering frequency should be penalized or excluded from the selection.
+3. Subject Pool: Only select courses from the provided CSV list below.
 
 [Output Format]
 Output the 10 selected courses. Each course object must include the following keys:
@@ -65,11 +66,9 @@ Output the 10 selected courses. Each course object must include the following ke
 - "code": The course code (String).
 - "score": The importance score, represented as an integer between 0 and 100 (Number).
 - "reason": A concise explanation of why this course was selected based on the user's input (String).
-- "limitoff": A boolean value (\`true\` or \`false\`) indicating whether to bypass standard prerequisite restrictions. Set this to \`true\` ONLY IF the user's input demonstrates strong prior knowledge, sufficient skills, or highly ambitious goals (e.g., early graduation). If \`true\`, it means the student is permitted to take this course ignoring the prerequisite tree.
+- "limitoff": A boolean value (\`true\` or \`false\`) indicating whether to bypass standard prerequisite restrictions. Set this to \`true\` ONLY IF the user's input demonstrates strong prior knowledge, sufficient skills, or highly ambitious goals (e.g., early graduation).
 
-
-CSV FIle:
-
+CSV File:
 과목명,학년,학기,과목코드,선이수과목,5년간 개설횟수,전공필수 여부
 계산이론,2,1,COSE215,,5,4
 공학수학,2,1,COSE281,전산수학2,5,4
@@ -137,7 +136,7 @@ CSV FIle:
         }
     ],
   };
-  const model = 'gemini-3.1-flash-lite';
+  const model = 'gemini-1.5-flash';
   const contents = [
     {
       role: 'user',
@@ -149,14 +148,20 @@ CSV FIle:
     },
   ];
 
-  const response = await ai.models.generateContentStream({
-    model,
-    config,
-    contents,
-  });
-  let txt = '';
-  for await (const chunk of response) {
-    txt += chunk.text?? '';
+  try {
+    const response = await ai.models.generateContentStream({
+      model,
+      config,
+      contents,
+    });
+    let txt = '';
+    for await (const chunk of response) {
+      txt += chunk.text?? '';
+    }
+    console.log('LLM Raw Response:', txt);
+    return JSON.parse(txt);
+  } catch (err) {
+    console.error('LLM Generation Error:', err);
+    throw err;
   }
-  return JSON.parse(txt);
 }

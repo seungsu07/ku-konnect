@@ -127,12 +127,11 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
 
     try {
-      // 1. Fetch User Profiles
-      const profiles = await dataApi.getUserProfiles({});
+      // 1. Fetch My Profile using the new 'my: true' flag
+      const profiles = await dataApi.getUserProfiles({ my: true } as any);
       if (profiles && profiles.length > 0) {
         setUserProfile(profiles[0]);
       }
-
       // 2. Fetch Timetables
       const timetables = await dataApi.getTimeTables({});
 

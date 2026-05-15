@@ -17,13 +17,8 @@ async function fetchData<T extends keyof PATH_ROUTE>(
 
     let url = `${BASE_URL}${path}`;
     if (method === 'GET' && data) {
-        const params = new URLSearchParams();
-        Object.entries(data).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                params.append(key, String(value));
-            }
-        });
-        url += `?${params.toString()}`;
+        const jsonStr = JSON.stringify(data);
+        url += `?data=${encodeURIComponent(jsonStr)}`;
     } else if (data) {
         options.body = JSON.stringify(data);
     }
@@ -120,6 +115,26 @@ export const dataApi = {
         fetchData('/api/data/graduationprogress', 'GET', query),
     updateGraduationProgress: (data: Scheme<'/api/data/graduationprogress', 'PATCH', 'REQ'>) =>
         fetchData('/api/data/graduationprogress', 'PATCH', data),
+
+    // Study Groups
+    getStudyGroups: (query: Scheme<'/api/data/studygroup', 'GET', 'REQ'>) =>
+        getMany('/api/data/studygroup', query),
+    createStudyGroup: (data: Scheme<'/api/data/studygroup', 'POST', 'REQ'>) =>
+        fetchData('/api/data/studygroup', 'POST', data),
+    updateStudyGroup: (data: Scheme<'/api/data/studygroup', 'PATCH', 'REQ'>) =>
+        fetchData('/api/data/studygroup', 'PATCH', data),
+    deleteStudyGroup: (data: Scheme<'/api/data/studygroup', 'DELETE', 'REQ'>) =>
+        fetchData('/api/data/studygroup', 'DELETE', data),
+
+    // Study Group Joining (Auth)
+    requestJoinStudy: (data: Scheme<'/api/auth/verify/studygroup', 'GET', 'REQ'>) =>
+        fetchData('/api/auth/verify/studygroup', 'GET', data),
+    joinStudyWithCode: (data: Scheme<'/api/auth/verify/studygroup', 'POST', 'REQ'>) =>
+        fetchData('/api/auth/verify/studygroup', 'POST', data),
+
+    // RoadMap Generation
+    generateRoadMap: (data: Scheme<'/api/generate/roadmap', 'GET', 'REQ'>) =>
+        fetchData('/api/generate/roadmap', 'GET', data),
 };
 
 // Legacy support for existing stubs if any

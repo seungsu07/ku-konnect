@@ -1,10 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
+import type { FC } from 'react';
 import {
-  Search, Plus, ChevronLeft, ChevronRight, Send, Users, MessageCircle,
+  Search, Plus, ChevronLeft, ChevronRight, Send, MessageCircle,
   FolderOpen, Lock, Sparkles, BookOpen, FileText, Image as ImageIcon,
-  Download, Upload, Hash, Filter, UserPlus, TrendingUp, BarChart3
+  Download, Upload, Hash, UserPlus, TrendingUp, BarChart3,
+  ShieldCheck, Copy
 } from 'lucide-react';
 import styles from './Study.module.css';
+import { dataApi } from '../api/data';
+import { AppDataContext } from '../api/DataContext';
+import type { StudyGroup, Post, UserProfile } from '../../../common/models';
+
+interface SharedFile {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image' | 'doc';
+  uploader: string;
+  date: string;
+  size: string;
+}
+
+const MOCK_FILES: SharedFile[] = [
+  { id: 'f1', name: '알고리즘_중간고사_정리노트.pdf', type: 'pdf', uploader: '김민수', date: '5월 10일', size: '2.4 MB' },
+  { id: 'f2', name: 'DP_패턴_총정리.pdf', type: 'pdf', uploader: '이지은', date: '5월 8일', size: '1.8 MB' },
+  { id: 'f3', name: '그래프_알고리즘_마인드맵.png', type: 'image', uploader: '박서준', date: '5월 5일', size: '890 KB' },
+];
+
+
 
 /* ===== Color Helpers ===== */
 const PASTEL_COLORS = [
@@ -24,103 +46,227 @@ const getColor = (id: string) => {
   return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length];
 };
 
-/* ===== Mock Data ===== */
-interface StudyGroup {
-  id: string;
-  name: string;
-  subject: string;
-  subjectCode: string;
-  desc: string;
-  members: { name: string; avatar: string }[];
-  maxMembers: number;
-  status: 'recruiting' | 'full' | 'private';
-  category: string;
-  unread?: number;
-  isMine?: boolean;
-}
-
-interface ChatMessage {
-  id: string;
-  sender: string;
-  avatar: string;
-  content: string;
-  time: string;
-  isMine: boolean;
-}
-
-interface SharedFile {
-  id: string;
-  name: string;
-  type: 'pdf' | 'image' | 'doc';
-  uploader: string;
-  date: string;
-  size: string;
-}
-
-const MY_STUDIES: StudyGroup[] = [
-  { id: 's1', name: '알고리즘 마스터', subject: '알고리즘', subjectCode: 'COSE214', desc: '매주 금요일 백준 5문제 풀이', members: [{ name: '김민수', avatar: '민' }, { name: '이지은', avatar: '지' }, { name: '박서준', avatar: '서' }], maxMembers: 6, status: 'recruiting', category: '코딩', unread: 3, isMine: true },
-  { id: 's2', name: 'OS 스터디', subject: '운영체제', subjectCode: 'COSE341', desc: '공룡책 같이 읽기 + 퀴즈', members: [{ name: '최유진', avatar: '유' }, { name: '정한솔', avatar: '한' }], maxMembers: 4, status: 'full', category: '전공', unread: 0, isMine: true },
-  { id: 's3', name: 'TOEIC 900+ 목표반', subject: 'TOEIC', subjectCode: 'ENG001', desc: '주 3회 모의고사 + 오답 분석', members: [{ name: '한지민', avatar: '지' }, { name: '김태리', avatar: '태' }, { name: '송중기', avatar: '중' }, { name: '전지현', avatar: '지' }], maxMembers: 5, status: 'recruiting', category: '어학', unread: 7, isMine: true },
-  { id: 's4', name: '데이터베이스 프로젝트팀', subject: '데이터베이스', subjectCode: 'COSE371', desc: 'PostgreSQL 기반 미니 프로젝트', members: [{ name: '이수현', avatar: '수' }, { name: '박보검', avatar: '보' }], maxMembers: 4, status: 'recruiting', category: '전공', unread: 0, isMine: true },
-];
-
-const PUBLIC_STUDIES: StudyGroup[] = [
-  { id: 'p1', name: 'AI/ML 논문 리딩', subject: '인공지능', subjectCode: 'COSE361', desc: 'NeurIPS/ICML 주요 논문 주 1회 발표 및 토론. 딥러닝 기초 이상 필수', members: [{ name: '김철수', avatar: '철' }, { name: '이영희', avatar: '영' }, { name: '박민지', avatar: '민' }], maxMembers: 8, status: 'recruiting', category: '코딩' },
-  { id: 'p2', name: '네트워크 시험 대비반', subject: '컴퓨터네트워크', subjectCode: 'COSE342', desc: 'TCP/IP 프로토콜 스택 완벽 정리. 기말고사 대비 집중 스터디', members: [{ name: '홍길동', avatar: '홍' }, { name: '김갑수', avatar: '갑' }, { name: '이을순', avatar: '을' }, { name: '박병호', avatar: '병' }], maxMembers: 4, status: 'full', category: '전공' },
-  { id: 'p3', name: '코딩테스트 실전반', subject: '코딩테스트', subjectCode: 'CS000', desc: '삼성/카카오/네이버 기출 매주 4문제 풀이 + 코드 리뷰', members: [{ name: '정우성', avatar: '우' }, { name: '손예진', avatar: '예' }], maxMembers: 6, status: 'recruiting', category: '취업' },
-  { id: 'p4', name: '소공 팀프로젝트 A조', subject: '소프트웨어공학', subjectCode: 'COSE242', desc: '애자일 방법론 실습. 주 2회 스프린트 미팅', members: [{ name: '강다니엘', avatar: '다' }], maxMembers: 5, status: 'private', category: '전공' },
-  { id: 'p5', name: '일본어 JLPT N2', subject: 'JLPT', subjectCode: 'JPN002', desc: '12월 시험 목표 주 2회 문법/독해 스터디', members: [{ name: '다나카', avatar: '田' }, { name: '김나연', avatar: '나' }, { name: '이준호', avatar: '준' }], maxMembers: 6, status: 'recruiting', category: '어학' },
-  { id: 'p6', name: '수학 기초 다지기', subject: '선형대수', subjectCode: 'MATH201', desc: '선형대수, 미적분 기초부터 탄탄히. 매주 토요일 오전', members: [{ name: '오일러', avatar: '오' }, { name: '가우스', avatar: '가' }], maxMembers: 4, status: 'recruiting', category: '기초' },
-];
-
-const MOCK_CHAT: ChatMessage[] = [
-  { id: 'c1', sender: '김민수', avatar: '민', content: '오늘 백준 1629번 풀어봤는데 분할정복으로 풀면 되더라', time: '오후 2:30', isMine: false },
-  { id: 'c2', sender: '이지은', avatar: '지', content: '아 그거 모듈러 연산 부분에서 오버플로 조심해야 해!', time: '오후 2:32', isMine: false },
-  { id: 'c3', sender: '나', avatar: '나', content: '맞아 long long 안 쓰면 바로 틀림 ㅋㅋ', time: '오후 2:33', isMine: true },
-  { id: 'c4', sender: '박서준', avatar: '서', content: '근데 이번 주 금요일 스터디 카페 어디로 할까요?', time: '오후 2:45', isMine: false },
-  { id: 'c5', sender: '나', avatar: '나', content: '안암역 근처 탐앤탐스 어때요? 콘센트도 많고 넓더라', time: '오후 2:46', isMine: true },
-  { id: 'c6', sender: '김민수', avatar: '민', content: '좋아요 👍 그럼 금요일 3시에 거기서 봐요!', time: '오후 2:48', isMine: false },
-  { id: 'c7', sender: '이지은', avatar: '지', content: '저 이번 주 과제 범위가 DP까지인데 혹시 좋은 문제 추천 있나요?', time: '오후 3:10', isMine: false },
-  { id: 'c8', sender: '나', avatar: '나', content: 'BOJ 12865 평범한 배낭이랑 11053 가장 긴 증가하는 부분 수열 추천!', time: '오후 3:12', isMine: true },
-];
-
-const MOCK_FILES: SharedFile[] = [
-  { id: 'f1', name: '알고리즘_중간고사_정리노트.pdf', type: 'pdf', uploader: '김민수', date: '5월 10일', size: '2.4 MB' },
-  { id: 'f2', name: 'DP_패턴_총정리.pdf', type: 'pdf', uploader: '이지은', date: '5월 8일', size: '1.8 MB' },
-  { id: 'f3', name: '그래프_알고리즘_마인드맵.png', type: 'image', uploader: '박서준', date: '5월 5일', size: '890 KB' },
-  { id: 'f4', name: '분할정복_예제코드.docx', type: 'doc', uploader: '나', date: '5월 3일', size: '156 KB' },
-  { id: 'f5', name: '시간복잡도_치트시트.pdf', type: 'pdf', uploader: '김민수', date: '4월 28일', size: '540 KB' },
-];
-
-const RECOMMENDED = [
-  { id: 'r1', name: 'React 심화 스터디', members: 5, category: '코딩' },
-  { id: 'r2', name: '경제학원론 시험대비', members: 3, category: '교양' },
-  { id: 'r3', name: '고시반 행정법', members: 7, category: '고시' },
-  { id: 'r4', name: '포트폴리오 피드백', members: 4, category: '취업' },
-];
-
 const CATEGORIES = ['전체', '전공', '코딩', '어학', '취업', '기초'];
 
-/* ===== Component ===== */
-const Study: React.FC = () => {
+const Study: FC = () => {
+  const { userProfile } = useContext(AppDataContext);
+  
   const [view, setView] = useState<'explore' | 'room'>('explore');
   const [activeStudyId, setActiveStudyId] = useState<string | null>(null);
+  const [activeStudy, setActiveStudy] = useState<StudyGroup | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('전체');
   const [activeTab, setActiveTab] = useState<'chat' | 'files'>('chat');
+  
+  const [myStudies, setMyStudies] = useState<StudyGroup[]>([]);
+  const [publicStudies, setPublicStudies] = useState<StudyGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [entryCode, setEntryCode] = useState('');
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState(MOCK_CHAT);
+  const [messages, setMessages] = useState<Post[]>([]);
+  const [authorMap, setAuthorMap] = useState<Record<string, UserProfile>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Create Mode States
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [newStudyName, setNewStudyName] = useState('');
-  const [newStudySubject, setNewStudySubject] = useState('');
   const [newStudyDesc, setNewStudyDesc] = useState('');
   const [newStudyCategory, setNewStudyCategory] = useState('전공');
-  const [newStudyMaxMembers, setNewStudyMaxMembers] = useState(4);
   const [newStudyIsPrivate, setNewStudyIsPrivate] = useState(false);
+  const [newStudyUserVisible, setNewStudyUserVisible] = useState(true);
+
+  useEffect(() => {
+    fetchStudies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile]);
+
+  const fetchStudies = async () => {
+    try {
+      const all = await dataApi.getStudyGroups({ inviting: true });
+      setPublicStudies(all as StudyGroup[]);
+
+      if (userProfile) {
+        const my = (all as StudyGroup[]).filter(s => 
+          s.users.includes(userProfile.id as any) || s.host === userProfile.id
+        );
+        setMyStudies(my);
+      }
+    } catch (err) {
+      console.error('Failed to fetch studies:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'room' && activeStudy?.chat) {
+      fetchMessages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, activeStudy?.chat]);
+
+  const fetchMessages = async () => {
+    if (!activeStudy?.chat) return;
+    try {
+      const msgs = await dataApi.getPosts({ board: activeStudy.chat as any });
+      setMessages(msgs);
+
+      const authorIds = Array.from(new Set(msgs.map((m: Post) => m.author)));
+      const profilePromises = authorIds.map(id => dataApi.getUserProfiles({ id: id as any }));
+      const profiles = (await Promise.all(profilePromises)).flat();
+      
+      const newMap = { ...authorMap };
+      profiles.forEach(p => { if(p) newMap[p.id] = p; });
+      setAuthorMap(newMap);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'room' && activeStudy && userProfile && activeStudy.host === userProfile.id) {
+      const interval = setInterval(() => rotateVerifyCode(), 1000 * 60 * 10);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, activeStudy?.id, userProfile?.id]);
+
+  const rotateVerifyCode = async () => {
+    if (!activeStudy || !userProfile || activeStudy.host !== userProfile.id) return;
+    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    try {
+      await dataApi.updateStudyGroup({
+        id: activeStudy.id,
+        data: { verify_code: newCode } as any
+      });
+      setActiveStudy((prev: StudyGroup | null) => prev ? { ...prev, verify_code: newCode } : null);
+    } catch (err) {
+      console.warn('Failed to rotate code:', err);
+    }
+  };
+
+  const handleCreateStudy = async () => {
+    if (!userProfile) return;
+    const studyName = newStudyName.trim();
+    try {
+      const res = await dataApi.createStudyGroup({
+        name: studyName,
+        user_visible: newStudyUserVisible,
+        inviting: true, // Defaulting to true
+        visible: !newStudyIsPrivate,
+        description: newStudyDesc,
+        profile: userProfile.id
+      });
+
+      if (res.success) {
+        setIsCreateMode(false);
+        setNewStudyName('');
+        setNewStudyDesc('');
+        alert('새 스터디가 성공적으로 생성되었습니다!');
+        
+        // Refresh list and find the new study
+        await fetchStudies(true);
+        
+        // Wait a bit for state updates and fetch the fresh study object
+        setTimeout(async () => {
+          const res = await dataApi.getStudyGroups({ name: studyName });
+          if (res && res.length > 0) {
+            // Force ish: true for the creator in case backend detection fails
+            enterStudy({ ...res[0], ish: true });
+          }
+        }, 500);
+      } else {
+        alert('생성 실패: ' + ((res as any).e || '알 수 없는 오류'));
+      }
+    } catch (err) {
+      console.error('Failed to create study:', err);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || !activeStudy?.chat || !userProfile) return;
+    try {
+      const res = await dataApi.createPost({
+        board: activeStudy.chat as any,
+        title: 'Chat',
+        content: chatInput.trim(),
+        visible: true,
+        profile: userProfile.id
+      });
+      if (res.success) {
+        setChatInput('');
+        fetchMessages();
+      }
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
+
+  const handleEntryCode = async () => {
+    if (!activeStudy || entryCode.length !== 6) {
+      alert('6자리 코드를 정확히 입력해주세요.');
+      return;
+    }
+    
+    if (!userProfile) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      const res = await dataApi.joinStudyWithCode({
+        group: activeStudy.id,
+        code: entryCode,
+        profile: userProfile.id
+      } as any);
+      
+      if (res.success) {
+        alert('스터디 가입이 완료되었습니다!');
+        fetchStudies();
+      } else {
+        alert('코드가 일치하지 않거나 오류가 발생했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('가입 처리 중 오류가 발생했습니다.');
+    }
+    setEntryCode('');
+  };
+
+  const handleRequestJoin = async (study: StudyGroup) => {
+    if (!userProfile) return;
+    try {
+      const res = await dataApi.requestJoinStudy({
+        group: study.id,
+        profile: userProfile.id
+      } as any);
+      if (res.success) {
+        alert('가입 신청이 완료되었습니다! 방장에게 받은 입장 코드를 입력해주세요.');
+        fetchStudies();
+      } else {
+        alert('신청 실패: ' + (res.e || ''));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('신청 중 오류가 발생했습니다.');
+    }
+  };
+
+  const enterStudy = async (study: StudyGroup) => {
+    // Client-side host verification to bypass backend mapping issues
+    const isHost = study.host === userProfile?.id;
+    const studyWithCorrectRole = { ...study, ish: study.ish || isHost };
+    
+    setActiveStudy(studyWithCorrectRole);
+    setActiveStudyId(study.id);
+    setView('room');
+  };
+
+  const filteredStudies = publicStudies.filter((s: StudyGroup) => {
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === '전체'; // Categories not yet implemented in backend
+    return matchesSearch && matchesCategory;
+  });
 
   useEffect(() => {
     document.body.style.backgroundColor = '#f8fafc';
@@ -130,40 +276,6 @@ const Study: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const enterStudy = (id: string) => {
-    setActiveStudyId(id);
-    setView('room');
-    setActiveTab('chat');
-  };
-
-  const activeStudy = [...MY_STUDIES, ...PUBLIC_STUDIES].find(s => s.id === activeStudyId);
-
-  const filteredStudies = PUBLIC_STUDIES.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === '전체' || s.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    setMessages(prev => [...prev, {
-      id: `c${Date.now()}`,
-      sender: '나',
-      avatar: '나',
-      content: chatInput.trim(),
-      time: new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      isMine: true,
-    }]);
-    setChatInput('');
-  };
-
-  const handleEntryCode = () => {
-    if (entryCode.length < 4) return;
-    alert(`입장 코드 "${entryCode}"로 스터디를 검색합니다...`);
-    setEntryCode('');
-  };
 
   const getFileIcon = (type: string) => {
     if (type === 'pdf') return <FileText size={22} />;
@@ -188,24 +300,21 @@ const Study: React.FC = () => {
               <BookOpen size={18} color="#ff3131" /> 내 스터디
             </h3>
             <div className={styles.studyList}>
-              {MY_STUDIES.map(study => {
-                const color = getColor(study.subjectCode);
+              {myStudies.map(study => {
+                const color = getColor(study.id);
                 return (
                   <div
                     key={study.id}
                     className={`${styles.studyItem} ${activeStudyId === study.id && view === 'room' ? styles.studyItemActive : ''}`}
-                    onClick={() => enterStudy(study.id)}
+                    onClick={() => enterStudy(study)}
                   >
                     <div className={styles.studyItemIcon} style={{ background: color.bg, color: color.text }}>
                       {study.name[0]}
                     </div>
                     <div className={styles.studyItemInfo}>
                       <span className={styles.studyItemName}>{study.name}</span>
-                      <span className={styles.studyItemMeta}>{study.members.length}명 · {study.subject}</span>
+                      <span className={styles.studyItemMeta}>{study.users.length}명</span>
                     </div>
-                    {(study.unread ?? 0) > 0 && (
-                      <span className={styles.unreadBadge}>{study.unread}</span>
-                    )}
                   </div>
                 );
               })}
@@ -271,40 +380,36 @@ const Study: React.FC = () => {
               {/* Study Cards */}
               <div className={styles.studyGrid}>
                 {filteredStudies.map(study => {
-                  const color = getColor(study.subjectCode);
+                  const color = getColor(study.id);
                   return (
-                    <div key={study.id} className={styles.studyCard} onClick={() => enterStudy(study.id)}>
+                    <div key={study.id} className={styles.studyCard} onClick={() => enterStudy(study)}>
                       <div className={styles.studyCardHeader}>
                         <span
                           className={styles.studyCardSubject}
                           style={{ background: color.bg, color: color.text }}
                         >
-                          {study.subject}
+                          스터디
                         </span>
-                        <span className={`${styles.studyCardBadge} ${
-                          study.status === 'recruiting' ? styles.badgeRecruiting :
-                          study.status === 'full' ? styles.badgeFull : styles.badgePrivate
-                        }`}>
-                          {study.status === 'recruiting' && <><UserPlus size={10} /> 모집중</>}
-                          {study.status === 'full' && '마감'}
-                          {study.status === 'private' && <><Lock size={10} /> 비공개</>}
+                        <span className={`${styles.studyCardBadge} ${study.inviting ? styles.badgeRecruiting : styles.badgeFull}`}>
+                          {study.inviting ? <><UserPlus size={10} /> 모집중</> : '마감'}
+                          {!study.visible && <><Lock size={10} /> 비공개</>}
                         </span>
                       </div>
                       <h3 className={styles.studyCardTitle}>{study.name}</h3>
-                      <p className={styles.studyCardDesc}>{study.desc}</p>
+                      <p className={styles.studyCardDesc}>참여하여 함께 공부하세요!</p>
                       <div className={styles.studyCardFooter}>
                         <div className={styles.memberAvatars}>
-                          {study.members.slice(0, 3).map((m, i) => (
+                          {study.users.slice(0, 3).map((uid: string, i: number) => (
                             <div
                               key={i}
                               className={styles.memberAvatar}
-                              style={{ background: getColor(m.name).bg, color: getColor(m.name).text }}
+                              style={{ background: getColor(uid).bg, color: getColor(uid).text }}
                             >
-                              {m.avatar}
+                              {uid[0]}
                             </div>
                           ))}
                           <span className={styles.memberCount}>
-                            {study.members.length}/{study.maxMembers}
+                            {study.users.length}명 참여중
                           </span>
                         </div>
                         <span className={styles.studyCardAction}>
@@ -325,51 +430,86 @@ const Study: React.FC = () => {
                 </button>
                 <h2 className={styles.roomTitle}>{activeStudy?.name || '스터디'}</h2>
                 <div className={styles.roomMembers}>
-                  {activeStudy?.members.slice(0, 4).map((m, i) => (
+                  {activeStudy?.users.slice(0, 4).map((uid: string, i: number) => (
                     <div
                       key={i}
                       className={styles.memberAvatar}
-                      style={{ background: getColor(m.name).bg, color: getColor(m.name).text, marginLeft: i > 0 ? '-6px' : 0 }}
+                      style={{ background: getColor(uid).bg, color: getColor(uid).text, marginLeft: i > 0 ? '-6px' : 0 }}
                     >
-                      {m.avatar}
+                      {uid[0]}
                     </div>
                   ))}
                   <span className={styles.memberCount} style={{ marginLeft: 6 }}>
-                    {activeStudy?.members.length}명
+                    {activeStudy?.users.length}명
                   </span>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className={styles.tabs}>
-                <button className={`${styles.tab} ${activeTab === 'chat' ? styles.tabActive : ''}`} onClick={() => setActiveTab('chat')}>
-                  <MessageCircle size={16} /> 채팅
-                </button>
-                <button className={`${styles.tab} ${activeTab === 'files' ? styles.tabActive : ''}`} onClick={() => setActiveTab('files')}>
-                  <FolderOpen size={16} /> 자료실
-                </button>
-              </div>
-
-              {/* Chat Tab */}
-              {activeTab === 'chat' && (
+              {/* Join Required View */}
+              {!(activeStudy?.inu || activeStudy?.ish) ? (
+                <div className={styles.joinRequiredContainer}>
+                  <div className={styles.joinIcon}>
+                    {activeStudy?.visible ? <UserPlus size={64} /> : <Lock size={64} />}
+                  </div>
+                  <h3 className={styles.joinTitle}>
+                    {activeStudy?.inp ? '가입 승인 대기 중' : '스터디 참여 신청'}
+                  </h3>
+                  <p className={styles.joinDesc}>
+                    {activeStudy?.inp 
+                      ? '방장에게 받은 6자리 입장 코드를 아래에 입력하면 바로 참여할 수 있습니다.' 
+                      : '이 스터디의 컨텐츠를 보려면 먼저 참여 신청을 해야 합니다.'}
+                  </p>
+                  
+                  {activeStudy?.inp ? (
+                    <div className={styles.joinActionBox}>
+                      <div className={styles.codeInputGroup}>
+                        <input
+                          type="text"
+                          className={styles.codeInput}
+                          placeholder="000000"
+                          maxLength={6}
+                          value={entryCode}
+                          onChange={e => setEntryCode(e.target.value.toUpperCase())}
+                          style={{ marginBottom: '16px' }}
+                        />
+                        <button className={styles.codeSubmitBtn} onClick={handleEntryCode}>
+                          코드 확인 및 입장
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      className={styles.primaryActionBtn} 
+                      onClick={() => handleRequestJoin(activeStudy!)}
+                      disabled={!activeStudy?.inviting}
+                    >
+                      {activeStudy?.inviting ? '참여 신청하기' : '현재 모집 중이 아닙니다'}
+                    </button>
+                  )}
+                </div>
+              ) : (
                 <div className={styles.chatContainer}>
                   <div className={styles.chatMessages}>
-                    {messages.map(msg => (
-                      <div key={msg.id} className={`${styles.messageGroup} ${msg.isMine ? styles.messageGroupMine : ''}`}>
-                        {!msg.isMine && (
-                          <div className={styles.messageAvatar} style={{ background: getColor(msg.sender).bg, color: getColor(msg.sender).text }}>
-                            {msg.avatar}
+                    {messages.map((msg: Post) => {
+                      const author = authorMap[msg.author];
+                      const isMine = msg.author === userProfile?.id;
+                      return (
+                        <div key={msg.id} className={`${styles.messageGroup} ${isMine ? styles.messageGroupMine : ''}`}>
+                          {!isMine && (
+                            <div className={styles.messageAvatar} style={{ background: getColor(msg.author).bg, color: getColor(msg.author).text }}>
+                              {author?.nickname?.[0] || '?'}
+                            </div>
+                          )}
+                          <div>
+                            {!isMine && <div className={styles.messageSender}>{author?.nickname || '알 수 없음'}</div>}
+                            <div className={`${styles.messageBubble} ${isMine ? styles.messageBubbleMine : styles.messageBubbleOther}`}>
+                              {msg.content}
+                            </div>
+                            <div className={styles.messageTime}>{new Date(msg.created_at).toLocaleTimeString()}</div>
                           </div>
-                        )}
-                        <div>
-                          {!msg.isMine && <div className={styles.messageSender}>{msg.sender}</div>}
-                          <div className={`${styles.messageBubble} ${msg.isMine ? styles.messageBubbleMine : styles.messageBubbleOther}`}>
-                            {msg.content}
-                          </div>
-                          <div className={styles.messageTime}>{msg.time}</div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <div ref={chatEndRef} />
                   </div>
 
@@ -388,36 +528,6 @@ const Study: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {/* Files Tab */}
-              {activeTab === 'files' && (
-                <div className={styles.filesGrid}>
-                  <button className={styles.uploadBtn}>
-                    <Upload size={18} /> 파일 업로드
-                  </button>
-                  {MOCK_FILES.map(file => {
-                    const iconColor = getFileIconColor(file.type);
-                    return (
-                      <div key={file.id} className={styles.fileCard}>
-                        <div className={styles.fileIcon} style={{ background: iconColor.bg, color: iconColor.color }}>
-                          {getFileIcon(file.type)}
-                        </div>
-                        <div className={styles.fileInfo}>
-                          <div className={styles.fileName}>{file.name}</div>
-                          <div className={styles.fileMeta}>
-                            <span>{file.uploader}</span>
-                            <span>·</span>
-                            <span>{file.date}</span>
-                            <span>·</span>
-                            <span>{file.size}</span>
-                          </div>
-                        </div>
-                        <Download size={18} className={styles.fileDownload} />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </>
           )}
         </main>
@@ -425,6 +535,30 @@ const Study: React.FC = () => {
 
         {/* ===== Right Sidebar ===== */}
         <aside className={styles.rightSidebar}>
+          {/* Host Management (Visible only to Host) */}
+          {activeStudy?.ish && (
+            <div className={`${styles.rightCard} ${styles.hostCard}`}>
+              <h3 className={styles.rightCardTitle}>
+                <ShieldCheck size={18} color="#ff3131" /> 방장 관리 도구
+              </h3>
+              <div className={styles.hostCodeBox}>
+                <span className={styles.hostCodeLabel}>초대 코드</span>
+                <div className={styles.hostCodeValue}>
+                  {activeStudy.verify_code}
+                  <button className={styles.copyBtn} onClick={() => {
+                    navigator.clipboard.writeText(activeStudy.verify_code || '');
+                    alert('복사되었습니다!');
+                  }}>
+                    <Copy size={14} />
+                  </button>
+                </div>
+              </div>
+              <p className={styles.codeHelper}>
+                멤버들에게 이 코드를 공유하여 가입을 승인하세요.
+              </p>
+            </div>
+          )}
+
           {/* Entry Code */}
           <div className={styles.rightCard}>
             <h3 className={styles.rightCardTitle}>
@@ -454,22 +588,10 @@ const Study: React.FC = () => {
             <h3 className={styles.rightCardTitle}>
               <BarChart3 size={18} color="#ff3131" /> 나의 스터디 활동
             </h3>
-            <div className={styles.statsGrid}>
+            <div className={styles.statsGrid} style={{ gridTemplateColumns: '1fr' }}>
               <div className={styles.statBox}>
-                <div className={styles.statNumber}>{MY_STUDIES.length}</div>
-                <div className={styles.statLabel}>참여 중</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statNumber}>12</div>
-                <div className={styles.statLabel}>이번 주 메시지</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statNumber}>3</div>
-                <div className={styles.statLabel}>공유한 자료</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statNumber}>🔥</div>
-                <div className={styles.statLabel}>연속 4주 참여</div>
+                <div className={styles.statNumber}>{myStudies.length}</div>
+                <div className={styles.statLabel}>참여 중인 스터디</div>
               </div>
             </div>
           </div>
@@ -477,15 +599,15 @@ const Study: React.FC = () => {
           {/* Recommended */}
           <div className={styles.rightCard}>
             <h3 className={styles.rightCardTitle}>
-              <TrendingUp size={18} color="#ff3131" /> 추천 스터디
+              <TrendingUp size={18} color="#ff3131" /> 인기 스터디
             </h3>
             <div className={styles.recList}>
-              {RECOMMENDED.map((rec, idx) => (
-                <div key={rec.id} className={styles.recItem}>
+              {publicStudies.slice(0, 4).map((rec: StudyGroup, idx: number) => (
+                <div key={rec.id} className={styles.recItem} onClick={() => enterStudy(rec)}>
                   <span className={styles.recRank}>{idx + 1}</span>
                   <div className={styles.recContent}>
                     <span className={styles.recTitle}>{rec.name}</span>
-                    <span className={styles.recMeta}>{rec.members}명 참여 · {rec.category}</span>
+                    <span className={styles.recMeta}>{rec.users.length}명 참여</span>
                   </div>
                 </div>
               ))}
@@ -514,29 +636,12 @@ const Study: React.FC = () => {
                 <h2 className={styles.modalTitle}>📚 새 스터디 개설</h2>
                 <button className={styles.modalCloseBtn} onClick={() => setIsCreateMode(false)}>&times;</button>
               </div>
-              
+
               <div className={styles.modalBody}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>스터디 이름 <span className={styles.formRequired}>*</span></label>
                   <input type="text" className={styles.formInput} placeholder="예: 알고리즘 스터디 A반"
                     value={newStudyName} onChange={e => setNewStudyName(e.target.value)} />
-                </div>
-                
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup} style={{ flex: 1 }}>
-                    <label className={styles.formLabel}>관련 과목 <span className={styles.formRequired}>*</span></label>
-                    <input type="text" className={styles.formInput} placeholder="예: 알고리즘"
-                      value={newStudySubject} onChange={e => setNewStudySubject(e.target.value)} />
-                  </div>
-                  <div className={styles.formGroup} style={{ width: 130 }}>
-                    <label className={styles.formLabel}>카테고리</label>
-                    <select className={styles.formSelect} value={newStudyCategory}
-                      onChange={e => setNewStudyCategory(e.target.value)}>
-                      {CATEGORIES.filter(c => c !== '전체').map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -547,16 +652,18 @@ const Study: React.FC = () => {
 
                 <div className={styles.settingsRow}>
                   <div className={styles.settingItem}>
-                    <span className={styles.settingLabel}>👥 최대 인원</span>
-                    <input type="range" min="2" max="10" className={styles.formRange}
-                      value={newStudyMaxMembers} onChange={e => setNewStudyMaxMembers(parseInt(e.target.value))} />
-                    <span className={styles.settingValue}>{newStudyMaxMembers}명</span>
-                  </div>
-                  <div className={styles.settingItem}>
                     <span className={styles.settingLabel}>🔒 비공개</span>
                     <label className={styles.toggleSwitch}>
                       <input type="checkbox" checked={newStudyIsPrivate}
                         onChange={e => setNewStudyIsPrivate(e.target.checked)} />
+                      <span className={styles.toggleSlider}></span>
+                    </label>
+                  </div>
+                  <div className={styles.settingItem}>
+                    <span className={styles.settingLabel}>👥 회원목록 공개</span>
+                    <label className={styles.toggleSwitch}>
+                      <input type="checkbox" checked={newStudyUserVisible}
+                        onChange={e => setNewStudyUserVisible(e.target.checked)} />
                       <span className={styles.toggleSlider}></span>
                     </label>
                   </div>
@@ -566,8 +673,8 @@ const Study: React.FC = () => {
               <div className={styles.modalFooter}>
                 <button className={styles.formCancelBtn} onClick={() => setIsCreateMode(false)}>취소</button>
                 <button className={styles.formSubmitBtn}
-                  disabled={!newStudyName.trim() || !newStudySubject.trim()}
-                  onClick={() => { alert('새 스터디가 생성되었습니다!'); setIsCreateMode(false); }}>
+                  disabled={!newStudyName.trim()}
+                  onClick={handleCreateStudy}>
                   <Sparkles size={14} /> 개설하기
                 </button>
               </div>

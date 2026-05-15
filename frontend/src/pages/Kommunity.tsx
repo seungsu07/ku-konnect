@@ -529,86 +529,16 @@ const Kommunity: React.FC = () => {
                     )}
                   </div>
 
-                  <div className={styles.feedHeader} style={{ marginTop: 40 }}>
-                    <h2 className={styles.feedTitle}>실시간 전체 인기글</h2>
-                  </div>
-                  <div className={styles.postsList}>
-                    {posts.length > 0 ? (
-                      posts.slice(0, 5).map(post => (
-                        <article
-                          key={post.id}
-                          className={styles.postCard}
-                          onClick={() => navigate(`/kommunity/post/${post.id}`)}
-                        >
-                          <div className={styles.postHeader}>
-                            <span className={styles.postBadge}>
-                              {post.board === FREE_BOARD_ID ? '자유게시판' : (subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판')}
-                            </span>
-                          </div>
-                          <h3 className={styles.postTitle}>{post.title}</h3>
-                          <p className={styles.postExcerpt}>{post.content}</p>
-                          <div className={styles.postMeta}>
-                            <div className={styles.authorInfo}>
-                              <div className={styles.authorAvatar} style={{ background: authorMap[post.author] ? getColor(authorMap[post.author].id).bg : '#f1f5f9', color: authorMap[post.author] ? getColor(authorMap[post.author].id).text : '#94a3b8' }}>
-                                {authorMap[post.author]?.nickname?.[0] || '?'}
-                              </div>
-                              <span>{authorMap[post.author]?.nickname || '알 수 없음'}</span>
-                            </div>
-                            <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes || 0}</div>
-                            <div className={styles.metaItem}><MessageCircle size={14} /> {post.comment_count}</div>
-                          </div>
-                        </article>
-                      ))
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>표시할 인기글이 없습니다.</div>
-                    )}
-                  </div>
+                  {/* Removed: Real-time Popular Posts section */}
                 </>
               )}
             </>
           )}
         </main>
 
-        {/* Right Sidebar: Trending & Best Tiger */}
+        {/* Right Sidebar: Quick Actions or empty for now */}
         <aside className={styles.rightSidebar}>
-          <div className={styles.trendingCard}>
-            <h3 className={styles.trendingTitle}>
-              <TrendingUp size={20} color="#ff3131" />
-              지금 뜨는 인기글
-            </h3>
-            <div className={styles.trendingList}>
-              {MOCK_TRENDING.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={styles.trendingItem}
-                  onClick={() => navigate(`/kommunity/post/${item.id}`)}
-                >
-                  <span className={styles.trendingRank}>{index + 1}</span>
-                  <div className={styles.trendingContent}>
-                    <span className={styles.trendingText}>{item.title}</span>
-                    <span className={styles.trendingStats}>조회수 {item.views}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.trendingCard} style={{ background: 'linear-gradient(135deg, #ff3131 0%, #ff914d 100%)', color: 'white', border: 'none' }}>
-            <h3 className={styles.trendingTitle} style={{ color: 'white' }}>
-              <Flame size={20} />
-              이번 주 베스트 호랑이
-            </h3>
-            <p style={{ fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.5 }}>
-              가장 많은 도움을 준 학우에게는 KONNECT 뱃지가 수여됩니다!
-            </p>
-            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🐯</div>
-              <div>
-                <div style={{ fontWeight: 700 }}>학사요정</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>정보게시판 채택 12회</div>
-              </div>
-            </div>
-          </div>
+          {/* Section removed per request */}
         </aside>
 
       </div>
