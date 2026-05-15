@@ -50,6 +50,7 @@ export type ErrorString =
   | 'no_permission'
   | 'already_processed'
   | 'server_is_busy'
+  | 'too_many'
   | 'unexpected';
 
 export type Path =
