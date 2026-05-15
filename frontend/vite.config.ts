@@ -18,6 +18,8 @@ export default defineConfig({
       '/api': {
         target: 'https://api.konnect.hydv.kr',
         changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: '',
       }
     },
     watch: {

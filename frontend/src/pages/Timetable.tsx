@@ -7,21 +7,40 @@ import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
 import type { TimeTable, Lecture, Preferences } from '../../../common/models';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
-import {  } from '../api/data';
+import { dataApi } from '../api/data';
 
 const Timetable: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0);
   const [generatedTimetables, setGeneratedTimetables] = useState<TimeTable[]>([]);
   const [deadEndReason, setDeadEndReason] = useState<string | null>(null);
 
   // View/Create modes
-  const [mode, setMode] = useState<'view' | 'create'>('view');
-  const [savedTimetables, saveTimetable] = useState<TimeTable[]>([]);
+  const [mode, setMode] = useState<'view' | 'create'>('create');
+  const [savedTimetables, setSavedTimetables] = useState<TimeTable[]>([]);
   const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
 
   const workerRef = useRef<Worker | null>(null);
+
+  // Fetch saved timetables from API on mount
+  useEffect(() => {
+    dataApi.getTimeTables({})
+      .then((fetched: TimeTable[]) => {
+        setSavedTimetables(fetched);
+        if (fetched.length > 0) {
+          const selectedIdx = fetched.findIndex(t => t.selected);
+          setActiveSavedIndex(selectedIdx !== -1 ? selectedIdx : 0);
+          setMode('view');
+        } else {
+          setMode('create');
+        }
+      })
+      .catch(() => setMode('create'))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../workers/timetableWorker.ts', import.meta.url), { type: 'module' });
@@ -63,17 +82,41 @@ const Timetable: React.FC = () => {
 
   const handleSaveTimetable = async (timeTable: TimeTable) => {
     const customName = prompt('저장할 시간표의 이름을 입력해주세요:', timeTable.name);
-    if (!customName) return;
+    if (!customName || !customName.trim()) return;
 
-    // Local save for session (UI only, backend logic removed per user request)
-    saveTimetable(prev => {
-      const newSaved = [...prev, { ...timeTable, name: customName, id: crypto.randomUUID() as any }];
-      setActiveSavedIndex(newSaved.length - 1);
-      return newSaved;
-    });
-    setMode('view');
-    alert('시간표가 성공적으로 저장되었습니다! (로컬 세션 전용)');
+    setIsSaving(true);
+    try {
+      const res = await dataApi.createTimeTable({
+        name: customName.trim(),
+        selected: savedTimetables.length === 0, // 첫 시간표면 자동 선택
+        classes: timeTable.classes,
+        visible: false,
+      });
+
+      if (res.success) {
+        const newTimetable = res.data as TimeTable;
+        setSavedTimetables(prev => {
+          const updated = [...prev, newTimetable];
+          setActiveSavedIndex(updated.length - 1);
+          return updated;
+        });
+        setMode('view');
+        alert('시간표가 성공적으로 저장되었습니다!');
+      } else {
+        const errMsg = (res as any).e;
+        if (errMsg === 'unauthorized') {
+          alert('로그인이 필요합니다. 먼저 로그인해주세요!');
+        } else {
+          alert(`저장에 실패했습니다: ${errMsg || '알 수 없는 오류'}`);
+        }
+      }
+    } catch (err: any) {
+      alert(`저장 중 오류가 발생했습니다: ${err.message || '네트워크 오류'}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
 
   const handleNextAlternative = () => {
     if (currentAlternativeIndex < generatedTimetables.length - 1) {
@@ -81,8 +124,29 @@ const Timetable: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.wrapper} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader2 className={styles.spinner} size={48} />
+            <h3 style={{ marginTop: '16px', color: '#666' }}>시간표 불러오는 중...</h3>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
+      {isSaving && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px 48px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <Loader2 className={styles.spinner} size={36} />
+            <p style={{ marginTop: '16px', fontWeight: 600, color: '#333' }}>시간표 저장 중...</p>
+          </div>
+        </div>
+      )}
       <div className={styles.wrapper}>
         
         {mode === 'create' ? (
