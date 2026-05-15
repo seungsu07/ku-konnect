@@ -295,6 +295,8 @@ export interface Post extends Entity<'post'> {
   view_count: number;
   /** 댓글 수 */
   comment_count: number;
+  /** 좋아요 수 */
+  heart_count: number;
   /** 생성 시간 */
   created_at: TimeStamp;
   /** 수정 시간 */

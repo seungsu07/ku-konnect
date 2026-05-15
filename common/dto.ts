@@ -729,6 +729,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'content'
           | 'view_count'
           | 'comment_count'
+          | 'heart_count'
           | 'created_at'
           | 'updated_at'
           | 'visible'

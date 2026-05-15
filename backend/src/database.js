@@ -1497,8 +1497,8 @@ export function CreateDatabaseManager(context, rcon) {
                 return {
                     success: true,
                     data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
-                        ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author }) =>
-                            ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author })
+                        ({ id, board, title, content, view_count, comment_count, heart_count, created_at, updated_at, visible, author }) =>
+                            ({ id, board, title, content, view_count, comment_count, heart_count, created_at, updated_at, visible, author })
                     )
                 };
             },
@@ -1539,6 +1539,7 @@ export function CreateDatabaseManager(context, rcon) {
                     content,
                     view_count: 0,
                     comment_count: 0,
+                    heart_count: 0,
                     created_at: now,
                     updated_at: now,
                     visible
@@ -2028,7 +2029,8 @@ export function CreateDatabaseManager(context, rcon) {
                     created_at: now,
                     updated_at: now,
                     view_count: 0,
-                    comment_count: 0
+                    comment_count: 0,
+                    heart_count: 0
                 };
                 const pr = dbm.createEntity(pp);
                 if (!pr) return {
