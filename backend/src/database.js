@@ -122,7 +122,7 @@ const STUDY_GROUP_DESCRIPTIONS = '709d1bed-6f52-4584-8ad6-0c8c92ea4772';
 
 const GEN_LIMIT = 100;
 const GEN_MIN_DURATION = Temporal.Duration.from({ minutes: 1 });
-const GEN_LIMIT_DURATION = Temporal.Duration.from({ hours: 12 });
+const GEN_LIMIT_DURATION = Temporal.Duration.from({ hours: 6 });
 /** @type {Map<EntityID<'user'>, Temporal.Instant>} */
 const genUsed = new Map();
 /** @type {Temporal.Instant[]} */
@@ -772,9 +772,7 @@ export function CreateDatabaseManager(context, rcon) {
             async generateRoadMap(data, user) {
                 const { input } = data;
                 const prev = genUsed.get(user.id);
-                if (!prev)
-                    genUsed.set(user.id, Temporal.Now.instant());
-                else {
+                if (prev) {
                     if (
                         prev &&
                         Temporal.Now.instant().since(prev)
@@ -784,6 +782,7 @@ export function CreateDatabaseManager(context, rcon) {
                         e: 'already_processed'
                     };
                 }
+                genUsed.set(user.id, Temporal.Now.instant());
                 if (
                     map_gened.length >= GEN_LIMIT &&
                     Temporal.Now.instant()
