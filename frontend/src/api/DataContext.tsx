@@ -4,6 +4,7 @@ import type { TimeTable, Period } from '../../../common/models';
 
 export interface SubjectBoard {
   id: string;
+  realBoardId?: string;
   name: string;
   prof: string;
   code: string;
@@ -13,6 +14,7 @@ export interface SubjectBoard {
 export interface AppDataContextType {
   savedTimetables: (TimeTable & { renderableClasses?: any[] })[];
   subjectBoards: SubjectBoard[];
+  userProfile: any | null;
   isDataLoading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -20,8 +22,9 @@ export interface AppDataContextType {
 export const AppDataContext = createContext<AppDataContextType>({
   savedTimetables: [],
   subjectBoards: [],
+  userProfile: null,
   isDataLoading: true,
-  refreshData: async () => {},
+  refreshData: async () => { },
 });
 
 const inflateTimetable = async (tt: TimeTable, cache: Map<string, any>): Promise<TimeTable & { renderableClasses: any[] }> => {
@@ -109,6 +112,7 @@ const inflateTimetable = async (tt: TimeTable, cache: Map<string, any>): Promise
 export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [savedTimetables, setSavedTimetables] = useState<(TimeTable & { renderableClasses?: any[] })[]>([]);
   const [subjectBoards, setSubjectBoards] = useState<SubjectBoard[]>([]);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   const refreshData = async () => {
@@ -117,13 +121,21 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (!loginId) {
       setSavedTimetables([]);
       setSubjectBoards([]);
+      setUserProfile(null);
       setIsDataLoading(false);
       return;
     }
 
     try {
+      // 1. Fetch User Profiles
+      const profiles = await dataApi.getUserProfiles({});
+      if (profiles && profiles.length > 0) {
+        setUserProfile(profiles[0]);
+      }
+
+      // 2. Fetch Timetables
       const timetables = await dataApi.getTimeTables({});
-      
+
       const globalCache = new Map<string, any>();
       const inflatedTimetables = await Promise.all(timetables.map((tt: TimeTable) => inflateTimetable(tt, globalCache)));
       setSavedTimetables(inflatedTimetables);
@@ -136,7 +148,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
         await Promise.all(activeTimetable.classes.map(async (classId: string) => {
           const cls = await globalCache.get(`cls-${classId}`) || await dataApi.getLectureClass({ id: classId as any });
           if (!cls) return;
-          
+
           const lecture = await globalCache.get(`lect-${cls.lecture}`) || await dataApi.getLecture({ id: cls.lecture });
           if (!lecture) return;
 
@@ -144,21 +156,27 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
           seenCourses.add(lecture.course);
 
           const course = await globalCache.get(`course-${lecture.course}`) || await dataApi.getCourse({ id: lecture.course });
-          const professor = lecture.professor 
+          const professor = lecture.professor
             ? (await globalCache.get(`prof-${lecture.professor}`) || await dataApi.getProfessor({ id: lecture.professor }))
             : null;
 
           if (!course) return;
 
+          // Try to find a real board for this lecture (backend uses __lectureId__ as board name)
+          const boardName = `__${lecture.id}__`;
+          const realBoards = await dataApi.getBoards({ name: boardName });
+          const realBoard = realBoards.length > 0 ? realBoards[0] : null;
+
           boards.push({
             id: course.id,
+            realBoardId: realBoard?.id,
             name: course.name,
             prof: professor?.name || '미지정',
             code: course.code,
-            newPosts: Math.floor(Math.random() * 5)
+            newPosts: realBoard?.post_count || 0
           });
         }));
-        
+
         setSubjectBoards(boards);
       } else {
         setSubjectBoards([]);
@@ -175,7 +193,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   return (
-    <AppDataContext.Provider value={{ savedTimetables, subjectBoards, isDataLoading, refreshData }}>
+    <AppDataContext.Provider value={{ savedTimetables, subjectBoards, userProfile, isDataLoading, refreshData }}>
       {children}
     </AppDataContext.Provider>
   );

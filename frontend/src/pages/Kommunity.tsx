@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  PenSquare, 
-  MessageCircle, 
-  ThumbsUp, 
-  Eye, 
-  TrendingUp, 
-  Clock, 
+import {
+  Search,
+  PenSquare,
+  MessageCircle,
+  ThumbsUp,
+  Eye,
+  TrendingUp,
+  Clock,
   MoreHorizontal,
   Flame,
   ChevronLeft,
   BookOpen,
   MessageSquare,
-  Loader2
+  Loader2,
+  Image,
+  Paperclip
 } from 'lucide-react';
 import styles from './Kommunity.module.css';
 import { dataApi } from '../api/data';
@@ -42,44 +44,7 @@ const getColor = (id: string) => {
 
 // SubjectBoard is imported from AppDataContext
 
-const MOCK_POSTS = [
-  {
-    id: '1',
-    board: '알고리즘',
-    title: '다이나믹 프로그래밍 점화식 질문드려요',
-    excerpt: '백준 12865번 평범한 배낭 문제 풀고 있는데, 2차원 배열 말고 1차원 배열로 최적화하는 부분이 잘 이해가 안 됩니다...',
-    author: '안암동불주먹',
-    createdAt: '10분 전',
-    likes: 24,
-    comments: 8,
-    views: 156,
-    isHot: true
-  },
-  {
-    id: '2',
-    board: '운영체제',
-    title: '이번 중간고사 범위 어디까지인가요?',
-    excerpt: '지난번 수업 때 말씀해주셨던 것 같은데 필기를 못 했네요. 세마포어까지인가요 아니면 데드락 전까지인가요?',
-    author: '학사요정',
-    createdAt: '1시간 전',
-    likes: 5,
-    comments: 12,
-    views: 342,
-    isHot: false
-  },
-  {
-    id: '3',
-    board: '인공지능',
-    title: '과제 2번 오차 역전파 구현 팁',
-    excerpt: '수식으로 볼 때는 쉬웠는데 코드로 옮기려니까 차원이 자꾸 꼬이네요. 넘파이 브로드캐스팅 활용하면 훨씬 깔끔하게 풀립니다.',
-    author: '호랑이꿈나무',
-    createdAt: '3시간 전',
-    likes: 56,
-    comments: 15,
-    views: 890,
-    isHot: true
-  }
-];
+
 
 const MOCK_TRENDING = [
   { id: '1', title: '이번 학기 꿀교양 추천 리스트', views: '2.5k' },
@@ -93,7 +58,14 @@ const Kommunity: React.FC = () => {
   const navigate = useNavigate();
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { subjectBoards, isDataLoading: isLoading } = React.useContext(AppDataContext);
+  const { subjectBoards, userProfile, isDataLoading: isLoading } = React.useContext(AppDataContext);
+  const [isWriteMode, setIsWriteMode] = useState(false);
+  const [writeTitle, setWriteTitle] = useState('');
+  const [writeContent, setWriteContent] = useState('');
+
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isPostsLoading, setIsPostsLoading] = useState(false);
+  const [authorMap, setAuthorMap] = useState<Record<string, any>>({});
 
   // Unify background color and remove white strip
   React.useEffect(() => {
@@ -105,6 +77,104 @@ const Kommunity: React.FC = () => {
   }, []);
 
   const activeBoard = subjectBoards.find(b => b.id === selectedBoardId);
+
+  // Fetch posts when board changes
+  useEffect(() => {
+    const fetchPosts = async () => {
+      if (!selectedBoardId || !activeBoard?.realBoardId) {
+        setPosts([]);
+        return;
+      }
+
+      setIsPostsLoading(true);
+      try {
+        const fetchedPosts = await dataApi.getPosts({ board: activeBoard.realBoardId as any });
+        setPosts(fetchedPosts);
+
+        // Fetch authors for these posts
+        const authorIds = Array.from(new Set(fetchedPosts.map((p: any) => p.author)));
+        const profilePromises = authorIds.map(id => dataApi.getUserProfiles({ id: id as any }));
+        const profiles = await Promise.all(profilePromises);
+
+        const newAuthorMap: Record<string, any> = { ...authorMap };
+        profiles.flat().forEach((profile: any) => {
+          if (profile) newAuthorMap[profile.id] = profile;
+        });
+        setAuthorMap(newAuthorMap);
+      } catch (err) {
+        console.error('Failed to fetch posts:', err);
+      } finally {
+        setIsPostsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [selectedBoardId, activeBoard?.realBoardId]);
+
+  const handleCreatePost = async () => {
+    if (!activeBoard?.realBoardId) {
+      alert(`이 과목의 게시판이 아직 연동되지 않았습니다. (${activeBoard?.name})`);
+      return;
+    }
+
+    let profile = userProfile;
+
+    // If no profile, prompt to create one
+    if (!profile) {
+      const nickname = prompt('게시글을 작성하려면 닉네임이 필요합니다.\n사용할 닉네임을 입력해주세요:');
+      if (!nickname || !nickname.trim()) return;
+
+      try {
+        const res = await dataApi.createUserProfile({ nickname: nickname.trim(), image: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJREFUeJztwQEBAAAAgiD/r25IQAEAAABJ6AHxwBjqPAAAAABJRU5ErkJggg==' });
+        if (res.success) {
+          profile = res.data;
+          // Note: This won't update the context, but works for this post
+        } else {
+          alert('프로필 생성 실패: ' + ((res as any).e || '알 수 없는 오류'));
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to create profile:', err);
+        alert('프로필 생성 중 오류가 발생했습니다.');
+        return;
+      }
+    }
+
+    try {
+      const res = await dataApi.createPost({
+        board: activeBoard.realBoardId as any,
+        title: writeTitle,
+        content: writeContent,
+        visible: true,
+        profile: profile.id
+      });
+
+      if (res.success) {
+        alert('게시글이 성공적으로 등록되었습니다!');
+        setIsWriteMode(false);
+        setWriteTitle('');
+        setWriteContent('');
+        // Re-fetch posts
+        const fetchedPosts = await dataApi.getPosts({ board: activeBoard.realBoardId as any });
+        setPosts(fetchedPosts);
+      } else {
+        alert(`등록 실패: ${res.e || '알 수 없는 오류'}`);
+      }
+    } catch (err) {
+      console.error('Failed to create post:', err);
+      alert('등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  const formatTime = (timestamp: number) => {
+    const diff = Date.now() - timestamp;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return '방금 전';
+    if (mins < 60) return `${mins}분 전`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    return new Date(timestamp).toLocaleDateString();
+  };
 
   if (isLoading) {
     return (
@@ -169,30 +239,31 @@ const Kommunity: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
-        
+
         {/* Left Sidebar: Fixed Boards */}
         <aside className={styles.sidebar}>
           <div className={styles.boardCard}>
             <h3 className={styles.sidebarTitle}>전체 게시판</h3>
             <nav className={styles.boardList}>
               <a href="#all" className={`${styles.boardItem} ${!selectedBoardId ? styles.boardItemActive : ''}`} onClick={() => setSelectedBoardId(null)}>
-                <div className={styles.boardIcon}><BookOpen size={18}/></div>
+                <div className={styles.boardIcon}><BookOpen size={18} /></div>
                 내 과목 전체
               </a>
               <a href="#free" className={styles.boardItem}>
-                <div className={styles.boardIcon}><MessageSquare size={18}/></div>
+                <div className={styles.boardIcon}><MessageSquare size={18} /></div>
                 자유게시판
               </a>
               <div className={styles.sidebarDivider} style={{ margin: '12px 0', borderBottom: '1px solid #f1f5f9' }} />
               <div style={{ padding: '0 12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>수강 과목</div>
               {subjectBoards.map(board => (
-                <a 
+                <a
                   key={board.id}
                   href={`#${board.id}`}
                   className={`${styles.boardItem} ${selectedBoardId === board.id ? styles.boardItemActive : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedBoardId(board.id);
+                    setIsWriteMode(false);
                   }}
                 >
                   <div className={styles.boardIcon} style={{ background: getColor(board.code).bg, color: getColor(board.code).text }}>
@@ -210,78 +281,142 @@ const Kommunity: React.FC = () => {
           {selectedBoardId ? (
             /* Board Detail View */
             <>
-              <div className={styles.backBtn} onClick={() => setSelectedBoardId(null)}>
+              <div className={styles.backBtn} onClick={() => { setSelectedBoardId(null); setIsWriteMode(false); }}>
                 <ChevronLeft size={20} /> 전체 과목으로 돌아가기
               </div>
               <div className={styles.feedHeader}>
                 <h2 className={styles.feedTitle}>
                   {activeBoard?.name} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500, marginLeft: 8 }}>{activeBoard?.prof}</span>
                 </h2>
-                <button className={styles.writeBtn}>
+                <button className={styles.writeBtn} onClick={() => setIsWriteMode(true)}>
                   <PenSquare size={18} /> 글쓰기
                 </button>
               </div>
 
               <div className={styles.searchBar} style={{ marginBottom: 20 }}>
                 <Search size={18} className={styles.searchIcon} />
-                <input 
-                  type="text" 
-                  placeholder={`${activeBoard?.name} 게시판 내 검색`} 
+                <input
+                  type="text"
+                  placeholder={`${activeBoard?.name} 게시판 내 검색`}
                   className={styles.searchInput}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
-              <div className={styles.postsList}>
-                {MOCK_POSTS.filter(p => (p.board === activeBoard?.name || !activeBoard) && 
-                  (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())))
-                .map(post => (
-                  <article 
-                    key={post.id} 
-                    className={styles.postCard}
-                    onClick={() => navigate(`/kommunity/post/${post.id}`)}
-                  >
-                    <div className={styles.postHeader}>
-                      <span className={styles.postBadge}>{post.board}</span>
-                      <button className={styles.moreBtn}><MoreHorizontal size={18} color="#94a3b8" /></button>
+              {isWriteMode ? (
+                <div className={styles.editorContainer}>
+                  <div className={styles.editorHeader}>
+                    <input
+                      type="text"
+                      className={styles.editorTitleInput}
+                      placeholder="제목을 입력하세요"
+                      value={writeTitle}
+                      onChange={(e) => setWriteTitle(e.target.value)}
+                    />
+                  </div>
+                  <textarea
+                    className={styles.editorContent}
+                    placeholder="내용을 작성하세요..."
+                    value={writeContent}
+                    onChange={(e) => setWriteContent(e.target.value)}
+                  />
+                  <div className={styles.editorActions}>
+                    <div className={styles.editorTools}>
+                      <button className={styles.toolBtn} title="이미지 첨부"><Image size={20} /></button>
+                      <button className={styles.toolBtn} title="파일 첨부"><Paperclip size={20} /></button>
                     </div>
-                    <h3 className={styles.postTitle}>
-                      {post.isHot && <Flame size={18} color="#ff3131" style={{ display: 'inline', marginRight: 6, verticalAlign: 'text-bottom' }} />}
-                      {post.title}
-                    </h3>
-                    <p className={styles.postExcerpt}>{post.excerpt}</p>
-                    
-                    <div className={styles.postMeta}>
-                      <div className={styles.authorInfo}>
-                        <div className={styles.authorAvatar}>{post.author[0]}</div>
-                        <span style={{ color: '#475569', fontWeight: 600 }}>{post.author}</span>
-                      </div>
-                      <div className={styles.metaItem}>
-                        <Clock size={14} /> {post.createdAt}
-                      </div>
-                      <div className={styles.metaItem}>
-                        <ThumbsUp size={14} /> {post.likes}
-                      </div>
-                      <div className={styles.metaItem}>
-                        <MessageCircle size={14} /> {post.comments}
-                      </div>
-                      <div className={styles.metaItem}>
-                        <Eye size={14} /> {post.views}
-                      </div>
+                    <div className={styles.submitGroup}>
+                      <button className={styles.cancelBtn} onClick={() => setIsWriteMode(false)}>취소</button>
+                      <button
+                        className={styles.submitBtn}
+                        disabled={!writeTitle.trim() || !writeContent.trim()}
+                        onClick={handleCreatePost}
+                      >
+                        등록하기
+                      </button>
                     </div>
-                  </article>
-                ))}
-              </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.postsList}>
+                  {isPostsLoading ? (
+                    /* Post Loading Skeletons */
+                    [1, 2, 3].map(i => (
+                      <div key={i} className={styles.postCard} style={{ cursor: 'default' }}>
+                        <div className={styles.skeleton} style={{ height: 20, width: 60, borderRadius: 12, marginBottom: 12 }}></div>
+                        <div className={styles.skeleton} style={{ height: 24, width: '70%', marginBottom: 12 }}></div>
+                        <div className={styles.skeleton} style={{ height: 16, width: '90%', marginBottom: 8 }}></div>
+                        <div className={styles.skeleton} style={{ height: 16, width: '40%', marginBottom: 20 }}></div>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <div className={styles.skeleton} style={{ width: 60, height: 14 }}></div>
+                          <div className={styles.skeleton} style={{ width: 60, height: 14 }}></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : posts.length === 0 ? (
+                    <div className={styles.noPosts}>
+                      <MessageSquare size={48} color="#cbd5e1" />
+                      <p>아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!</p>
+                    </div>
+                  ) : (
+                    posts.filter(p =>
+                      (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.content.toLowerCase().includes(searchQuery.toLowerCase())))
+                      .map(post => {
+                        const author = authorMap[post.author];
+                        const isHot = post.view_count > 100 || post.comment_count > 10;
+
+                        return (
+                          <article
+                            key={post.id}
+                            className={styles.postCard}
+                            onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                          >
+                            <div className={styles.postHeader}>
+                              <span className={styles.postBadge}>{activeBoard?.name}</span>
+                              <button className={styles.moreBtn}><MoreHorizontal size={18} color="#94a3b8" /></button>
+                            </div>
+                            <h3 className={isHot ? `${styles.postTitle} ${styles.postTitleHot}` : styles.postTitle}>
+                              {isHot && <Flame size={18} color="#ff3131" style={{ display: 'inline', marginRight: 6, verticalAlign: 'text-bottom' }} />}
+                              {post.title}
+                            </h3>
+                            <p className={styles.postExcerpt}>{post.content}</p>
+
+                            <div className={styles.postMeta}>
+                              <div className={styles.authorInfo}>
+                                <div className={styles.authorAvatar} style={{ background: author ? getColor(author.id).bg : '#f1f5f9', color: author ? getColor(author.id).text : '#94a3b8' }}>
+                                  {author?.nickname?.[0] || '?'}
+                                </div>
+                                <span style={{ color: '#475569', fontWeight: 600 }}>{author?.nickname || '알 수 없음'}</span>
+                              </div>
+                              <div className={styles.metaItem}>
+                                <Clock size={14} /> {formatTime(post.created_at)}
+                              </div>
+                              <div className={styles.metaItem}>
+                                <ThumbsUp size={14} /> {post.likes || 0}
+                              </div>
+                              <div className={styles.metaItem}>
+                                <MessageCircle size={14} /> {post.comment_count}
+                              </div>
+                              <div className={styles.metaItem}>
+                                <Eye size={14} /> {post.view_count}
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })
+                  )}
+                </div>
+              )}
             </>
           ) : (
             /* Main Subject Grid View */
             <>
               <div className={styles.searchBar} style={{ marginBottom: 24 }}>
                 <Search size={18} className={styles.searchIcon} />
-                <input 
-                  type="text" 
-                  placeholder="전체 게시판 검색..." 
+                <input
+                  type="text"
+                  placeholder="전체 게시판 검색..."
                   className={styles.searchInput}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -294,25 +429,27 @@ const Kommunity: React.FC = () => {
                     <h2 className={styles.feedTitle}>'{searchQuery}' 검색 결과</h2>
                   </div>
                   <div className={styles.postsList}>
-                    {MOCK_POSTS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
-                      MOCK_POSTS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
-                        <article 
-                          key={post.id} 
+                    {posts.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.content.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                      posts.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.content.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+                        <article
+                          key={post.id}
                           className={styles.postCard}
                           onClick={() => navigate(`/kommunity/post/${post.id}`)}
                         >
                           <div className={styles.postHeader}>
-                            <span className={styles.postBadge}>{post.board}</span>
+                            <span className={styles.postBadge}>{subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판'}</span>
                           </div>
                           <h3 className={styles.postTitle}>{post.title}</h3>
-                          <p className={styles.postExcerpt}>{post.excerpt}</p>
+                          <p className={styles.postExcerpt}>{post.content}</p>
                           <div className={styles.postMeta}>
                             <div className={styles.authorInfo}>
-                              <div className={styles.authorAvatar}>{post.author[0]}</div>
-                              <span>{post.author}</span>
+                              <div className={styles.authorAvatar} style={{ background: authorMap[post.author] ? getColor(authorMap[post.author].id).bg : '#f1f5f9', color: authorMap[post.author] ? getColor(authorMap[post.author].id).text : '#94a3b8' }}>
+                                {authorMap[post.author]?.nickname?.[0] || '?'}
+                              </div>
+                              <span>{authorMap[post.author]?.nickname || '알 수 없음'}</span>
                             </div>
-                            <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes}</div>
-                            <div className={styles.metaItem}><MessageCircle size={14} /> {post.comments}</div>
+                            <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes || 0}</div>
+                            <div className={styles.metaItem}><MessageCircle size={14} /> {post.comment_count}</div>
                           </div>
                         </article>
                       ))
@@ -327,7 +464,7 @@ const Kommunity: React.FC = () => {
                     <h2 className={styles.feedTitle}>나의 수강 과목 게시판</h2>
                     <div style={{ fontSize: '0.9rem', color: '#64748b' }}>2026학년도 1학기</div>
                   </div>
-                  
+
                   <div className={styles.subjectGrid}>
                     {subjectBoards.length === 0 ? (
                       <div style={{ padding: '40px 20px', color: '#64748b', gridColumn: '1 / -1', textAlign: 'center', backgroundColor: 'white', borderRadius: 16, border: '1px solid #e2e8f0' }}>
@@ -337,8 +474,8 @@ const Kommunity: React.FC = () => {
                       subjectBoards.map(subject => {
                         const colors = getColor(subject.code);
                         return (
-                          <div 
-                            key={subject.id} 
+                          <div
+                            key={subject.id}
                             className={styles.subjectCard}
                             style={{ backgroundColor: colors.bg, color: colors.text }}
                             onClick={() => setSelectedBoardId(subject.id)}
@@ -350,7 +487,7 @@ const Kommunity: React.FC = () => {
                                 <span className={styles.subjectCardCode}>{subject.code}</span>
                               </div>
                             </div>
-                            
+
                             <div className={styles.subjectCardStats}>
                               {subject.newPosts > 0 && (
                                 <div className={styles.newCount} style={{ color: colors.text }}>
@@ -374,27 +511,33 @@ const Kommunity: React.FC = () => {
                     <h2 className={styles.feedTitle}>실시간 전체 인기글</h2>
                   </div>
                   <div className={styles.postsList}>
-                    {MOCK_POSTS.map(post => (
-                      <article 
-                        key={post.id} 
-                        className={styles.postCard}
-                        onClick={() => navigate(`/kommunity/post/${post.id}`)}
-                      >
-                        <div className={styles.postHeader}>
-                          <span className={styles.postBadge}>{post.board}</span>
-                        </div>
-                        <h3 className={styles.postTitle}>{post.title}</h3>
-                        <p className={styles.postExcerpt}>{post.excerpt}</p>
-                        <div className={styles.postMeta}>
-                          <div className={styles.authorInfo}>
-                            <div className={styles.authorAvatar}>{post.author[0]}</div>
-                            <span>{post.author}</span>
+                    {posts.length > 0 ? (
+                      posts.slice(0, 5).map(post => (
+                        <article
+                          key={post.id}
+                          className={styles.postCard}
+                          onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                        >
+                          <div className={styles.postHeader}>
+                            <span className={styles.postBadge}>{subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판'}</span>
                           </div>
-                          <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes}</div>
-                          <div className={styles.metaItem}><MessageCircle size={14} /> {post.comments}</div>
-                        </div>
-                      </article>
-                    ))}
+                          <h3 className={styles.postTitle}>{post.title}</h3>
+                          <p className={styles.postExcerpt}>{post.content}</p>
+                          <div className={styles.postMeta}>
+                            <div className={styles.authorInfo}>
+                              <div className={styles.authorAvatar} style={{ background: authorMap[post.author] ? getColor(authorMap[post.author].id).bg : '#f1f5f9', color: authorMap[post.author] ? getColor(authorMap[post.author].id).text : '#94a3b8' }}>
+                                {authorMap[post.author]?.nickname?.[0] || '?'}
+                              </div>
+                              <span>{authorMap[post.author]?.nickname || '알 수 없음'}</span>
+                            </div>
+                            <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes || 0}</div>
+                            <div className={styles.metaItem}><MessageCircle size={14} /> {post.comment_count}</div>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>표시할 인기글이 없습니다.</div>
+                    )}
                   </div>
                 </>
               )}
@@ -411,8 +554,8 @@ const Kommunity: React.FC = () => {
             </h3>
             <div className={styles.trendingList}>
               {MOCK_TRENDING.map((item, index) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className={styles.trendingItem}
                   onClick={() => navigate(`/kommunity/post/${item.id}`)}
                 >
