@@ -123,7 +123,7 @@ const STUDY_GROUP_DESCRIPTIONS = '709d1bed-6f52-4584-8ad6-0c8c92ea4772';
 
 const GEN_LIMIT = 100;
 const GEN_MIN_DURATION = Temporal.Duration.from({ minutes: 1 });
-const GEN_LIMIT_DURATION = Temporal.Duration.from({ hours: 12 });
+const GEN_LIMIT_DURATION = Temporal.Duration.from({ hours: 6 });
 /** @type {Map<EntityID<'user'>, Temporal.Instant>} */
 const genUsed = new Map();
 /** @type {Temporal.Instant[]} */
@@ -773,9 +773,7 @@ export function CreateDatabaseManager(context, rcon) {
             async generateRoadMap(data, user) {
                 const { input } = data;
                 const prev = genUsed.get(user.id);
-                if (!prev)
-                    genUsed.set(user.id, Temporal.Now.instant());
-                else {
+                if (prev) {
                     if (
                         prev &&
                         Temporal.Now.instant().since(prev)
@@ -798,86 +796,14 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'server_is_busy'
                 };
-                try {
-                    console.log('Generating Roadmap for input:', input);
-                    const recommendations = await generate(input);
-                    console.log('LLM Recommendations received:', recommendations.length);
-                    
-                    // Initialize roadmap
-                    const roadmap = [];
-                    for (let y = 1; y <= 4; y++) {
-                        for (let s = 1; s <= 2; s++) {
-                            roadmap.push({ year: y, sem: s, courses: [] });
-                        }
-                    }
-
-                    // 1. Add Mandatory subjects (type 0 or 3)
-                    COSE_SUBJECTS.forEach(sub => {
-                        if (sub.type === 0 || sub.type === 3) {
-                            const slot = roadmap.find(r => r.year === sub.year && r.sem === sub.sem);
-                            if (slot) slot.courses.push({ ...sub, score: 100, reason: '전공 필수' });
-                        }
-                    });
-
-                    // 2. Add Recommended electives from LLM
-                    if (Array.isArray(recommendations)) {
-                        recommendations.forEach(rec => {
-                            const sub = COSE_SUBJECTS.find(s => s.code === rec.code);
-                            if (sub) {
-                                const slot = roadmap.find(r => r.year === sub.year && r.sem === sub.sem);
-                                if (slot) {
-                                    if (!slot.courses.some(c => c.code === sub.code)) {
-                                        slot.courses.push({ ...sub, score: rec.score, reason: rec.reason });
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    // 3. Balancing Logic
-                    roadmap.forEach(slot => {
-                        // If <= 2 courses, add a high-frequency elective
-                        if (slot.courses.length <= 2) {
-                            const available = COSE_SUBJECTS.filter(s => 
-                                s.year === slot.year && 
-                                s.sem === slot.sem && 
-                                s.type !== 0 && s.type !== 3 &&
-                                !slot.courses.some(c => c.code === s.code)
-                            ).sort((a, b) => b.freq - a.freq);
-                            
-                            if (available.length > 0) {
-                                slot.courses.push({ ...available[0], score: 50, reason: '전공 균형을 위한 추천 과목' });
-                            }
-                        }
-
-                        // If > 5 courses, trim to 4 (removing least important electives)
-                        if (slot.courses.length >= 5) {
-                            slot.courses.sort((a, b) => {
-                                const aReq = (a.type === 0 || a.type === 3) ? 1 : 0;
-                                const bReq = (b.type === 0 || b.type === 3) ? 1 : 0;
-                                if (aReq !== bReq) return bReq - aReq;
-                                return b.score - a.score;
-                            });
-                            slot.courses = slot.courses.slice(0, 4);
-                        }
-                    });
-
-                    map_gened.push(Temporal.Now.instant());
-                    if (map_gened.length > GEN_LIMIT)
-                        map_gened.splice(0, map_gened.length - GEN_LIMIT);
-                    
-                    console.log('Roadmap generation successful');
-                    return {
-                        success: true,
-                        data: roadmap
-                    };
-                } catch (err) {
-                    console.error('Roadmap Generation Algorithm Error:', err);
-                    return {
-                        success: false,
-                        e: 'unexpected_algorithm_error'
-                    };
-                }
+                const output = await generate(input);
+                map_gened.push(Temporal.Now.instant());
+                if (map_gened.length > GEN_LIMIT)
+                    map_gened.splice(0, map_gened.length - GEN_LIMIT);
+                return {
+                    success: true,
+                    data: output
+                };
             },
 
             /**
