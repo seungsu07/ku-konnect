@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import logo from '../assets/logo.svg';
 import styles from './Login.module.css';
+import { AppDataContext } from '../api/DataContext';
 
 function Login() {
     const navigate = useNavigate();
@@ -10,6 +11,7 @@ function Login() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { refreshData } = useContext(AppDataContext);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,6 +21,7 @@ function Login() {
             if (res.success) {
                 alert('로그인 성공!');
                 localStorage.setItem('login_id', id);
+                await refreshData();
                 navigate('/');
             } else {
                 alert(`로그인 실패: ${res.e}`);

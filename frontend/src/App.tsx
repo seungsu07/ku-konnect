@@ -36,11 +36,15 @@ const AppContent = () => {
   );
 };
 
+import { AppDataProvider } from './api/DataContext';
+
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <AppDataProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AppDataProvider>
   );
 }
 

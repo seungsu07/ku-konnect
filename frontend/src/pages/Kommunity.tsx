@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -12,9 +12,13 @@ import {
   Flame,
   ChevronLeft,
   BookOpen,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import styles from './Kommunity.module.css';
+import { dataApi } from '../api/data';
+import type { TimeTable } from '../../../common/models';
+import { AppDataContext } from '../api/DataContext';
 
 // Using the same colors as LeftPanel.tsx
 const PASTEL_COLORS = [
@@ -36,14 +40,7 @@ const getColor = (id: string) => {
   return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length];
 };
 
-const MOCK_SUBJECT_BOARDS = [
-  { id: '1', name: '알고리즘', prof: '김민수 교수님', code: 'COSE214', newPosts: 5 },
-  { id: '2', name: '운영체제', prof: '박철호 교수님', code: 'COSE341', newPosts: 12 },
-  { id: '3', name: '데이터베이스', prof: '이영희 교수님', code: 'COSE371', newPosts: 3 },
-  { id: '4', name: '인공지능', prof: '최준영 교수님', code: 'COSE361', newPosts: 8 },
-  { id: '5', name: '컴퓨터네트워크', prof: '정대리 교수님', code: 'COSE342', newPosts: 0 },
-  { id: '6', name: '소프트웨어공학', prof: '한지민 교수님', code: 'COSE242', newPosts: 2 },
-];
+// SubjectBoard is imported from AppDataContext
 
 const MOCK_POSTS = [
   {
@@ -96,6 +93,7 @@ const Kommunity: React.FC = () => {
   const navigate = useNavigate();
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { subjectBoards, isDataLoading: isLoading } = React.useContext(AppDataContext);
 
   // Unify background color and remove white strip
   React.useEffect(() => {
@@ -106,7 +104,67 @@ const Kommunity: React.FC = () => {
     };
   }, []);
 
-  const activeBoard = MOCK_SUBJECT_BOARDS.find(b => b.id === selectedBoardId);
+  const activeBoard = subjectBoards.find(b => b.id === selectedBoardId);
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.wrapper}>
+          {/* Skeleton Left Sidebar */}
+          <aside className={styles.sidebar}>
+            <div className={styles.boardCard}>
+              <div className={`${styles.skeleton} ${styles.skeletonTitle}`} style={{ width: '50%', marginBottom: 24 }}></div>
+              <div className={styles.boardList}>
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 12px' }}>
+                    <div className={styles.skeleton} style={{ width: 32, height: 32, borderRadius: 8, marginRight: 12 }}></div>
+                    <div className={styles.skeleton} style={{ height: 16, width: '60%', borderRadius: 4 }}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* Skeleton Main Feed */}
+          <main className={styles.mainFeed}>
+            <div className={styles.feedHeader} style={{ marginBottom: 20 }}>
+              <div className={`${styles.skeleton} ${styles.skeletonTitle}`} style={{ width: '40%' }}></div>
+            </div>
+            <div className={styles.subjectGrid}>
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className={styles.skeletonCard}>
+                  <div>
+                    <div className={`${styles.skeleton} ${styles.skeletonTitle}`}></div>
+                    <div className={`${styles.skeleton} ${styles.skeletonText}`}></div>
+                    <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '30%' }}></div>
+                  </div>
+                  <div className={`${styles.skeleton} ${styles.skeletonBadge}`}></div>
+                </div>
+              ))}
+            </div>
+          </main>
+
+          {/* Skeleton Right Sidebar */}
+          <aside className={styles.rightSidebar}>
+            <div className={styles.trendingCard}>
+              <div className={`${styles.skeleton} ${styles.skeletonTitle}`} style={{ width: '60%', marginBottom: 20 }}></div>
+              <div className={styles.trendingList}>
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className={styles.trendingItem} style={{ border: 'none', background: 'transparent' }}>
+                    <div className={styles.skeleton} style={{ width: 20, height: 20, borderRadius: 4, marginRight: 12 }}></div>
+                    <div style={{ flex: 1 }}>
+                      <div className={styles.skeleton} style={{ height: 14, width: '90%', marginBottom: 8, borderRadius: 4 }}></div>
+                      <div className={styles.skeleton} style={{ height: 12, width: '40%', borderRadius: 4 }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -127,7 +185,7 @@ const Kommunity: React.FC = () => {
               </a>
               <div className={styles.sidebarDivider} style={{ margin: '12px 0', borderBottom: '1px solid #f1f5f9' }} />
               <div style={{ padding: '0 12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>수강 과목</div>
-              {MOCK_SUBJECT_BOARDS.map(board => (
+              {subjectBoards.map(board => (
                 <a 
                   key={board.id}
                   href={`#${board.id}`}
@@ -271,39 +329,45 @@ const Kommunity: React.FC = () => {
                   </div>
                   
                   <div className={styles.subjectGrid}>
-                    {MOCK_SUBJECT_BOARDS.map(subject => {
-                      const colors = getColor(subject.code);
-                      return (
-                        <div 
-                          key={subject.id} 
-                          className={styles.subjectCard}
-                          style={{ backgroundColor: colors.bg, color: colors.text }}
-                          onClick={() => setSelectedBoardId(subject.id)}
-                        >
-                          <div>
-                            <div className={styles.subjectCardTitle}>{subject.name}</div>
-                            <div className={styles.subjectCardInfo}>
-                              <span className={styles.subjectCardProf}>{subject.prof}</span>
-                              <span className={styles.subjectCardCode}>{subject.code}</span>
+                    {subjectBoards.length === 0 ? (
+                      <div style={{ padding: '40px 20px', color: '#64748b', gridColumn: '1 / -1', textAlign: 'center', backgroundColor: 'white', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                        현재 활성화된 시간표에 수강 과목이 없습니다.
+                      </div>
+                    ) : (
+                      subjectBoards.map(subject => {
+                        const colors = getColor(subject.code);
+                        return (
+                          <div 
+                            key={subject.id} 
+                            className={styles.subjectCard}
+                            style={{ backgroundColor: colors.bg, color: colors.text }}
+                            onClick={() => setSelectedBoardId(subject.id)}
+                          >
+                            <div>
+                              <div className={styles.subjectCardTitle}>{subject.name}</div>
+                              <div className={styles.subjectCardInfo}>
+                                <span className={styles.subjectCardProf}>{subject.prof}</span>
+                                <span className={styles.subjectCardCode}>{subject.code}</span>
+                              </div>
+                            </div>
+                            
+                            <div className={styles.subjectCardStats}>
+                              {subject.newPosts > 0 && (
+                                <div className={styles.newCount} style={{ color: colors.text }}>
+                                  <Flame size={12} fill={colors.text} />
+                                  새 글 {subject.newPosts}
+                                </div>
+                              )}
+                              {subject.newPosts === 0 && (
+                                <div className={styles.newCount} style={{ opacity: 0.6, color: colors.text }}>
+                                  최근 게시글 없음
+                                </div>
+                              )}
                             </div>
                           </div>
-                          
-                          <div className={styles.subjectCardStats}>
-                            {subject.newPosts > 0 && (
-                              <div className={styles.newCount} style={{ color: colors.text }}>
-                                <Flame size={12} fill={colors.text} />
-                                새 글 {subject.newPosts}
-                              </div>
-                            )}
-                            {subject.newPosts === 0 && (
-                              <div className={styles.newCount} style={{ opacity: 0.6, color: colors.text }}>
-                                최근 게시글 없음
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
 
                   <div className={styles.feedHeader} style={{ marginTop: 40 }}>

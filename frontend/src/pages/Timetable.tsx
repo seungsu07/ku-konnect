@@ -8,10 +8,10 @@ import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 import type { TimeTable, Lecture, Preferences, Period } from '../../../common/models';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
 import { dataApi } from '../api/data';
+import { AppDataContext } from '../api/DataContext';
 
 const Timetable: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0);
@@ -20,112 +20,20 @@ const Timetable: React.FC = () => {
 
   // View/Create modes
   const [mode, setMode] = useState<'view' | 'create'>('view');
-  const [savedTimetables, setSavedTimetables] = useState<(TimeTable & { renderableClasses?: any[] })[]>([]);
+  const { savedTimetables, isDataLoading: isLoading, refreshData } = React.useContext(AppDataContext);
   const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
+
+  // When saved timetables load, select the active one
+  useEffect(() => {
+    if (savedTimetables.length > 0 && mode === 'view') {
+      const selectedIdx = savedTimetables.findIndex(t => t.selected);
+      setActiveSavedIndex(selectedIdx !== -1 ? selectedIdx : 0);
+    }
+  }, [savedTimetables, mode]);
 
   const workerRef = useRef<Worker | null>(null);
 
-  const inflateTimetable = async (tt: TimeTable, cache: Map<string, any>): Promise<TimeTable & { renderableClasses: any[] }> => {
-    if ((tt as any).renderableClasses) return tt as any;
-
-    const renderableClasses: any[] = [];
-    const grouped = new Map<string, any[]>();
-
-    const fetchWithCache = async (key: string, fetcher: () => Promise<any>) => {
-      if (cache.has(key)) return cache.get(key);
-      const promise = fetcher();
-      cache.set(key, promise); // Store promise to avoid duplicate pending requests
-      const res = await promise;
-      cache.set(key, res);
-      return res;
-    };
-
-    // Parallelize all classes in the timetable
-    await Promise.all(tt.classes.map(async (classId) => {
-      const cls = await fetchWithCache(`cls-${classId}`, () => dataApi.getLectureClass({ id: classId as any }));
-      if (!cls) return;
-
-      const lecture = await fetchWithCache(`lect-${cls.lecture}`, () => dataApi.getLecture({ id: cls.lecture }));
-      if (!lecture) return;
-
-      // Parallelize Course, Professor, and Periods/Rooms/Buildings
-      const [course, professor, ...periodData] = await Promise.all([
-        fetchWithCache(`course-${lecture.course}`, () => dataApi.getCourse({ id: lecture.course })),
-        lecture.professor ? fetchWithCache(`prof-${lecture.professor}`, () => dataApi.getProfessor({ id: lecture.professor })) : Promise.resolve(undefined),
-        ...cls.periods.map(async (period: Period) => {
-          const room = await fetchWithCache(`room-${period.room}`, () => dataApi.getClassRoom({ id: period.room }));
-          const building = room ? await fetchWithCache(`bld-${room.building}`, () => dataApi.getBuilding({ id: room.building })) : undefined;
-          return { period, room, building };
-        })
-      ]);
-
-      const duration = lecture.hours / (cls.periods.length || 1);
-
-      periodData.forEach(({ period, room, building }) => {
-        const entry = {
-          id: `${classId}-${period.day}-${period.time}`,
-          lectureId: lecture.id,
-          courseName: course?.name || '알 수 없음',
-          courseCode: course?.code || '----',
-          courseType: course?.course_type || 'major',
-          credit: lecture.credit,
-          profName: professor?.name || '미지정',
-          day: period.day,
-          start: 9 + (period.time - 1) * 1.5,
-          end: 9 + (period.time - 1) * 1.5 + duration,
-          location: `${building?.name || ''} ${room?.room || ''}`.trim(),
-          warning: false
-        };
-
-        if (!grouped.has(classId)) grouped.set(classId, []);
-        grouped.get(classId)!.push(entry);
-      });
-    }));
-
-    grouped.forEach(list => {
-      const dayGroups = new Map<string, any[]>();
-      list.forEach(entry => {
-        if (!dayGroups.has(entry.day)) dayGroups.set(entry.day, []);
-        dayGroups.get(entry.day)!.push(entry);
-      });
-
-      dayGroups.forEach(dayList => {
-        dayList.sort((a, b) => a.start - b.start);
-        let current = dayList[0];
-        if (!current) return;
-        for (let i = 1; i < dayList.length; i++) {
-          const next = dayList[i];
-          if (next.start - current.end <= 0.3) {
-            current.end = next.end;
-          } else {
-            renderableClasses.push(current);
-            current = next;
-          }
-        }
-        renderableClasses.push(current);
-      });
-    });
-
-    return { ...tt, renderableClasses };
-  };
-
-  // Fetch saved timetables from API on mount
-  useEffect(() => {
-    dataApi.getTimeTables({})
-      .then(async (fetched: TimeTable[]) => {
-        const globalCache = new Map<string, any>();
-        const inflated = await Promise.all(fetched.map(tt => inflateTimetable(tt, globalCache)));
-        setSavedTimetables(inflated);
-        if (inflated.length > 0) {
-          const selectedIdx = inflated.findIndex(t => t.selected);
-          setActiveSavedIndex(selectedIdx !== -1 ? selectedIdx : 0);
-          setMode('view');
-        }
-      })
-      .catch(() => { })
-      .finally(() => setIsLoading(false));
-  }, []);
-
+  // Replaced local data fetching with AppDataContext
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../workers/timetableWorker.ts', import.meta.url), { type: 'module' });
