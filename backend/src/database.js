@@ -1,6 +1,6 @@
 /**
- * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session, UserProfile, Professor, BoolRecord, Comment, Post, TimeTable, Period, GraduationProgress } from '../../common/models.js'
- * @import { RouteFunction, Scheme } from '../../common/dto.js'
+ * @import { TypeEntity, Entity, EntityType, EntityID, SolvedNestedID, WithoutID, User, Campus, Department, College, Session, UserProfile, Professor, BoolRecord, Comment, Post, TimeTable, Period, GraduationProgress, Board, StudyGroup } from '../../common/models.js'
+ * @import { RouteFunction } from '../../common/dto.js'
  * @import { RunningController, MonoController } from './controller.js'
  * @import { ServerContext } from './server.js'
  */
@@ -16,9 +16,10 @@ import JSON_DEPARTMENTS from '../data/departments.json' with { type: 'json' };
 import JSON_BUILDINGS from '../data/buildings.json' with { type: 'json' };
 import JSON_CLASSROOMS from '../data/classroom.json' with { type: 'json' };
 import JSON_COURSES from '../data/courses.json' with { type: 'json' };
-import JSON_LECTURES from '../data/lecture.json' with { type: 'json' };
-import JSON_LECTURECLASSES from '../data/lectureclass.json' with { type: 'json' };
-import JSON_PROFESSORS from '../data/professor.json' with { type: 'json' };
+import JSON_LECTURES from '../data/lectures.json' with { type: 'json' };
+import JSON_LECTURECLASSES from '../data/lectureclasses.json' with { type: 'json' };
+import JSON_PROFESSORS from '../data/professors.json' with { type: 'json' };
+import JSON_BOARDS from '../data/boards.json' with { type: 'json' };
 
 
 
@@ -103,6 +104,9 @@ const db = new loki('./database.json', {
     env: 'NODEJS'
 });
 
+/** @type {EntityID<'board'>} */
+const STUDY_GROUP_DESCRIPTIONS = '709d1bed-6f52-4584-8ad6-0c8c92ea4772';
+
 /**
  * @template {(...args: any[]) => any} T
  * @typedef {(...args: Parameters<T>) => Promise<ReturnType<Awaited<T>>>} Asyncify
@@ -133,6 +137,7 @@ export function CreateDatabaseManager(context, rcon) {
             col.insert(JSON_LECTURES);
             col.insert(JSON_LECTURECLASSES);
             col.insert(JSON_PROFESSORS);
+            col.insert(JSON_BOARDS);
             console.log('Created collection');
             return col;
         })();
@@ -410,6 +415,10 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'id_exists'
                 };
+                if (dbm.findEntity({ type: 'user', univ_mail: address })) return {
+                    success: false,
+                    e: 'used_mail'
+                };
                 const mailSession = mailMgr.check(token, address);
                 if (!mailSession.valid) return {
                     success: false,
@@ -598,6 +607,92 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     token: mailSession.token,
                     expires_at: mailSession.expires_at
+                };
+            },
+            
+            /**
+             * /api/auth/verify/studygroup
+             * @method GET
+             * @type {RouteFunction<'/api/auth/verify/studygroup', 'GET', [User]>}
+             */
+            verifyStudyGroupGet(data, user) {
+                const {
+                    group,
+                    profile
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user?.id
+                ) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const t = dbm.getByID(group);
+                if (
+                    t?.type != 'study_group'
+                ) return {
+                    success: false,
+                    e: 'studygroup_doesnt_exist'
+                };
+                if (
+                    t.pendings.includes(pf.id) ||
+                    t.users.includes(pf.id)
+                ) return {
+                    success: false,
+                    e: 'already_processed'
+                };
+                t.pendings.push(pf.id);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/auth/verify/studygroup
+             * @method POST
+             * @type {RouteFunction<'/api/auth/verify/studygroup', 'POST', [User]>}
+             */
+            verifyStudyGroupPost(data, user) {
+                const {
+                    group,
+                    code,
+                    profile
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user?.id
+                ) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const t = dbm.getByID(group);
+                if (
+                    t?.type != 'study_group' ||
+                    !t.pendings.includes(pf.id)
+                ) return {
+                    success: false,
+                    e: 'studygroup_doesnt_exist'
+                };
+                if (t.verify_code != code) return {
+                    success: false,
+                    e: 'code_doesnt_match'
+                };
+                t.pendings.filter(u => u != pf.id);
+                t.users.push(pf.id);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
                 };
             },
             
@@ -1227,6 +1322,8 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
+                p.comment_count++;
+                const pr = dbm.updateEntity(p); // TODO
                 return {
                     success: true,
                     data: {
@@ -1310,6 +1407,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
+                const post = dbm.getByID(t.post);
+                if (post) {
+                    post.comment_count--;
+                    const pr = dbm.updateEntity(post); // TODO
+                }
                 return {
                     success: true
                 };
@@ -1400,6 +1502,8 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
+                b.post_count++;
+                const br = dbm.updateEntity(b); // TODO
                 return {
                     success: true,
                     data: {
@@ -1488,6 +1592,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unexpected'
                 };
+                const board = dbm.getByID(t.board);
+                if (board) {
+                    board.post_count--;
+                    const br = dbm.updateEntity(board); // TODO
+                }
                 return {
                     success: true
                 };
@@ -1720,6 +1829,313 @@ export function CreateDatabaseManager(context, rcon) {
                 return {
                     success: true,
                     modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/auth/verify/studygroup
+             * @method POST
+             * @type {RouteFunction<'/api/auth/verify/studygroup', 'POST', [User]>}
+             */
+            authVerifyStudyGroup(data, user) {
+                const {
+                    group,
+                    code,
+                    profile
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user.id
+                ) return {
+                    success: false,
+                    e: 'profile_doesnt_exist'
+                };
+                const t = dbm.getByID(group);
+                if (
+                    t?.type != 'study_group' ||
+                    !t.pendings.includes(pf.id) ||
+                    !t.inviting ||
+                    t.verify_code != code
+                ) return {
+                    success: false,
+                    e: 'studygroup_doesnt_exist'
+                };
+                t.pendings = t.pendings.filter(e => e != pf.id);
+                t.users.push(pf.id);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/session
+             * @method DELETE
+             * @type {RouteFunction<'/api/session', 'DELETE', [Session | null]>}
+             */
+            sessionDelete(_, session) {
+                if (!session) return {
+                    success: false,
+                    e: 'unauthorized'
+                };
+                session.expired = true;
+                const res = dbm.updateEntity(session);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
+                };
+            },
+            
+            /**
+             * /api/data/studygroup
+             * @method GET
+             * @type {RouteFunction<'/api/data/studygroup', 'GET', [User | null]>}
+             */
+            dataStudyGroupGet(data, user) {
+                const {
+                    id,
+                    name,
+                    post,
+                    inviting,
+                    page
+                } = data;
+                const limit = 50;
+                const t = dbm.findEntity({
+                    type: 'study_group',
+                    ...removeEmpty({
+                        id,
+                        name,
+                        post,
+                        inviting
+                    })
+                }, {
+                    limit,
+                    offset: limit * (page?? 0)
+                });
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                return {
+                    success: true,
+                    data: t.map(g => {
+                        const ish = profiles.includes(g.host);
+                        const inu = g.users.findIndex(u => profiles.includes(u)) != -1;
+                        const inp = g.pendings.findIndex(u => profiles.includes(u)) != -1;
+                        return { ...g, inu, inp, ish };
+                    })
+                    .filter(g => g.visible || g.inp || g.inu || g.ish)
+                    .map(({ id, name, user_visible, inviting, visible, post, users, pendings, host, chat, verify_code, inu, inp, ish }) =>
+                        ({
+                            id, name, user_visible, inviting, visible,
+                            post: visible || inu || ish? post: undefined,
+                            users: (visible && user_visible) || inu || ish? users: undefined,
+                            pendings: ish? pendings: undefined,
+                            host,
+                            chat: inu? chat: undefined,
+                            verify_code: ish? verify_code: undefined
+                        })
+                    )
+                };
+            },
+            
+            /**
+             * /api/data/studygroup
+             * @method POST
+             * @type {RouteFunction<'/api/data/studygroup', 'POST', [User]>}
+             */
+            dataStudyGroupPost(data, user) {
+                const {
+                    name,
+                    user_visible,
+                    inviting,
+                    visible,
+                    description,
+                    profile
+                } = data;
+                const pf = dbm.getByID(profile);
+                if (
+                    pf?.type != 'user_profile' ||
+                    pf.user != user.id
+                ) return {
+                    success: false,
+                    e: 'no_permission'
+                };
+                const now = Temporal.Now.instant().epochMilliseconds;
+                /** @type {WithoutID<Post>} */
+                const pp = {
+                    type: 'post',
+                    board: STUDY_GROUP_DESCRIPTIONS,
+                    visible,
+                    title: name,
+                    content: description,
+                    author: pf.id,
+                    created_at: now,
+                    updated_at: now,
+                    view_count: 0,
+                    comment_count: 0
+                };
+                const pr = dbm.createEntity(pp);
+                if (!pr) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                /** @type {WithoutID<Board>} */
+                const bp = {
+                    type: 'board',
+                    name: `__CHAT_${name}__`,
+                    description: '',
+                    post_count: 0
+                };
+                const br = dbm.createEntity(bp);
+                if (!br) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                /** @type {WithoutID<StudyGroup>} */
+                const param = {
+                    type: 'study_group',
+                    name,
+                    post: pr.id,
+                    users: [pf.id],
+                    pendings: [],
+                    user_visible,
+                    inviting,
+                    host: pf.id,
+                    chat: br.id,
+                    verify_code: String(Math.round(Math.random() * 1000000)).padStart(6, '0'),
+                    visible
+                };
+                const t = dbm.createEntity(param);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    data: {
+                        id: t.id,
+                        name: t.name,
+                        post: t.post,
+                        users: t.users,
+                        pendings: t.pendings,
+                        user_visible: t.user_visible,
+                        inviting: t.inviting,
+                        host: t.host,
+                        chat: t.chat,
+                        verify_code: t.verify_code,
+                        visible: t.visible
+                    }
+                };
+            },
+            
+            /**
+             * /api/data/studygroup
+             * @method PATCH
+             * @type {RouteFunction<'/api/data/studygroup', 'PATCH', [User]>}
+             */
+            dataStudyGroupPatch(data, user) {
+                const {
+                    id,
+                    data: {
+                        name,
+                        users,
+                        pendings,
+                        user_visible,
+                        inviting,
+                        host,
+                        visible
+                    }
+                } = data;
+                const t = dbm.getByID(id);
+                if (
+                    t?.type != 'study_group'
+                ) return {
+                    success: false,
+                    e: 'studygroup_doesnt_exist'
+                };
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                const ish = profiles.includes(t.host);
+                const modifier = removeEmpty({
+                    user_visible: ish? user_visible: undefined,
+                    inviting: ish? inviting: undefined,
+                    host: ish && t.users.includes(/** @type {any} */ (host))? host: undefined,
+                    visible: ish? visible: undefined
+                });
+                if (name) ifb: {
+                    if (!ish) break ifb;
+                    modifier['name'] = name;
+                }
+                if (users) {
+                    const org = new Set(t.users);
+                    const rm = new Set(
+                        t.users.filter(u => !users.includes(u))
+                            .filter(u => ish || profiles.includes(u))
+                    );
+                    const after = org.difference(rm);
+                    modifier['users'] = Array.from(after);
+                }
+                if (pendings) {
+                    const org = new Set(t.pendings);
+                    const rm = new Set(
+                        t.pendings.filter(u => !pendings.includes(u))
+                            .filter(u => ish || profiles.includes(u))
+                    );
+                    const after = org.difference(rm);
+                    modifier['pendings'] = Array.from(after);
+                }
+                Object.entries(modifier).forEach(([k, v]) => t[k] = v);
+                const res = dbm.updateEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true,
+                    modified: getModified(res, modifier)
+                };
+            },
+            
+            /**
+             * /api/data/studygroup
+             * @method DELETE
+             * @type {RouteFunction<'/api/data/studygroup', 'DELETE', [User]>}
+             */
+            dataStudyGroupDelete(data, user) {
+                const { id } = data;
+                const t = dbm.getByID(id);
+                const profiles = user?
+                    dbm.findEntity({
+                        type: 'user_profile',
+                        user: user.id
+                    }).map(({ id }) => id): [];
+                if (
+                    t?.type != 'study_group' ||
+                    !profiles.includes(t.host)
+                ) return {
+                    success: false,
+                    e: 'timetable_doesnt_exist'
+                };
+                const res = dbm.deleteEntity(t);
+                if (!res) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                return {
+                    success: true
                 };
             }
         },

@@ -1,0 +1,1079 @@
+[
+    {
+        "id": "98f02236-b9ab-4897-9c42-c8b124379efa",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "5546f0fb-1f38-405c-86b1-817494b07f28",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 6,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "thu",
+            "time": 6,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "eff1cca6-7541-4e2c-8669-80f3d81ff0bc",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "5546f0fb-1f38-405c-86b1-817494b07f28",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 5,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "wed",
+            "time": 5,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "3b894341-16b1-4c65-a273-41b91d811a41",
+        "type": "lecture_class",
+        "code": "03",
+        "lecture": "fd34542d-b351-4daf-addf-f80b5534e119",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            },
+            {
+            "day": "mon",
+            "time": 3,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            }
+        ]
+    },
+    {
+        "id": "dc4b3c8b-e800-4069-9a54-354903fe5ebc",
+        "type": "lecture_class",
+        "code": "04",
+        "lecture": "fd34542d-b351-4daf-addf-f80b5534e119",
+        "periods": [
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            },
+            {
+            "day": "thu",
+            "time": 3,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            }
+        ]
+    },
+    {
+        "id": "271a6a21-99e5-481c-aa54-e57a2d1fe153",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "0145033c-fc64-4d4c-a558-e0ba1396ffb4",
+        "periods": [
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            },
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            }
+        ]
+    },
+    {
+        "id": "3af15c3a-8361-42e5-b148-75ce774ba63d",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "3d907b1a-bb94-4145-98d1-96250c2630ef",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 3,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            },
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            },
+            {
+            "day": "thu",
+            "time": 3,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            }
+        ]
+    },
+    {
+        "id": "6433884a-76c3-48be-8135-def130caf5df",
+        "type": "lecture_class",
+        "code": "03",
+        "lecture": "633d1e1b-9cc6-4063-bbd2-9d432e752c65",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "238cc3a2-9886-458a-8918-bbcdde614e51",
+        "type": "lecture_class",
+        "code": "04",
+        "lecture": "2bcf3f81-a130-46e3-b6ad-9ea8dc9c1064",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 1,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            },
+            {
+            "day": "fri",
+            "time": 2,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            }
+        ]
+    },
+    {
+        "id": "9ae87d8e-c619-491a-b481-b85d30adec50",
+        "type": "lecture_class",
+        "code": "05",
+        "lecture": "2bcf3f81-a130-46e3-b6ad-9ea8dc9c1064",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 3,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            },
+            {
+            "day": "fri",
+            "time": 4,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            }
+        ]
+    },
+    {
+        "id": "3039cd85-e006-4658-82c7-2be54f7ff2ba",
+        "type": "lecture_class",
+        "code": "06",
+        "lecture": "67761d7d-66da-4b08-9044-f2160676094e",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            },
+            {
+            "day": "wed",
+            "time": 2,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            }
+        ]
+    },
+    {
+        "id": "3811ee0f-1ec8-4ef3-a611-e8bea4a99915",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "3d73734d-6fa4-44a7-95c6-01aad8286d4f",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 6,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "wed",
+            "time": 6,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "5018fdd9-23c5-42d5-9da4-6dcd4bd8cfe7",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "3d73734d-6fa4-44a7-95c6-01aad8286d4f",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "wed",
+            "time": 4,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "fb27b30a-83c2-4b0e-8cef-c5543fcadffc",
+        "type": "lecture_class",
+        "code": "03",
+        "lecture": "3d73734d-6fa4-44a7-95c6-01aad8286d4f",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 7,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "tue",
+            "time": 8,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "thu",
+            "time": 7,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "thu",
+            "time": 8,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "052e0d3d-31e6-4793-8e69-97827ef80942",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "b245bf11-82fe-40ed-a180-8f67a0955e3a",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 5,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            }
+        ]
+    },
+    {
+        "id": "29bba882-ae9a-46d5-b1db-0da331ffb768",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "e8489fb2-7fa2-47c0-9be1-2df189b099b5",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            },
+            {
+            "day": "wed",
+            "time": 4,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            }
+        ]
+    },
+    {
+        "id": "708dad7d-4fe1-475e-8331-b0e4832b38b6",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "a7164bf5-f5bc-49c0-b5ee-718ee2b4d1a0",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 1,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            },
+            {
+            "day": "thu",
+            "time": 1,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            }
+        ]
+    },
+    {
+        "id": "02063f63-c38b-40d9-bd24-960de7e944c3",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "19576723-a396-4fdf-87c1-8a1ac853ef91",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 5,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "wed",
+            "time": 5,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "5d297f35-4552-40d1-8810-a693564cdde1",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "bd052284-91ac-4744-975f-898ba803a7d0",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "54bf34ea-416d-4030-9cfe-264692292c05",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "49de2e78-1617-4d1f-a37d-54067eff28f4",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 4,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            },
+            {
+            "day": "fri",
+            "time": 5,
+            "room": "c7092bf4-6790-4ca9-b98b-a7ed00743cbc"
+            }
+        ]
+    },
+    {
+        "id": "446192db-4556-449c-9e12-6fef88130619",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "73877756-8dbc-4505-95cb-8a4b7a727ab8",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "cad991c5-5cb1-4223-b702-0257fc5e792c",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "6642c484-ccba-40e2-81d5-b36e85083931",
+        "periods": [
+            {
+            "day": "wed",
+            "time": 3,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            },
+            {
+            "day": "fri",
+            "time": 3,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            }
+        ]
+    },
+    {
+        "id": "167cf089-4701-40eb-a872-16d36ad2cfcd",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "175ee81a-8d6e-4591-b075-fa6a7129dfac",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 2,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "tue",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "thu",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "3b056185-be3c-41a2-8693-8c882c929273",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "e6c05c08-21ff-4ad5-b8a3-65bd2547d168",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            },
+            {
+            "day": "wed",
+            "time": 4,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            }
+        ]
+    },
+    {
+        "id": "2fb2c0b4-55a5-4b7c-af25-49676989ff0f",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "42ebe928-01bb-4881-bd74-fd997caeb577",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "wed",
+            "time": 4,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "49c592b1-cd71-4480-be93-4e44f7955821",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "c7520813-9b31-4edf-8819-e821dd7ace0a",
+        "periods": [
+            {
+            "day": "wed",
+            "time": 5,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "wed",
+            "time": 6,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "fri",
+            "time": 5,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "fri",
+            "time": 6,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "cb7d5aba-d60f-4e60-9003-fa249332250a",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "9b64f4c9-4988-49d3-92b4-13864cf8bc21",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 3,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "fri",
+            "time": 4,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "4d3408ff-8ae3-4b40-b859-bf83bf698b59",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "ffd07502-6363-49ff-9dcd-aa265583b631",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            },
+            {
+            "day": "wed",
+            "time": 2,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            }
+        ]
+    },
+    {
+        "id": "1c292f9a-e551-4c43-9a86-b96f5263dc89",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "801c65a2-1553-4468-8633-4689859c3178",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 3,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "wed",
+            "time": 3,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "59e81bb0-8d66-4a27-a54d-f341bdfc5362",
+        "type": "lecture_class",
+        "code": "03",
+        "lecture": "3f633d70-e1bf-465b-99cf-b5b128ae5b8f",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 2,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "fri",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "52bb9944-1633-45f3-b39c-d9fbfe124dbf",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "10ad5086-d917-4075-aec2-824bd4d5eed4",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "thu",
+            "time": 3,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "7f8b16a9-e9ab-44cf-8cf4-12e8ac422210",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "f84fa97b-a3c3-46b9-b683-6205abe4978c",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 5,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "9485e7c1-42b4-4489-9125-9630cb08945b",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "8ffe95fb-1ffc-480e-93fe-47563fb28650",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 5,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            }
+        ]
+    },
+    {
+        "id": "110c8c06-961a-4833-93cf-f82207044f30",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "79739d67-9bca-4c8e-85d6-26822c08662e",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 6,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "wed",
+            "time": 6,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "fbb87eab-ee1b-4617-a145-34c69ebb8874",
+        "type": "lecture_class",
+        "code": "03",
+        "lecture": "e8577332-876a-4cb2-90c8-5faa4d33850b",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "e07f970c-6edc-4fbb-abc8-697022f3b3fd"
+            }
+        ]
+    },
+    {
+        "id": "f01ad17e-aa47-4604-afed-a53ad25d5388",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "fab4deca-6a9a-423f-902e-9b32b955de7a",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 6,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "thu",
+            "time": 6,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "5c6ee0aa-a254-4093-8a0f-a42ff9753cfe",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "7e2f4bcc-3de5-4bf6-b4cf-0e062f351511",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 2,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            },
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            }
+        ]
+    },
+    {
+        "id": "b7e06345-b85b-4043-8619-aaab7bddf702",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "88d818e6-cdbc-4cfe-a94e-9dd1266f0c2c",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "6b6b26d1-073f-40cd-9aee-ba7b4976b9f0",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "d21fbb77-8b4c-44fd-a29b-4fe1b4c734a3",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 3,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            },
+            {
+            "day": "wed",
+            "time": 3,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            }
+        ]
+    },
+    {
+        "id": "6e1a4867-759d-4a4e-9999-c72ff4cefde9",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "07448445-250a-47b7-9aee-912bd87673db",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 5,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            },
+            {
+            "day": "wed",
+            "time": 5,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            }
+        ]
+    },
+    {
+        "id": "661120ae-1aee-4237-aa12-fe6f4156f8d2",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "51a301ed-8a37-40ac-97bc-fd482706b3c7",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 2,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            },
+            {
+            "day": "wed",
+            "time": 2,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            }
+        ]
+    },
+    {
+        "id": "2e8cddb3-ee66-436f-b7c7-9bc604f75f44",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "3aab6237-766b-490e-a97f-b7864b56a89c",
+        "periods": [
+        ]
+    },
+    {
+        "id": "bcc3d846-e2cc-4a02-80e9-9f6d323afbbe",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "6ff85c36-a638-481e-96d8-5610f86cd53c",
+        "periods": [
+        ]
+    },
+    {
+        "id": "3a4e229e-64b7-4b4e-90a7-9b81a754a4a6",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "a8ccfb93-dbfa-47c7-9b1b-f318e7db3c99",
+        "periods": [
+        ]
+    },
+    {
+        "id": "d7a131d0-af21-4b87-a336-9dc968d522d6",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "a17f3d81-37da-4fbd-8822-554aa362bbd3",
+        "periods": [
+        ]
+    },
+    {
+        "id": "8b3207d2-3e41-438f-8546-87737523dca9",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "eace027f-7ce1-406d-8c0f-47312b17caf4",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 6,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            }
+        ]
+    },
+    {
+        "id": "6b992a16-5956-4159-8565-f3c4fb7fb741",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "299a7fa6-7669-4037-a666-b067ab9107c8",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 5,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+            }
+        ]
+    },
+    {
+        "id": "49a5433e-f37b-418b-a93b-abc92d090a57",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "270eecc7-1deb-4c5e-801d-20ebc5eeaded",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "47695912-2e96-4c16-85da-b5def12381d3"
+            }
+        ]
+    },
+    {
+        "id": "9c5c0340-d1de-4a26-967d-4e33a3c26ab7",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "6b9fc87a-dc70-4f16-a8aa-650912d7708e",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 5,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "15659d10-2842-46b8-9d71-2c1a13bfd002"
+            }
+        ]
+    },
+    {
+        "id": "a4261ffe-956d-4a4a-a916-e2e72ec7e6a3",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "9f8303c4-3e4e-491f-8f78-103a8c1610ac",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 2,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            },
+            {
+            "day": "thu",
+            "time": 2,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            }
+        ]
+    },
+    {
+        "id": "756484ca-0674-45c5-b300-07580611d98e",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "893378cb-1ea9-4816-a65f-fc0bf15d31fb",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "6a479fe5-6b55-4272-9f8e-9ec09e28a59c"
+            }
+        ]
+    },
+    {
+        "id": "e97f0f4b-a350-43fb-90f5-b4127d5649f6",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "00666897-135b-48d2-9e12-7148c3f6674d",
+        "periods": [
+            {
+            "day": "mon",
+            "time": 4,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            },
+            {
+            "day": "wed",
+            "time": 4,
+            "room": "8cdb1890-5fd5-40a3-974d-cac13ac97fb7"
+            }
+        ]
+    },
+    {
+        "id": "f634a6e1-fcbf-4fe1-9252-546af64f85e6",
+        "type": "lecture_class",
+        "code": "00",
+        "lecture": "82ed5a74-a2c4-4edc-878a-0ff0dde80aba",
+        "periods": [
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            },
+            {
+            "day": "thu",
+            "time": 5,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            }
+        ]
+    },
+    {
+        "id": "75cbda41-2d04-48a2-944f-b3f3ccd78c46",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "427a947d-47d4-4e93-9204-16cb08573db0",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 2,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            },
+            {
+            "day": "fri",
+            "time": 3,
+            "room": "5647ffd8-5421-4516-b5a5-ffb46bc2dc58"
+            }
+        ]
+    },
+    {
+        "id": "bfc650f2-ac01-4b3e-986b-4f5bd683dc3a",
+        "type": "lecture_class",
+        "code": "02",
+        "lecture": "3c792f2f-9d36-4775-8fcd-47c781206707",
+        "periods": [
+            {
+            "day": "fri",
+            "time": 5,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            },
+            {
+            "day": "fri",
+            "time": 6,
+            "room": "878a3034-74aa-45cb-815f-1e330a1eb248"
+            }
+        ]
+    },
+    {
+        "id": "df84cdd0-5d78-4d2c-b51a-164cc597715f",
+        "type": "lecture_class",
+        "code": "01",
+        "lecture": "40ba0ea8-1f7c-4abd-a162-72df3af62609",
+        "periods": [
+            {
+            "day": "tue",
+            "time": 3,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            },
+            {
+            "day": "tue",
+            "time": 4,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            },
+            {
+            "day": "thu",
+            "time": 3,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            },
+            {
+            "day": "thu",
+            "time": 4,
+            "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+            }
+        ]
+    },
+      {
+    "id": "f1878c1f-e04f-4c48-a03a-1089de9c914a",
+    "type": "lecture_class",
+    "code": "02",
+    "lecture": "441ad535-e061-4e55-b8d2-cbf11cb2cbe5",
+    "periods": [
+      {
+        "day": "fri",
+        "time": 1,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+      },
+      {
+        "day": "fri",
+        "time": 2,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1fs"
+      }
+    ]
+  },
+  {
+    "id": "9b7735e8-c662-454f-819c-143d4969b369",
+    "type": "lecture_class",
+    "code": "00",
+    "lecture": "e9b053a5-15a4-4242-95b6-03512f7cb7be",
+    "periods": [
+      {
+        "day": "mon",
+        "time": 4,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+      },
+      {
+        "day": "mon",
+        "time": 5,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+      },
+      {
+        "day": "wed",
+        "time": 4,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+      },
+      {
+        "day": "wed",
+        "time": 4,
+        "room": "c459870e-70aa-4f87-8683-cb1b22fade1f"
+      }
+    ]
+  },
+  {
+    "id": "28b9d281-539c-479a-ac8f-cb0a51245962",
+    "type": "lecture_class",
+    "code": "00",
+    "lecture": "08aec4a4-fd33-4e57-812a-7878448fafda",
+    "periods": [
+      {
+        "day": "wed",
+        "time": 5,
+        "room": "ddbcc725-72fd-4f00-9455-7a12569a7370"
+      },
+      {
+        "day": "fri",
+        "time": 5,
+        "room": "ddbcc725-72fd-4f00-9455-7a12569a7370"
+      }
+    ]
+  },
+  {
+    "id": "85dc665d-fdc1-4996-86e8-55644f673df9",
+    "type": "lecture_class",
+    "code": "00",
+    "lecture": "a3ea84d8-86d7-4f05-914e-1f5203c6e36d",
+    "periods": [
+      {
+        "day": "fri",
+        "time": 3,
+        "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+      },
+      {
+        "day": "fri",
+        "time": 4,
+        "room": "cdc81c17-1066-4af6-813a-34fa6e413272"
+      }
+    ]
+  }
+]

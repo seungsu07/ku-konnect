@@ -63,8 +63,6 @@ export function CreateLoginSessionManager(context, rcon) {
          */
         check(token, user_id=undefined) {
             if (!dbManager) throw new Error();
-            if (!user_id || dbManager.getByID(user_id)?.type != 'user')
-                return { valid: false };
             const session = dbManager.getByID(token);
             if (
                 session?.type != 'session' ||
@@ -76,6 +74,7 @@ export function CreateLoginSessionManager(context, rcon) {
             if (session.expires_at < now) {
                 session.expired = true;
                 dbManager.updateEntity(session);
+                return { valid: false };
             }
             return {
                 valid: true,

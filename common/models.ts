@@ -71,6 +71,7 @@ export interface TYPE_ENTITY {
   ['time_table']: TimeTable;
   ['graduation_progress']: GraduationProgress;
   ['session']: Session;
+  ['study_group']: StudyGroup;
 };
 
 export type EntityType = keyof TYPE_ENTITY;
@@ -389,6 +390,29 @@ export interface GraduationProgress extends Entity<'graduation_progress'> {
     value: Fraction;
     color: RGB;
   }[];
+}
+
+export interface StudyGroup extends Entity<'study_group'> {
+  /** 이름 */
+  name: string;
+  /** 설명 */
+  post: EntityID<'post'>;
+  /** 정회원 */
+  users: EntityID<'user_profile'>[];
+  /** 대기회원 */
+  pendings: EntityID<'user_profile'>[];
+  /** 회원공개 */
+  user_visible: boolean;
+  /** 모집여부 */
+  inviting: boolean;
+  /** 방장 */
+  host: EntityID<'user_profile'>;
+  /** 채팅방 */
+  chat: EntityID<'board'>;
+  /** 인증코드 */
+  verify_code: string;
+  /** 가시성 */
+  visible: boolean;
 }
 
 export type SessionDataType =

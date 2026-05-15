@@ -3,7 +3,7 @@
  * @import { RunningController } from './controller'
  * @import { ServerContext } from './server'
  * @import { Path, Scheme, TypeGuarder, TypeGuardObject, MethodOf, ErrorString, PickIndices } from '../../common/dto'
- * @import { CourseType, Day, Semester, Period, User } from '../../common/models'
+ * @import { CourseType, Day, Semester, Period, User, SessionDataType } from '../../common/models'
  */
 
 import express from 'express';
@@ -194,6 +194,17 @@ export function CreateAppManager(context, rcon) {
                 })
             })
         },
+        '/api/auth/verify/studygroup': {
+            GET: gObjectGuarder({
+                group: G.id,
+                profile: G.id
+            }),
+            POST: gObjectGuarder({
+                group: G.id,
+                code: G.s,
+                profile: G.id
+            })
+        },
         '/api/auth/verify/mail': {
             GET: gObjectGuarder({
                 address: (t) =>
@@ -219,9 +230,13 @@ export function CreateAppManager(context, rcon) {
                 user: G.id
             })
         },
+        '/api/session': {
+            DELETE: gObjectGuarder({})
+        },
         '/api/data/user': {
             GET: gObjectGuarder({
-                id: G.s
+                id: G.id,
+                login_id: G.s
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
@@ -337,8 +352,8 @@ export function CreateAppManager(context, rcon) {
                 ),
                 name: optGuarder(G.s),
                 course_type: optGuarder((t) =>
-                    /^(?:major|major_required|general|general_required|inter|inter_required)$/.test(t)? /** @type {CourseType} */ (String(t)):
-                    new ParseError('This field needed to be one of \'major\', \'major_required\', \'general\', \'general_required\', \'inter\', \'inter_required\'')
+                    /^(?:major|major_required|general|general_required|common)$/.test(t)? /** @type {CourseType} */ (String(t)):
+                    new ParseError('This field needed to be one of \'major\', \'major_required\', \'general\', \'general_required\', \'common\'')
                 ),
                 department: optGuarder(G.id)
             })
@@ -476,6 +491,37 @@ export function CreateAppManager(context, rcon) {
                     }))])
                 })
             })
+        },
+        '/api/data/studygroup': {
+            GET: gObjectGuarder({
+                id: optGuarder(G.id),
+                name: optGuarder(G.s),
+                post: optGuarder(G.id),
+                inviting: optGuarder(G.b)
+            }),
+            POST: gObjectGuarder({
+                name: G.s,
+                user_visible: G.b,
+                inviting: G.b,
+                visible: G.b,
+                description: G.s,
+                profile: G.id
+            }),
+            PATCH: gObjectGuarder({
+                id: G.id,
+                data: gObjectGuarder({
+                    name: optGuarder(G.s),
+                    users: anyGuarder([G.u, gArrayGuarder(G.id)]),
+                    pendings: anyGuarder([G.u, gArrayGuarder(G.id)]),
+                    user_visible: optGuarder(G.b),
+                    inviting: optGuarder(G.b),
+                    host: optGuarder(G.id),
+                    visible: optGuarder(G.b)
+                })
+            }),
+            DELETE: gObjectGuarder({
+                id: G.id
+            })
         }
     };
     
@@ -569,6 +615,10 @@ export function CreateAppManager(context, rcon) {
         res.status(result.success? 200: 400).json(result);
     }));
     
+    app.post(...makeHandler('/api/auth/verify/studygroup', 'POST', (req, res) => {
+        // TODO
+    }));
+    
     app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -597,6 +647,10 @@ export function CreateAppManager(context, rcon) {
                 e: /** @type {any} */ (raw).e
             }));
         }
+    }));
+    
+    app.delete(...makeHandler('/api/session', 'DELETE', (req, res) => {
+        // TODO
     }));
     
     app.get(...makeHandler('/api/data/user', 'GET', (req, res) => {
@@ -902,6 +956,22 @@ export function CreateAppManager(context, rcon) {
         }
         const result = context.databaseManager.API.dataGraduationProgressPatch(data, user);
         res.status(result.success? 200: 400).json(result);
+    }));
+    
+    app.get(...makeHandler('/api/data/studygroup', 'GET', (req, res) => {
+        // TODO
+    }));
+    
+    app.post(...makeHandler('/api/data/studygroup', 'POST', (req, res) => {
+        // TODO
+    }));
+    
+    app.patch(...makeHandler('/api/data/studygroup', 'PATCH', (req, res) => {
+        // TODO
+    }));
+    
+    app.delete(...makeHandler('/api/data/studygroup', 'DELETE', (req, res) => {
+        // TODO
     }));
     
     app.use(/** @type {express.ErrorRequestHandler} */

@@ -17,10 +17,10 @@ import {
   type EntityID,
   type TimeTable,
   type User,
-  type CourseType,
-  type RGB,
   type BoolRecord,
-  type RemovedID
+  type RemovedID,
+  type StudyGroup,
+  type SessionDataType
 } from './models.ts';
 
 export type ErrorString =
@@ -43,16 +43,21 @@ export type ErrorString =
   | 'board_doesnt_exist'
   | 'classroom_doesnt_exist'
   | 'graduationprogress_doesnt_exist'
+  | 'studygroup_doesnt_exist'
   | 'id_exists'
+  | 'used_mail'
   | 'unauthorized'
   | 'no_permission'
+  | 'already_processed'
   | 'unexpected';
 
 export type Path =
   | '/api/auth/verify/mail'
   | '/api/auth/verify/tel'
+  | '/api/auth/verify/studygroup'
   | '/api/auth/signup'
   | '/api/auth/login'
+  | '/api/session'
   | '/api/data/user'
   | '/api/data/userprofile'
   | '/api/data/professor'
@@ -68,7 +73,8 @@ export type Path =
   | '/api/data/post'
   | '/api/data/board'
   | '/api/data/timetable'
-  | '/api/data/graduationprogress';
+  | '/api/data/graduationprogress'
+  | '/api/data/studygroup';
 
 export type Method =
   | 'GET'
@@ -154,6 +160,50 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
         code: string;
         user: EntityID<'user'>;
       };
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+  };
+  
+  '/api/auth/verify/studygroup': {
+    GET: {
+      REQ: {
+        group: EntityID<'study_group'>;
+        profile: EntityID<'user_profile'>;
+      };
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+    
+    POST: {
+      REQ: {
+        group: EntityID<'study_group'>,
+        code: string;
+        profile: EntityID<'user_profile'>;
+      };
+      
+      RES: {
+        success: true;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+  };
+  
+  '/api/session': {
+    DELETE: {
+      REQ: {};
       
       RES: {
         success: true;
@@ -892,6 +942,108 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
       RES: {
         success: true;
         modified: BoolRecord<Partial<GraduationProgress>>;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+  };
+  
+  '/api/data/studygroup': {
+    GET: {
+      REQ: Partial<Pick<StudyGroup,
+        | 'id'
+        | 'name'
+        | 'post'
+        | 'inviting'
+      >> & {
+        page?: number;
+      };
+      
+      RES: {
+        success: true;
+        data: (Pick<StudyGroup,
+          | 'id'
+          | 'name'
+          | 'user_visible'
+          | 'inviting'
+          | 'visible'
+        > & Partial<Pick<StudyGroup,
+          | 'post'
+          | 'users'
+          | 'pendings'
+          | 'host'
+          | 'chat'
+          | 'verify_code'
+        >>)[];
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+    
+    POST: {
+      REQ: Pick<StudyGroup,
+        | 'name'
+        | 'user_visible'
+        | 'inviting'
+        | 'visible'
+      > & {
+        description: string;
+        profile: EntityID<'user_profile'>;
+      };
+      
+      RES: {
+        success: true;
+        data: Pick<StudyGroup,
+          | 'id'
+          | 'name'
+          | 'post'
+          | 'users'
+          | 'pendings'
+          | 'user_visible'
+          | 'inviting'
+          | 'host'
+          | 'chat'
+          | 'verify_code'
+          | 'visible'
+        >;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+    
+    PATCH: {
+      REQ: {
+        id: EntityID<'study_group'>;
+        data: Partial<Pick<StudyGroup,
+          | 'name'
+          | 'users'
+          | 'pendings'
+          | 'user_visible'
+          | 'inviting'
+          | 'host'
+          | 'visible'
+        >>;
+      };
+      
+      RES: {
+        success: true;
+        modified: BoolRecord<Partial<StudyGroup>>;
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    };
+    
+    DELETE: {
+      REQ: {
+        id: EntityID<'study_group'>;
+      };
+      
+      RES: {
+        success: true;
       } | {
         success: false;
         e: ErrorString;
