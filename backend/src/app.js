@@ -3,7 +3,7 @@
  * @import { RunningController } from './controller'
  * @import { ServerContext } from './server'
  * @import { Path, Scheme, TypeGuarder, TypeGuardObject, MethodOf, ErrorString, PickIndices } from '../../common/dto'
- * @import { CourseType, Day, Semester, Period, User, SessionDataType } from '../../common/models'
+ * @import { CourseType, Day, Semester, Period, User, SessionDataType, Session } from '../../common/models'
  */
 
 import express from 'express';
@@ -234,10 +234,7 @@ export function CreateAppManager(context, rcon) {
             DELETE: gObjectGuarder({})
         },
         '/api/data/user': {
-            GET: gObjectGuarder({
-                id: G.id,
-                login_id: G.s
-            }),
+            GET: gObjectGuarder({}),
             PATCH: gObjectGuarder({
                 id: G.id,
                 data: gObjectGuarder({
@@ -531,8 +528,8 @@ export function CreateAppManager(context, rcon) {
      * @template V
      * @param {T} path
      * @param {U} method
-     * @param {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>} fn
-     * @returns {[T, RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>]}
+     * @param {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null; getSession: () => Session | null }>} fn
+     * @returns {[T, RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null; getSession: () => Session | null }>]}
      */
     function makeHandler(path, method, fn) {
         /**
@@ -551,7 +548,21 @@ export function CreateAppManager(context, rcon) {
             return user ?? null;
         }
         
-        /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null }>} */
+        /**
+         * @param {Parameters<typeof fn>[0]} req
+         * @returns {Session | null}
+         */
+        function getSession(req) {
+            const loginMgr = context.sessionManager?.context.loginSessionManager;
+            if (!loginMgr) return null;
+            const token = req.cookies.token;
+            if (!token) return null;
+            const result = context.databaseManager?.getByID(token);
+            if (result?.type != 'session') return null;
+            return result;
+        }
+        
+        /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null; getSession: () => Session | null }>} */
         function handler(req, res, next) {
             const data = method == 'GET'?
                 req.query: req.body;
@@ -568,6 +579,7 @@ export function CreateAppManager(context, rcon) {
             }
             req.body = gdata;
             res.locals.getSessionUser = getSessionUser.bind(null, req);
+            res.locals.getSession = getSession.bind(null, req);
             fn(req, res, next);
             return;
         }
@@ -615,8 +627,28 @@ export function CreateAppManager(context, rcon) {
         res.status(result.success? 200: 400).json(result);
     }));
     
+    app.get(...makeHandler('/api/auth/verify/studygroup', 'GET', (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.verifyStudyGroupGet(data, user);
+        res.status(result.success? 200: 400).json(result);
+    }));
+    
     app.post(...makeHandler('/api/auth/verify/studygroup', 'POST', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.verifyStudyGroupPost(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
@@ -650,13 +682,21 @@ export function CreateAppManager(context, rcon) {
     }));
     
     app.delete(...makeHandler('/api/session', 'DELETE', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const session = res.locals.getSession();
+        const result = context.databaseManager.API.sessionDelete(data, session);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.get(...makeHandler('/api/data/user', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
         const result = context.databaseManager.API.dataUserGet(data, user);
         res.status(result.success? 200: 400).json(result);
     }));
@@ -959,19 +999,47 @@ export function CreateAppManager(context, rcon) {
     }));
     
     app.get(...makeHandler('/api/data/studygroup', 'GET', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataStudyGroupGet(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.post(...makeHandler('/api/data/studygroup', 'POST', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataStudyGroupPost(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.patch(...makeHandler('/api/data/studygroup', 'PATCH', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataStudyGroupPatch(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.delete(...makeHandler('/api/data/studygroup', 'DELETE', (req, res) => {
-        // TODO
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = context.databaseManager.API.dataStudyGroupDelete(data, user);
+        res.status(result.success? 200: 400).json(result);
     }));
     
     app.use(/** @type {express.ErrorRequestHandler} */

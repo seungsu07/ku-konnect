@@ -259,10 +259,7 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
   
   '/api/data/user': {
     GET: {
-      REQ: Pick<User,
-        | 'id'
-        | 'login_id'
-      >;
+      REQ: {};
       
       RES: {
         success: true;
