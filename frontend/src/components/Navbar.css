@@ -279,3 +279,20 @@ body:not(.light-mode) .logout-btn:hover {
     border-bottom: 1px solid #eaeaea;
   }
 }
+
+@media (max-width: 500px) {
+  .user-id {
+    display: none;
+  }
+  .logout-btn {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .navbar-actions {
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 100px;
+  }
+}

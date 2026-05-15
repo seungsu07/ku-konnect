@@ -4,6 +4,7 @@
   color: #ffffff;
   font-family: 'Pretendard', sans-serif;
   position: relative;
+  overflow-x: hidden;
 }
 
 :global(body.light-mode) .container {

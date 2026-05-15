@@ -5,7 +5,7 @@ import CenterPanel from '../components/Timetable/CenterPanel';
 import RightPanel from '../components/Timetable/RightPanel';
 import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
-import type { TimeTable, Lecture, Preferences, Period } from '../../../common/models';
+import type { TimeTable, Lecture, Preferences } from '../../../common/models';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
 import { dataApi } from '../api/data';
 import { AppDataContext } from '../api/DataContext';
@@ -87,15 +87,8 @@ const Timetable: React.FC = () => {
       });
 
       if (res.success) {
-        const newTimetable = res.data as TimeTable;
-        // Re-attach renderableClasses from the source to avoid re-inflating
-        const finalTimetable = { ...newTimetable, renderableClasses: (timeTable as any).renderableClasses };
-
-        setSavedTimetables(prev => {
-          const updated = [...prev, finalTimetable];
-          setActiveSavedIndex(updated.length - 1);
-          return updated;
-        });
+        await refreshData();
+        setActiveSavedIndex(savedTimetables.length);
         setMode('view');
         alert('시간표가 성공적으로 저장되었습니다!');
       } else {
