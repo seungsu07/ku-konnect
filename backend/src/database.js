@@ -29,7 +29,7 @@ import JSON_BOARDS from '../data/boards.json' with { type: 'json' };
 // SMTP
 // ====================
 
-const transporter = nodemailer.createTransport(/** @type {any} */ ({
+const transporter = nodemailer.createTransport(/** @type {any} */({
     host: 'smtp-relay.gmail.com',
     port: 587,
     secure: false,
@@ -108,7 +108,11 @@ const db = new loki('./database.json', {
         dbOk();
         console.log('Database loaded');
     },
-    autosave: false,
+    autosave: true,
+    autosaveInterval: 60000,
+    autosaveCallback: () => {
+        console.log('Database saved');
+    },
     env: 'NODEJS'
 });
 
@@ -130,35 +134,35 @@ export function CreateDatabaseManager(context, rcon) {
 
     /** @type {Collection<Entity<EntityType>>?} */
     let collection = null;
-    
+
     (async () => {
         await dbWait;
         collection = db.getCollection('entities') ??
-        (() => {
-            const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
-            col.insert(JSON_CAMPUSES);
-            col.insert(JSON_COLLEGES);
-            col.insert(JSON_DEPARTMENTS);
-            col.insert(JSON_BUILDINGS);
-            col.insert(JSON_CLASSROOMS);
-            col.insert(JSON_COURSES);
-            col.insert(JSON_LECTURES);
-            col.insert(JSON_LECTURECLASSES);
-            col.insert(JSON_PROFESSORS);
-            col.insert(JSON_BOARDS);
-            console.log('Created collection');
-            return col;
-        })();
+            (() => {
+                const col = db.addCollection('entities', { unique: ['id'], indices: ['type'] });
+                col.insert(JSON_CAMPUSES);
+                col.insert(JSON_COLLEGES);
+                col.insert(JSON_DEPARTMENTS);
+                col.insert(JSON_BUILDINGS);
+                col.insert(JSON_CLASSROOMS);
+                col.insert(JSON_COURSES);
+                col.insert(JSON_LECTURES);
+                col.insert(JSON_LECTURECLASSES);
+                col.insert(JSON_PROFESSORS);
+                col.insert(JSON_BOARDS);
+                console.log('Created collection');
+                return col;
+            })();
     })();
-    
+
     /** @type {ServerContext['sessionManager']} */
     let sessionManager;
-    
+
     /**
      * @param {string} password
      * @param {string} salt
      */
-    function makehash(password, salt=crypto.randomBytes(8).toString('hex')) {
+    function makehash(password, salt = crypto.randomBytes(8).toString('hex')) {
         const iterations = 100000;
         const keylen = 64;
         const digest = 'sha512';
@@ -176,7 +180,61 @@ export function CreateDatabaseManager(context, rcon) {
     function duration(cond) {
         return Temporal.Duration.from(cond);
     }
-    
+
+    /**
+     * @template {EntityType} T
+     * @template {EntityID<T>} U
+     * @typedef {{ [K in keyof U]: U[K] extends EntityID<infer V>? SolvedID<V, U[K]>: U[K] }} SolvedID<U>
+     */
+
+    /**
+     * @template {TypeEntity<EntityType> | EntityID<EntityType>} T
+     * @param {T} nested
+     * @param {number} max_depth
+     * @returns {SolvedNestedID<T>}
+     */
+    function solveID(nested, max_depth) {
+        ++max_depth;
+        /** @type {[string, any][][]} */
+        const stack = [[['0', nested]]];
+        const idx = [0];
+        const id_map = new Map();
+        let h = 0;
+        while (true) {
+            if (idx[h] == stack[h].length) {
+                if (h == 0) {
+                    return stack[0][0][1];
+                }
+                stack.pop();
+                idx.pop();
+                --h;
+                ++idx[h];
+                continue;
+            }
+            const c = stack[h][idx[h]];
+            let [k, v] = c;
+            if (
+                typeof v == 'string' &&
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)
+            ) {
+                if (!id_map.has(v))
+                    id_map.set(v, v = dbm.getByID(v))
+                else
+                    v = id_map.get(v);
+                stack[h][idx[h]][1] = v;
+            }
+            if (h > 0)
+                stack[h - 1][idx[h - 1]][1][k] = v;
+            if (v != null && typeof v == 'object' && h <= max_depth) {
+                stack.push(Object.entries(v));
+                idx.push(0);
+                ++h;
+                continue;
+            }
+            ++idx[h];
+        }
+    }
+
     /**
      * @template {Record<string, any>} T
      * @param {T} obj
@@ -188,7 +246,7 @@ export function CreateDatabaseManager(context, rcon) {
                 .filter(([_, v]) => v !== undefined)
         ));
     }
-    
+
     /**
      * @template {Record<string, any>} T
      * @template {{ [K in keyof T]?: any; }} U
@@ -200,31 +258,31 @@ export function CreateDatabaseManager(context, rcon) {
         return (
             Object.fromEntries(
                 Object.entries(modifier)
-                .map(([k, v]) => {
-                    const n = modified[k];
-                    if (Array.isArray(n) && Array.isArray(v))
-                        return [k, Array.from({
-                            .../** @type {any} */(getModified(n, v)),
-                            length: v.length
-                        })];
-                    if (
-                        typeof n == 'object' &&
-                        n !== null &&
-                        typeof v == 'object' &&
-                        v !== null
-                    ) return [k, getModified(n, v)];
-                    if (
-                        typeof n == 'object' &&
-                        n !== null ||
-                        typeof v == 'object' &&
-                        v !== null
-                    ) return [k, false];
-                    return [k, v === n];
-                })
+                    .map(([k, v]) => {
+                        const n = modified[k];
+                        if (Array.isArray(n) && Array.isArray(v))
+                            return [k, Array.from({
+                                .../** @type {any} */(getModified(n, v)),
+                                length: v.length
+                            })];
+                        if (
+                            typeof n == 'object' &&
+                            n !== null &&
+                            typeof v == 'object' &&
+                            v !== null
+                        ) return [k, getModified(n, v)];
+                        if (
+                            typeof n == 'object' &&
+                            n !== null ||
+                            typeof v == 'object' &&
+                            v !== null
+                        ) return [k, false];
+                        return [k, v === n];
+                    })
             )
         );
     }
-    
+
     /** @type {Map<string | EntityID<EntityType>, WeakRef<any>>} */
     const idMap = new Map();
 
@@ -236,7 +294,7 @@ export function CreateDatabaseManager(context, rcon) {
             idMap,
             sendMail
         },
-        
+
         /**
          * @template {EntityType} T
          * @param {string | EntityID<T>} id
@@ -245,18 +303,18 @@ export function CreateDatabaseManager(context, rcon) {
         fromIDMap(id) {
             return idMap.get(id)?.deref();
         },
-        
+
         /**
          * @param {Entity<EntityType>} entity
          */
         pushIDMap(entity) {
             idMap.set(entity.id, new WeakRef(entity));
         },
-        
+
         collectIDMap() {
-            idMap.forEach((v, k) => v.deref() == undefined? idMap.delete(k): undefined);
+            idMap.forEach((v, k) => v.deref() == undefined ? idMap.delete(k) : undefined);
         },
-        
+
         /**
          * @template {TypeEntity<EntityType>} T
          * @param {WithoutID<T>} param
@@ -273,7 +331,7 @@ export function CreateDatabaseManager(context, rcon) {
             this.pushIDMap(entity);
             return /** @type {any} */ (entity);
         },
-        
+
         /**
          * @template {EntityType} T
          * @param {EntityID<T> | string} id
@@ -288,19 +346,19 @@ export function CreateDatabaseManager(context, rcon) {
             this.pushIDMap(entity);
             return /** @type {any} */ (entity);
         },
-        
+
         /**
          * @template {EntityType} T
          * @param {LokiQuery<TypeEntity<T>> & { type: T } & { [K: `${string}.${string}`]: any; }} query
          * @param {{ limit?: number, offset?: number }} options
          * @returns {TypeEntity<T>[]}
          */
-        findEntity(query, options={}) {
+        findEntity(query, options = {}) {
             if (!collection) throw new Error();
             return collection.chain()
                 .find(query)
-                .offset(options.offset?? 0)
-                .limit(options.limit?? 1000)
+                .offset(options.offset ?? 0)
+                .limit(options.limit ?? 1000)
                 .map(e => ({ id: e.id }))
                 .data({
                     forceClones: false,
@@ -317,9 +375,9 @@ export function CreateDatabaseManager(context, rcon) {
                     this.pushIDMap(entity);
                     arr.push(entity);
                     return arr;
-                }, /** @type {any[]} */ ([]));
+                }, /** @type {any[]} */([]));
         },
-        
+
         /**
          * @template {TypeEntity<EntityType>} T
          * @param {T} entity
@@ -330,7 +388,7 @@ export function CreateDatabaseManager(context, rcon) {
             const result = collection.update(entity);
             return /** @type {any} */ (result);
         },
-        
+
         /**
          * @template {TypeEntity<EntityType>} T
          * @param {T} entity
@@ -343,7 +401,7 @@ export function CreateDatabaseManager(context, rcon) {
             idMap.delete(entity.id);
             return /** @type {any} */ (result);
         },
-        
+
         API: {
             /**
              * /api/auth/signup
@@ -371,7 +429,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'id_exists'
                 };
-                if (dbm.findEntity({ type: 'user', univ_mail: address }).length) return {
+                if (dbm.findEntity({ type: 'user', univ_mail: address })) return {
                     success: false,
                     e: 'used_mail'
                 };
@@ -445,7 +503,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/auth/login
              * @method POST
@@ -488,7 +546,7 @@ export function CreateDatabaseManager(context, rcon) {
                     token: reg.token
                 };
             },
-            
+
             /**
              * /api/auth/verify/mail
              * @method GET
@@ -512,11 +570,11 @@ export function CreateDatabaseManager(context, rcon) {
                 if (
                     mail_sended.length >= 100 &&
                     Temporal.Now.instant()
-                        .since(/** @type {any} */ (mail_sended.at(-100)))
+                        .since(/** @type {any} */(mail_sended.at(-100)))
                         .subtract(SEND_LIMIT_DURATION).sign < 0 ||
                     mail_sended.length != 0 &&
                     Temporal.Now.instant()
-                        .since(/** @type {any} */ (mail_sended.at(-1)))
+                        .since(/** @type {any} */(mail_sended.at(-1)))
                         .subtract(SEND_MIN_DURATION).sign < 0
                 ) return {
                     success: false,
@@ -537,15 +595,15 @@ export function CreateDatabaseManager(context, rcon) {
                         <br>
                         이 코드는 15분 뒤에 만료됩니다.
                     `));
-                return res? {
+                return res ? {
                     success: true,
                     expires_at: mailvSession.expires_at
-                }: {
+                } : {
                     success: false,
                     e: 'send_mail_failed'
                 };
             },
-            
+
             /**
              * /api/auth/verify/mail
              * @method POST
@@ -580,7 +638,7 @@ export function CreateDatabaseManager(context, rcon) {
                     expires_at: mailSession.expires_at
                 };
             },
-            
+
             /**
              * /api/auth/verify/studygroup
              * @method GET
@@ -623,7 +681,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/auth/verify/studygroup
              * @method POST
@@ -666,7 +724,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/auth/verify/tel
              * @method GET
@@ -676,7 +734,7 @@ export function CreateDatabaseManager(context, rcon) {
             //     
             //     return;
             // },
-            
+
             /**
              * /api/auth/verify/tel
              * @method GET
@@ -686,7 +744,7 @@ export function CreateDatabaseManager(context, rcon) {
             //     
             //     return;
             // },
-            
+
             /**
              * /api/data/user
              * @method GET
@@ -713,7 +771,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }]
                 };
             },
-            
+
             /**
              * /api/data/user
              * @method PATCH
@@ -786,7 +844,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/user
              * @method DELETE
@@ -831,7 +889,7 @@ export function CreateDatabaseManager(context, rcon) {
                     deleted_at: Temporal.Now.instant().epochMilliseconds
                 };
             },
-            
+
             /**
              * /api/data/userprofile
              * @method GET
@@ -857,7 +915,7 @@ export function CreateDatabaseManager(context, rcon) {
                         ({ id, nickname, image, user }))
                 };
             },
-            
+
             /**
              * /api/data/userprofile
              * @method POST
@@ -865,14 +923,6 @@ export function CreateDatabaseManager(context, rcon) {
              */
             dataUserProfilePost(data, user) {
                 const { nickname, image } = data;
-                const profiles = dbm.findEntity({
-                    type: 'user_profile',
-                    user: user.id
-                }).length;
-                if (profiles >= 5) return {
-                    success: false,
-                    e: 'too_many'
-                };
                 /** @type {WithoutID<UserProfile>} */
                 const param = {
                     type: 'user_profile',
@@ -895,7 +945,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 };
             },
-            
+
             /**
              * /api/data/userprofile
              * @method PATCH
@@ -932,7 +982,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/userprofile
              * @method DELETE
@@ -957,7 +1007,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/data/professor
              * @method GET
@@ -985,7 +1035,7 @@ export function CreateDatabaseManager(context, rcon) {
                         ({ id, name, tel, mail }))
                 };
             },
-            
+
             /**
              * /api/data/campus
              * @method GET
@@ -1008,7 +1058,7 @@ export function CreateDatabaseManager(context, rcon) {
                     data: t.map(({ id, name }) => ({ id, name }))
                 };
             },
-            
+
             /**
              * /api/data/college
              * @method GET
@@ -1036,11 +1086,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, name, campus, code_num, virtual }) =>
-                        ({ id, name, campus, code_num, virtual })
+                            ({ id, name, campus, code_num, virtual })
                     )
                 };
             },
-            
+
             /**
              * /api/data/department
              * @method GET
@@ -1066,11 +1116,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, name, code, college }) =>
-                        ({ id, name, code, college })
+                            ({ id, name, code, college })
                     )
                 };
             },
-            
+
             /**
              * /api/data/course
              * @method GET
@@ -1088,12 +1138,12 @@ export function CreateDatabaseManager(context, rcon) {
                     type: 'course',
                     ...removeEmpty({
                         id,
-                        code: code? {
+                        code: code ? {
                             '$regex': new RegExp(RegExp.escape(code))
-                        }: undefined,
-                        name: name? {
+                        } : undefined,
+                        name: name ? {
                             '$regex': new RegExp(RegExp.escape(name))
-                        }: undefined,
+                        } : undefined,
                         course_type,
                         department
                     })
@@ -1102,11 +1152,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, name, code, course_type, department }) =>
-                        ({ id, name, code, course_type, department })
+                            ({ id, name, code, course_type, department })
                     )
                 };
             },
-            
+
             /**
              * /api/data/lecture
              * @method GET
@@ -1140,11 +1190,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, course, ay, sem, professor, hours, lab_hours, credit }) =>
-                        ({ id, course, ay, sem, professor, hours, lab_hours, credit })
+                            ({ id, course, ay, sem, professor, hours, lab_hours, credit })
                     )
                 };
             },
-            
+
             /**
              * /api/data/lectureclass
              * @method GET
@@ -1168,11 +1218,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, code, lecture, periods }) =>
-                        ({ id, code, lecture, periods })
+                            ({ id, code, lecture, periods })
                     )
                 };
             },
-            
+
             /**
              * /api/data/building
              * @method GET
@@ -1196,11 +1246,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, name, location }) =>
-                        ({ id, name, location })
+                            ({ id, name, location })
                     )
                 };
             },
-            
+
             /**
              * /api/data/classroom
              * @method GET
@@ -1224,11 +1274,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, building, room }) =>
-                        ({ id, building, room })
+                            ({ id, building, room })
                     )
                 };
             },
-            
+
             /**
              * /api/data/comment
              * @method GET
@@ -1249,26 +1299,22 @@ export function CreateDatabaseManager(context, rcon) {
                     })
                 }, {
                     limit,
-                    offset: limit * (page?? 0)
+                    offset: limit * (page ?? 0)
                 });
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 return {
                     success: true,
-                    data: t.filter(({ visible, author, post }) =>
-                        visible ||
-                        profiles.includes(/** @type {any} */ (dbm.getByID(post)?.author)) || 
-                        profiles.includes(author)
-                    ).map(
+                    data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
                         ({ id, post, content, created_at, updated_at, visible, author }) =>
-                        ({ id, post, content, created_at, updated_at, visible, author })
+                            ({ id, post, content, created_at, updated_at, visible, author })
                     )
                 };
             },
-            
+
             /**
              * /api/data/comment
              * @method POST
@@ -1290,11 +1336,11 @@ export function CreateDatabaseManager(context, rcon) {
                     e: 'no_permission'
                 };
                 const p = dbm.getByID(post);
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (
                     p?.type != 'post' ||
                     !p.visible && !profiles.includes(p.author)
@@ -1333,7 +1379,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 };
             },
-            
+
             /**
              * /api/data/comment
              * @method PATCH
@@ -1352,11 +1398,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'comment_doesnt_exist'
                 };
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (!profiles.includes(t.author)) return {
                     success: false,
                     e: 'no_permission'
@@ -1376,7 +1422,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/comment
              * @method DELETE
@@ -1389,11 +1435,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'comment_doesnt_exist'
                 };
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (!profiles.includes(t.author)) return {
                     success: false,
                     e: 'comment_doesnt_exist'
@@ -1412,7 +1458,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/data/post
              * @method GET
@@ -1432,31 +1478,31 @@ export function CreateDatabaseManager(context, rcon) {
                     ...removeEmpty({
                         id,
                         board,
-                        title: title? {
+                        title: title ? {
                             '$regex': new RegExp(RegExp.escape(title))
-                        }: undefined,
-                        content: content? {
+                        } : undefined,
+                        content: content ? {
                             '$regex': new RegExp(RegExp.escape(content))
-                        }: undefined,
+                        } : undefined,
                     })
                 }, {
                     limit,
-                    offset: limit * (page?? 0)
+                    offset: limit * (page ?? 0)
                 });
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 return {
                     success: true,
                     data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
                         ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author }) =>
-                        ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author })
+                            ({ id, board, title, content, view_count, comment_count, created_at, updated_at, visible, author })
                     )
                 };
             },
-            
+
             /**
              * /api/data/post
              * @method POST
@@ -1520,7 +1566,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 };
             },
-            
+
             /**
              * /api/data/post
              * @method PATCH
@@ -1540,11 +1586,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'post_doesnt_exist'
                 };
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (!profiles.includes(t.author)) return {
                     success: false,
                     e: 'no_permission'
@@ -1565,7 +1611,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/post
              * @method DELETE
@@ -1578,11 +1624,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'post_doesnt_exist'
                 };
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (!profiles.includes(t.author)) return {
                     success: false,
                     e: 'post_doesnt_exist'
@@ -1601,7 +1647,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/data/board
              * @method GET
@@ -1623,11 +1669,11 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true,
                     data: t.map(
                         ({ id, description, name, post_count }) =>
-                        ({ id, description, name, post_count })
+                            ({ id, description, name, post_count })
                     )
                 };
             },
-            
+
             /**
              * /api/data/timetable
              * @method GET
@@ -1648,17 +1694,17 @@ export function CreateDatabaseManager(context, rcon) {
                     })
                 }, {
                     limit,
-                    offset: limit * (page?? 0)
+                    offset: limit * (page ?? 0)
                 });
                 return {
                     success: true,
                     data: t.filter(({ visible, user: u }) => visible || u == user?.id).map(
                         ({ id, classes, name, selected, user: u, visible }) =>
-                        ({ id, classes, name, selected, user: u, visible })
+                            ({ id, classes, name, selected, user: u, visible })
                     )
                 };
             },
-            
+
             /**
              * /api/data/timetable
              * @method POST
@@ -1704,7 +1750,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 };
             },
-            
+
             /**
              * /api/data/timetable
              * @method PATCH
@@ -1745,7 +1791,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/timetable
              * @method DELETE
@@ -1770,7 +1816,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/data/graduationprogress
              * @method GET
@@ -1794,7 +1840,7 @@ export function CreateDatabaseManager(context, rcon) {
                         ({ id, color, details, user, value }))
                 };
             },
-            
+
             /**
              * /api/data/graduationprogress
              * @method PATCH
@@ -1831,7 +1877,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/auth/verify/studygroup
              * @method POST
@@ -1872,7 +1918,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/session
              * @method DELETE
@@ -1893,7 +1939,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: true
                 };
             },
-            
+
             /**
              * /api/data/studygroup
              * @method GET
@@ -1918,13 +1964,13 @@ export function CreateDatabaseManager(context, rcon) {
                     })
                 }, {
                     limit,
-                    offset: limit * (page?? 0)
+                    offset: limit * (page ?? 0)
                 });
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 return {
                     success: true,
                     data: t.map(g => {
@@ -1933,21 +1979,21 @@ export function CreateDatabaseManager(context, rcon) {
                         const inp = g.pendings.findIndex(u => profiles.includes(u)) != -1;
                         return { ...g, inu, inp, ish };
                     })
-                    .filter(g => g.visible || g.inp || g.inu || g.ish)
-                    .map(({ id, name, user_visible, inviting, visible, post, users, pendings, host, chat, verify_code, inu, inp, ish }) =>
+                        .filter(g => g.visible || g.inp || g.inu || g.ish)
+                        .map(({ id, name, user_visible, inviting, visible, post, users, pendings, host, chat, verify_code, inu, inp, ish }) =>
                         ({
                             id, name, user_visible, inviting, visible,
-                            post: visible || inu || ish? post: undefined,
-                            users: (visible && user_visible) || inu || ish? users: undefined,
-                            pendings: ish? pendings: undefined,
+                            post: visible || inu || ish ? post : undefined,
+                            users: (visible && user_visible) || inu || ish ? users : undefined,
+                            pendings: ish ? pendings : undefined,
                             host,
-                            chat: inu? chat: undefined,
-                            verify_code: ish? verify_code: undefined
+                            chat: inu ? chat : undefined,
+                            verify_code: ish ? verify_code : undefined
                         })
-                    )
+                        )
                 };
             },
-            
+
             /**
              * /api/data/studygroup
              * @method POST
@@ -2037,7 +2083,7 @@ export function CreateDatabaseManager(context, rcon) {
                     }
                 };
             },
-            
+
             /**
              * /api/data/studygroup
              * @method PATCH
@@ -2063,17 +2109,17 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'studygroup_doesnt_exist'
                 };
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 const ish = profiles.includes(t.host);
                 const modifier = removeEmpty({
-                    user_visible: ish? user_visible: undefined,
-                    inviting: ish? inviting: undefined,
-                    host: ish && t.users.includes(/** @type {any} */ (host))? host: undefined,
-                    visible: ish? visible: undefined
+                    user_visible: ish ? user_visible : undefined,
+                    inviting: ish ? inviting : undefined,
+                    host: ish && t.users.includes(/** @type {any} */(host)) ? host : undefined,
+                    visible: ish ? visible : undefined
                 });
                 if (name) ifb: {
                     if (!ish) break ifb;
@@ -2108,7 +2154,7 @@ export function CreateDatabaseManager(context, rcon) {
                     modified: getModified(res, modifier)
                 };
             },
-            
+
             /**
              * /api/data/studygroup
              * @method DELETE
@@ -2117,11 +2163,11 @@ export function CreateDatabaseManager(context, rcon) {
             dataStudyGroupDelete(data, user) {
                 const { id } = data;
                 const t = dbm.getByID(id);
-                const profiles = user?
+                const profiles = user ?
                     dbm.findEntity({
                         type: 'user_profile',
                         user: user.id
-                    }).map(({ id }) => id): [];
+                    }).map(({ id }) => id) : [];
                 if (
                     t?.type != 'study_group' ||
                     !profiles.includes(t.host)
@@ -2155,7 +2201,6 @@ export function CreateDatabaseManager(context, rcon) {
                 db.save(db_save_resv);
                 const err = await db_save;
                 if (err) console.error(err);
-                console.log('Database saved; at', Temporal.Now.instant());
                 this.collectIDMap();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
@@ -2164,13 +2209,13 @@ export function CreateDatabaseManager(context, rcon) {
                     break;
                 }
             }
-            
+
             const { promise: db_close, resolve: db_close_resv } = Promise.withResolvers();
             db.close(db_close_resv);
             await db_close;
             await controller.stop();
         }
     };
-    
+
     return dbm;
 }

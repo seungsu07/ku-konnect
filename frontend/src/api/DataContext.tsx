@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, type ReactNode } from 'react';
 import { dataApi } from './data';
 import type { TimeTable, Period } from '../../../common/models';
 
@@ -16,7 +16,7 @@ export interface AppDataContextType {
   subjectBoards: SubjectBoard[];
   userProfile: any | null;
   isDataLoading: boolean;
-  refreshData: () => Promise<void>;
+  refreshData: (silent?: boolean) => Promise<void>;
 }
 
 export const AppDataContext = createContext<AppDataContextType>({
@@ -115,8 +115,8 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
-  const refreshData = async () => {
-    setIsDataLoading(true);
+  const refreshData = async (silent: boolean = false) => {
+    if (!silent) setIsDataLoading(true);
     const loginId = localStorage.getItem('login_id');
     if (!loginId) {
       setSavedTimetables([]);

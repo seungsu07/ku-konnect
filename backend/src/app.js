@@ -29,7 +29,7 @@ export function CreateAppManager(context, rcon) {
     /**
      * @typedef {`${string}-${string}-${string}-${string}-${string}`} UUID
      */
-    
+
     /**
      * @param {string} t
      * @returns {t is UUID}
@@ -37,16 +37,16 @@ export function CreateAppManager(context, rcon) {
     function checkUUID(t) {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(t);
     }
-    
+
     /**
      * @template {any} E
      * @param {E} e
      * @returns {TypeGuarder<UUID, E>}
      */
     function UUIDGuarder(e) {
-        return (t) => typeof t == 'string' && checkUUID(t)? t: e;
+        return (t) => typeof t == 'string' && checkUUID(t) ? t : e;
     }
-    
+
     /**
      * @constructor
      * @param {string} message
@@ -54,12 +54,12 @@ export function CreateAppManager(context, rcon) {
      * @property {string} message
      * @property {string[]} path
      */
-    function ParseError(message, path=[]) {
+    function ParseError(message, path = []) {
         this.message = message;
         this.path = path;
         return this;
     }
-    
+
     /**
      * @template T
      * @param {TypeGuardObject<T, ParseError>} o
@@ -84,10 +84,10 @@ export function CreateAppManager(context, rcon) {
                 }
                 obj[k] = res;
                 return true;
-            })? tup? Object.values(obj): obj: error;
+            }) ? tup ? Object.values(obj) : obj : error;
         };
     }
-    
+
     /**
      * @template T
      * @param {TypeGuarder<T, ParseError>} g
@@ -111,17 +111,17 @@ export function CreateAppManager(context, rcon) {
                 }
                 arr.push(res);
                 return true;
-            })? arr: error;
+            }) ? arr : error;
         };
     }
-    
+
     /**
      * @template {TypeGuarder<any, ParseError>[]} T
      * @param {T} gs
      * @param {string | undefined} msg
      * @returns {TypeGuarder<{ [K in keyof T]: T[K] extends TypeGuarder<infer U, ParseError>? U: never; }[number], ParseError>}
      */
-    function anyGuarder(gs, msg=undefined) {
+    function anyGuarder(gs, msg = undefined) {
         return (t) => {
             /** @type {ParseError?} */
             let err = null;
@@ -133,29 +133,29 @@ export function CreateAppManager(context, rcon) {
                     return res;
             }
             err = new ParseError(
-                msg?? /** @type {ParseError} */ (err).message,
-                /** @type {ParseError} */ (err).path
+                msg ?? /** @type {ParseError} */ (err).message,
+                /** @type {ParseError} */(err).path
             );
             return err;
         };
     }
-    
+
     /**
      * @template T
      * @param {TypeGuarder<T, ParseError>} g
      * @param {string} msg
      * @returns {TypeGuarder<T | undefined, ParseError>}
      */
-    function optGuarder(g, msg=' or undefined') {
+    function optGuarder(g, msg = ' or undefined') {
         return (t) =>
-            G.u(t) instanceof ParseError?
-                ((r) => r instanceof ParseError?
-                    new ParseError(r.message + msg):
+            G.u(t) instanceof ParseError ?
+                ((r) => r instanceof ParseError ?
+                    new ParseError(r.message + msg) :
                     r
-                )(g(t)):
+                )(g(t)) :
                 undefined;
     }
-    
+
     const G = {
         s: stringGuarder(new ParseError('This field needed to be string')),
         n: numberGuarder(new ParseError('This field needed to be number')),
@@ -166,7 +166,7 @@ export function CreateAppManager(context, rcon) {
         o: objectGuarder(new ParseError('This field needed to be object')),
         nl: nullGuarder(new ParseError('This field needed to be null')),
     };
-    
+
     /** @type {{ [K in Path]: { [L in MethodOf<K>]: TypeGuarder<Scheme<K, L, 'REQ'>, ParseError> } }} */
     const guarders = {
         '/api/auth/login': {
@@ -181,15 +181,15 @@ export function CreateAppManager(context, rcon) {
                 college: G.id,
                 department: G.id,
                 student_id: (t) =>
-                    /^20[12][0-9]{7}$/.test(t)? String(t):
-                    new ParseError('This field needed to be student id'),
+                    /^20[12][0-9]{7}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be student id'),
                 name: G.s,
                 login_id: G.s,
                 password: G.s,
                 univ_mail: gObjectGuarder({
-                    address:  (t) =>
-                        /^.+@korea\.ac\.kr$/.test(t)? String(t):
-                        new ParseError('This field needed to be \'korea.ac.kr\' email address'),
+                    address: (t) =>
+                        /^.+@korea\.ac\.kr$/.test(t) ? String(t) :
+                            new ParseError('This field needed to be \'korea.ac.kr\' email address'),
                     token: G.id
                 })
             })
@@ -208,16 +208,16 @@ export function CreateAppManager(context, rcon) {
         '/api/auth/verify/mail': {
             GET: gObjectGuarder({
                 address: (t) =>
-                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
-                    new ParseError('This field needed to be email address')
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be email address')
             }),
             POST: gObjectGuarder({
-                address:  (t) =>
-                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
-                    new ParseError('This field needed to be email address'),
+                address: (t) =>
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be email address'),
                 code: (t) =>
-                    /[0-9]{6}/.test(t)? String(t):
-                    new ParseError('This field needed to be 6-digit code')
+                    /[0-9]{6}/.test(t) ? String(t) :
+                        new ParseError('This field needed to be 6-digit code')
             })
         },
         '/api/auth/verify/tel': {
@@ -225,8 +225,8 @@ export function CreateAppManager(context, rcon) {
             POST: gObjectGuarder({
                 tel: G.s,
                 code: (t) =>
-                    /[0-9]{6}/.test(t)? String(t):
-                    new ParseError('This field needed to be 6-digit code'),
+                    /[0-9]{6}/.test(t) ? String(t) :
+                        new ParseError('This field needed to be 6-digit code'),
                 user: G.id
             })
         },
@@ -240,8 +240,8 @@ export function CreateAppManager(context, rcon) {
                 data: gObjectGuarder({
                     name: optGuarder(G.s),
                     student_id: optGuarder((t) =>
-                        /^20[12][0-9]{7}$/.test(t)? String(t):
-                        new ParseError('This field needed to be student id')
+                        /^20[12][0-9]{7}$/.test(t) ? String(t) :
+                            new ParseError('This field needed to be student id')
                     ),
                     campus: optGuarder(G.id),
                     college: optGuarder(G.id),
@@ -252,9 +252,9 @@ export function CreateAppManager(context, rcon) {
                             'This field needed to be UUID or null'
                         ),
                         status: (t) =>
-                            /^(?:none|minor|double|advanced)$/.test(t)?
-                            /** @type {'none' | 'minor' | 'double' | 'advanced'} */ (String(t)):
-                            new ParseError('This field needed to be one of \'none\', \'minor\', \'double\', \'advanced\'')
+                            /^(?:none|minor|double|advanced)$/.test(t) ?
+                            /** @type {'none' | 'minor' | 'double' | 'advanced'} */ (String(t)) :
+                                new ParseError('This field needed to be one of \'none\', \'minor\', \'double\', \'advanced\'')
                     })]),
                     mail: anyGuarder([G.u, gObjectGuarder({
                         address: G.s,
@@ -262,8 +262,8 @@ export function CreateAppManager(context, rcon) {
                     })]),
                     univ_mail: anyGuarder([G.u, gObjectGuarder({
                         address: (t) =>
-                            /^.+@korea\.ac\.kr$/.test(t)? String(t):
-                            new ParseError('This field needed to be \'korea.ac.kr\' email address'),
+                            /^.+@korea\.ac\.kr$/.test(t) ? String(t) :
+                                new ParseError('This field needed to be \'korea.ac.kr\' email address'),
                         token: G.id
                     })]),
                     password: anyGuarder([G.u, gObjectGuarder({
@@ -286,16 +286,16 @@ export function CreateAppManager(context, rcon) {
             POST: gObjectGuarder({
                 nickname: G.s,
                 image: (t) =>
-                    /^[A-Za-z0-9+\/]+={0,2}$/.test(t)? String(t):
-                    new ParseError('This field needed to be Base64 string')
+                    /^[A-Za-z0-9+\/]+={0,2}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be Base64 string')
             }),
             PATCH: gObjectGuarder({
                 id: G.id,
                 data: gObjectGuarder({
                     nickname: optGuarder(G.s),
                     image: optGuarder((t) =>
-                        /^[A-Za-z0-9+\/]+={0,2}$/.test(t)? String(t):
-                        new ParseError('This field needed to be Base64 string')
+                        /^[A-Za-z0-9+\/]+={0,2}$/.test(t) ? String(t) :
+                            new ParseError('This field needed to be Base64 string')
                     )
                 })
             }),
@@ -308,12 +308,12 @@ export function CreateAppManager(context, rcon) {
                 id: optGuarder(G.id),
                 name: optGuarder(G.s),
                 tel: optGuarder((t) =>
-                    /^0[0-9]{1,2}-[0-9]{4}-[0-9]{4}$/.test(t)? String(t):
-                    new ParseError('This field needed to be telephone number')
+                    /^0[0-9]{1,2}-[0-9]{4}-[0-9]{4}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be telephone number')
                 ),
                 mail: optGuarder((t) =>
-                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t)? String(t):
-                    new ParseError('This field needed to be email address')
+                    /^.+@[0-9A-Za-z]+(?:\.[0-9A-Za-z]+){1,3}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be email address')
                 )
             })
         },
@@ -344,13 +344,13 @@ export function CreateAppManager(context, rcon) {
             GET: gObjectGuarder({
                 id: optGuarder(G.id),
                 code: optGuarder((t) =>
-                    /^[A-Za-z]{4}[0-9]{3}$/.test(t)? String(t):
-                    new ParseError('This field needed to be course code')
+                    /^[A-Za-z]{4}[0-9]{3}$/.test(t) ? String(t) :
+                        new ParseError('This field needed to be course code')
                 ),
                 name: optGuarder(G.s),
                 course_type: optGuarder((t) =>
-                    /^(?:major|major_required|general|general_required|common)$/.test(t)? /** @type {CourseType} */ (String(t)):
-                    new ParseError('This field needed to be one of \'major\', \'major_required\', \'general\', \'general_required\', \'common\'')
+                    /^(?:major|major_required|general|general_required|common)$/.test(t) ? /** @type {CourseType} */ (String(t)) :
+                        new ParseError('This field needed to be one of \'major\', \'major_required\', \'general\', \'general_required\', \'common\'')
                 ),
                 department: optGuarder(G.id)
             })
@@ -361,8 +361,8 @@ export function CreateAppManager(context, rcon) {
                 course: optGuarder(G.id),
                 ay: optGuarder(G.n),
                 sem: optGuarder((t) =>
-                    /^(?:first|second|summer|winter)$/.test(t)? /** @type {Semester} */ (String(t)):
-                    new ParseError('This field needed to be one of \'first\', \'second\', \'summer\', \'winter\'')
+                    /^(?:first|second|summer|winter)$/.test(t) ? /** @type {Semester} */ (String(t)) :
+                        new ParseError('This field needed to be one of \'first\', \'second\', \'summer\', \'winter\'')
                 ),
                 professor: optGuarder(G.id),
                 hours: optGuarder(G.n),
@@ -481,8 +481,8 @@ export function CreateAppManager(context, rcon) {
                     color: anyGuarder([G.u, gObjectGuarder([G.n, G.n, G.n])]),
                     details: anyGuarder([G.u, gArrayGuarder(gObjectGuarder({
                         course: (t) =>
-                            /^(?:major|general|inter)(?:_required)?$/.test(t)? /** @type {any} */ (String(t)):
-                            new ParseError('This field needed to be course type'),
+                            /^(?:major|general|inter)(?:_required)?$/.test(t) ? /** @type {any} */ (String(t)) :
+                                new ParseError('This field needed to be course type'),
                         value: gObjectGuarder([G.n, G.n]),
                         color: gObjectGuarder([G.n, G.n, G.n])
                     }))])
@@ -521,7 +521,7 @@ export function CreateAppManager(context, rcon) {
             })
         }
     };
-    
+
     /**
      * @template {Path} T
      * @template {MethodOf<T>} U
@@ -547,7 +547,7 @@ export function CreateAppManager(context, rcon) {
             const user = context.databaseManager?.getByID(user_id);
             return user ?? null;
         }
-        
+
         /**
          * @param {Parameters<typeof fn>[0]} req
          * @returns {Session | null}
@@ -561,19 +561,19 @@ export function CreateAppManager(context, rcon) {
             if (result?.type != 'session') return null;
             return result;
         }
-        
+
         /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null; getSession: () => Session | null }>} */
         function handler(req, res, next) {
-            const data = method == 'GET'?
-                req.query: req.body;
+            const data = method == 'GET' ?
+                req.query : req.body;
             const guarder = guarders[path][method];
             /** @type {ParseError | Scheme<T, U, 'REQ'>} */
             const gdata = /** @type {any} */ (guarder(data));
             if (gdata instanceof ParseError) {
-                res.status(400).json(/** @type {any} */ ({
+                res.status(400).json(/** @type {any} */({
                     success: false,
-                    e: `${gdata.message}${gdata.path.length?
-                        ', at \'' + gdata.path.join('.') + '\'': ''}`
+                    e: `${gdata.message}${gdata.path.length ?
+                        ', at \'' + gdata.path.join('.') + '\'' : ''}`
                 }));
                 return;
             }
@@ -589,7 +589,7 @@ export function CreateAppManager(context, rcon) {
     const app = express();
 
     app.use(express.json({ limit: '500kb' }));
-    
+
     app.use(cookieParser());
 
     app.use(/** @type {express.ErrorRequestHandler} */
@@ -598,35 +598,35 @@ export function CreateAppManager(context, rcon) {
             return;
         }
     );
-    
+
     app.get(...makeHandler('/api/auth/verify/mail', 'GET', async (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = await context.databaseManager.API.verifyMailGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/auth/verify/mail', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.verifyMailPost(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/auth/verify/tel', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.verifyTelGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/auth/verify/tel', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.verifyTelPost(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/auth/verify/studygroup', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -636,9 +636,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.verifyStudyGroupGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/auth/verify/studygroup', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -648,16 +648,16 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.verifyStudyGroupPost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/auth/signup', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.authSignup(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/auth/login', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -674,21 +674,21 @@ export function CreateAppManager(context, rcon) {
             });
             res.status(200).json(result);
         } else {
-            res.status(400).json(/** @type {any} */ ({
+            res.status(400).json(/** @type {any} */({
                 success: raw.success,
                 e: /** @type {any} */ (raw).e
             }));
         }
     }));
-    
+
     app.delete(...makeHandler('/api/session', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const session = res.locals.getSession();
         const result = context.databaseManager.API.sessionDelete(data, session);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/user', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -698,9 +698,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/user', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -710,9 +710,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserPatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/user', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -722,16 +722,16 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/userprofile', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataUserProfileGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/data/userprofile', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -741,9 +741,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserProfilePost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/userprofile', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -753,9 +753,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserProfilePatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/userprofile', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -765,80 +765,80 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataUserProfileDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/professor', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataProfessorGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/campus', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataCampusGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/college', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataCollegeGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/department', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataDepartmentGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/course', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataCourseGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/lecture', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataLectureGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/lectureclass', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataLectureClassGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/building', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataBuildingGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/classroom', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataClassRoomGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/comment', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
         const result = context.databaseManager.API.dataCommentGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/data/comment', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -848,9 +848,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataCommentPost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/comment', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -860,9 +860,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataCommentPatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/comment', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -872,17 +872,17 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataCommentDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/post', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
         const result = context.databaseManager.API.dataPostGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/data/post', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -892,9 +892,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataPostPost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/post', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -904,9 +904,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataPostPatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/post', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -916,16 +916,16 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataPostDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/board', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const result = context.databaseManager.API.dataBoardGet(data);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/timetable', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -935,9 +935,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataTimeTableGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/data/timetable', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -947,9 +947,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataTimeTablePost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/timetable', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -959,9 +959,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataTimeTablePatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/timetable', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -971,9 +971,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataTimeTableDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/graduationprogress', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -983,9 +983,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataGraduationProgressGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/graduationprogress', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -995,17 +995,17 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataGraduationProgressPatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.get(...makeHandler('/api/data/studygroup', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
         const user = res.locals.getSessionUser();
         const result = context.databaseManager.API.dataStudyGroupGet(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.post(...makeHandler('/api/data/studygroup', 'POST', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -1015,9 +1015,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataStudyGroupPost(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.patch(...makeHandler('/api/data/studygroup', 'PATCH', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -1027,9 +1027,9 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataStudyGroupPatch(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.delete(...makeHandler('/api/data/studygroup', 'DELETE', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
@@ -1039,29 +1039,29 @@ export function CreateAppManager(context, rcon) {
             return;
         }
         const result = context.databaseManager.API.dataStudyGroupDelete(data, user);
-        res.status(result.success? 200: 400).json(result);
+        res.status(result.success ? 200 : 400).json(result);
     }));
-    
+
     app.use(/** @type {express.ErrorRequestHandler} */
         (err, req, res, next) => {
             res.status(500).json({ e: 'unexpected' });
             return;
         }
     );
-    
+
     return {
         controller: rcon.outer,
-        
-        async serve(delay=Temporal.Duration.from({ minutes: 3 })) {
+
+        async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
             const controller = rcon.inner;
-            app.listen(3000, '0.0.0.0', (e) => e?
-                console.error(e):
+            app.listen(3000, '0.0.0.0', (e) => e ?
+                console.error(e) :
                 console.log('Express is running')
             );
             await controller.start();
-            
+
             while (true) {
-                
+
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([delay_prom, controller.waitFor(false)]);
@@ -1069,7 +1069,7 @@ export function CreateAppManager(context, rcon) {
                     break;
                 }
             }
-            
+
             await controller.stop();
         }
     };

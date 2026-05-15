@@ -20,22 +20,21 @@ const Timetable: React.FC = () => {
 
   // View/Create modes
   const [mode, setMode] = useState<'view' | 'create'>('view');
-  const { savedTimetables, isDataLoading: isLoading, refreshData } = React.useContext(AppDataContext);
-  const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
+  const { savedTimetables, isDataLoading: isLoading, refreshData, userProfile } = React.useContext(AppDataContext);
+  const [activeSavedId, setActiveSavedId] = useState<string | undefined>(undefined);
 
   // When saved timetables load, select the active one (only if not already set or out of bounds)
   useEffect(() => {
     if (savedTimetables.length > 0 && mode === 'view') {
-      // 만약 현재 선택된 인덱스가 유효하지 않거나 처음 로드된 경우에만 서버 설정에 맞춤
       const selectedIdx = savedTimetables.findIndex(t => t.selected);
       const finalIdx = selectedIdx !== -1 ? selectedIdx : 0;
       
-      // 현재 보고 있는 인덱스가 없거나, 방금 불러온 리스트 범위를 벗어난 경우에만 자동 설정
-      if (activeSavedIndex === undefined || activeSavedIndex >= savedTimetables.length) {
-        setActiveSavedIndex(finalIdx);
+      // 처음 로드되거나, 현재 선택된 아이디가 유효하지 않은 경우에만 자동 설정
+      if (activeSavedId === undefined || !savedTimetables.some(t => t.id === activeSavedId)) {
+        setActiveSavedId(savedTimetables[finalIdx].id);
       }
     }
-  }, [savedTimetables.length, mode]); // length가 바뀔 때만 (추가/삭제) 체크하도록 변경
+  }, [savedTimetables, mode]); // savedTimetables 전체가 바뀔 때마다 체크하여 최신 상태 유지
 
   const workerRef = useRef<Worker | null>(null);
 
@@ -94,7 +93,7 @@ const Timetable: React.FC = () => {
 
       if (res.success) {
         await refreshData();
-        setActiveSavedIndex(savedTimetables.length);
+        setActiveSavedId(res.data.id);
         setMode('view');
         alert('시간표가 성공적으로 저장되었습니다!');
       } else {
@@ -220,33 +219,56 @@ const Timetable: React.FC = () => {
               </div>
             ) : (
               <CenterPanel
-                timeTable={savedTimetables[activeSavedIndex]}
+                timeTable={savedTimetables.find(t => t.id === activeSavedId) || savedTimetables[0]}
                 mode="view"
                 savedTimetables={savedTimetables}
                 onSelectTimetable={async (id) => {
                   const idx = savedTimetables.findIndex(t => t.id === id);
                   if (idx === -1) return;
 
+                  const oldId = activeSavedId;
                   // 1. 즉시 UI에 반영 (로컬 상태 우선 업데이트)
-                  setActiveSavedIndex(idx);
+                  setActiveSavedId(id);
                   
                   try {
-                    // 2. 다른 선택된 시간표들 찾기
+                    // 2. 다른 모든 선택된 시간표 해제 시도 (내가 소유한 것 위주)
                     const otherSelected = savedTimetables.filter(t => t.selected && t.id !== id);
                     
-                    // 3. 순차적으로 처리하거나 Promise.all로 처리하되, 결과 대기
-                    // 먼저 기존 것들 해제
-                    await Promise.all(otherSelected.map(t => 
-                      dataApi.updateTimeTable({ id: t.id, data: { selected: false } })
-                    ));
+                    for (const t of otherSelected) {
+                      try {
+                        // 백엔드 가드 설정상 classes가 필수이므로 함께 전송
+                        await dataApi.updateTimeTable({ 
+                          id: t.id, 
+                          data: { 
+                            selected: false,
+                            classes: t.classes
+                          } 
+                        });
+                      } catch (e) {
+                        console.warn(`Failed to unselect timetable ${t.id}:`, e);
+                      }
+                    }
 
-                    // 그 다음 새로운 것 선택
-                    await dataApi.updateTimeTable({ id, data: { selected: true } });
+                    // 3. 새로운 시간표 선택
+                    const targetTt = savedTimetables.find(t => t.id === id);
+                    const res = await dataApi.updateTimeTable({ 
+                      id: id as any, 
+                      data: { 
+                        selected: true,
+                        classes: targetTt?.classes || []
+                      } 
+                    });
                     
-                    // 4. 데이터 새로고침 (이 때 로딩 스피너가 돌더라도 activeSavedIndex는 유지됨)
-                    await refreshData();
-                  } catch (err) {
+                    if (!res.success) {
+                      throw new Error(`API 오류: ${(res as any).e || '알 수 없는 오류'}`);
+                    }
+
+                    // 4. 데이터 새로고침 (배경에서 조용히 업데이트)
+                    await refreshData(true);
+                  } catch (err: any) {
                     console.error('Failed to update selected timetable:', err);
+                    setActiveSavedId(oldId);
+                    alert(`시간표 선택 중 오류가 발생했습니다.\n메시지: ${err.message || '알 수 없는 오류'}\nID: ${id}`);
                   }
                 }}
                 onCreateNew={() => setMode('create')}

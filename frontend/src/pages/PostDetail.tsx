@@ -96,9 +96,9 @@ const PostDetail: React.FC = () => {
       if (!nickname || !nickname.trim()) return;
 
       try {
-        const res = await dataApi.createUserProfile({ 
-          nickname: nickname.trim(), 
-          image: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJREFUeJztwQEBAAAAgiD/r25IQAEAAABJ6AHxwBjqPAAAAABJRU5ErkJggg==' 
+        const res = await dataApi.createUserProfile({
+          nickname: nickname.trim(),
+          image: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJREFUeJztwQEBAAAAgiD/r25IQAEAAABJ6AHxwBjqPAAAAABJRU5ErkJggg=='
         });
         if (res.success) {
           profile = res.data;
@@ -126,7 +126,7 @@ const PostDetail: React.FC = () => {
         // Refresh comments
         const updatedComments = await dataApi.getComments({ post: postId as any });
         setComments(updatedComments);
-        
+
         // Fetch new author if needed
         if (!authorMap[profile.id]) {
           const authorProfile = await dataApi.getUserProfiles({ id: profile.id as any });
@@ -266,8 +266,8 @@ const PostDetail: React.FC = () => {
                     <input type="checkbox" disabled /> 익명
                   </label>
                 </div>
-                <button 
-                  className={styles.submitBtn} 
+                <button
+                  className={styles.submitBtn}
                   disabled={!commentInput.trim() || isSubmitting}
                   onClick={handleSubmitComment}
                 >
