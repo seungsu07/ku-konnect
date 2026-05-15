@@ -152,12 +152,6 @@ export interface UserProfile extends Entity<'user_profile'> {
 
 /** 교수 */
 export interface Professor extends Entity<'professor'> {
-  /** 로그인 아이디 */
-  login_id: string;
-  /** crypto.pbkdf2Sync(password, salt, iterations=100000, keylen=64, digest=sha512).toHex() */
-  login_hash: string;
-  /** 솔트 */
-  login_salt: string;
   /** 성명 */
   name: string;
   /** 연락처 */

@@ -1001,8 +1001,12 @@ export function CreateDatabaseManager(context, rcon) {
                     type: 'course',
                     ...removeEmpty({
                         id,
-                        code,
-                        name,
+                        code: code? {
+                            '$regex': new RegExp(RegExp.escape(code))
+                        }: undefined,
+                        name: name? {
+                            '$regex': new RegExp(RegExp.escape(name))
+                        }: undefined,
                         course_type,
                         department
                     })
