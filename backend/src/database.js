@@ -311,7 +311,9 @@ export function CreateDatabaseManager(context, rcon) {
             idMap.set(entity.id, new WeakRef(entity));
         },
         
-        collectIDMap() {/* TODO */},
+        collectIDMap() {
+            idMap.forEach((v, k) => v.deref() == undefined? idMap.delete(k): undefined);
+        },
         
         /**
          * @template {TypeEntity<EntityType>} T
@@ -480,6 +482,7 @@ export function CreateDatabaseManager(context, rcon) {
                     },
                     univ_mail: address,
                     mail: null,
+                    deleted: false
                 };
                 const user = dbm.createEntity(param);
                 if (!user) return {
@@ -495,8 +498,7 @@ export function CreateDatabaseManager(context, rcon) {
                     details: []
                 };
                 mailMgr.expire(token);
-                const gp = dbm.createEntity(gparam);
-                // TODO
+                dbm.createEntity(gparam);
                 return {
                     success: true
                 };
@@ -523,19 +525,15 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'user_doesnt_exist'
                 };
+                if (user.deleted) return {
+                    success: false,
+                    e: 'user_doesnt_exist'
+                };
                 const { hash } = makehash(password, user.login_salt);
                 if (user.login_hash != hash) return {
                     success: false,
                     e: 'user_doesnt_exist'
                 };
-                const { hash: n_hash, salt } = makehash(password);
-                user.login_hash = n_hash;
-                user.login_salt = salt;
-                if (!dbm.updateEntity(user))
-                    return {
-                        success: false,
-                        e: 'unexpected'
-                    };
                 const dur = duration({ days: 30 });
                 const reg = loginMgr.register(user.id, dur);
                 if (!reg) return {
@@ -715,7 +713,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'code_doesnt_match'
                 };
-                t.pendings.filter(u => u != pf.id);
+                t.pendings = t.pendings.filter(u => u != pf.id);
                 t.users.push(pf.id);
                 const res = dbm.updateEntity(t);
                 if (!res) return {
@@ -733,7 +731,7 @@ export function CreateDatabaseManager(context, rcon) {
              * @type {RouteFunction<'/api/auth/verify/tel', 'GET'>}
              */
             // verifyTelGet(data) {
-            //     // TODO
+            //     
             //     return;
             // },
             
@@ -743,32 +741,34 @@ export function CreateDatabaseManager(context, rcon) {
              * @type {RouteFunction<'/api/auth/verify/tel', 'POST'>}
              */
             // verifyTelPost(data) {
-            //     // TODO
+            //     
             //     return;
             // },
             
             /**
              * /api/data/user
              * @method GET
-             * @type {RouteFunction<'/api/data/user', 'GET', [User | null]>}
+             * @type {RouteFunction<'/api/data/user', 'GET', [User]>}
              */
-            dataUserGet(data, user) {
-                const {
-                    id,
-                    login_id
-                } = data;
-                const t = dbm.findEntity({
-                    type: 'user',
-                    ...removeEmpty({
-                        id,
-                        login_id
-                    })
-                });
+            dataUserGet(_, user) {
+                const t = dbm.getByID(user.id);
+                if (!t) return {
+                    success: false,
+                    e: 'unexpected'
+                };
                 return {
                     success: true,
-                    data: t.map(({ id, login_id, name, student_id, campus, college, department, univ_mail, mail }) =>
-                        id == user?.id? ({ id, login_id, name, student_id, campus, college, department, univ_mail, mail }):
-                        ({ id, login_id }))
+                    data: [{
+                        id: t.id,
+                        login_id: t.login_id,
+                        name: t.name,
+                        student_id: t.student_id,
+                        campus: t.campus,
+                        college: t.college,
+                        department: t.department,
+                        univ_mail: t.univ_mail,
+                        mail: t.univ_mail
+                    }]
                 };
             },
             
@@ -866,13 +866,24 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'unauthorized'
                 };
-                t.id = crypto.randomUUID();
-                t.login_id = `${crypto.randomBytes(8).toString('hex')}DEL_${t.login_id}`;
+                t.deleted = true;
                 const res = dbm.updateEntity(t);
                 if (!res) return {
                     success: false,
                     e: 'unexpected'
                 };
+                const sessions = dbm.findEntity({
+                    type: 'session',
+                    data_type: 'LOGIN',
+                    data: t.id
+                });
+                for (const s of sessions) {
+                    try {
+                        dbm.deleteEntity(s);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
                 return {
                     success: true,
                     deleted_at: Temporal.Now.instant().epochMilliseconds
@@ -1354,7 +1365,7 @@ export function CreateDatabaseManager(context, rcon) {
                     e: 'unexpected'
                 };
                 p.comment_count++;
-                const pr = dbm.updateEntity(p); // TODO
+                dbm.updateEntity(p);
                 return {
                     success: true,
                     data: {
@@ -1441,7 +1452,7 @@ export function CreateDatabaseManager(context, rcon) {
                 const post = dbm.getByID(t.post);
                 if (post) {
                     post.comment_count--;
-                    const pr = dbm.updateEntity(post); // TODO
+                    dbm.updateEntity(post);
                 }
                 return {
                     success: true
@@ -1538,7 +1549,7 @@ export function CreateDatabaseManager(context, rcon) {
                     e: 'unexpected'
                 };
                 b.post_count++;
-                const br = dbm.updateEntity(b); // TODO
+                dbm.updateEntity(b);
                 return {
                     success: true,
                     data: {
@@ -1630,7 +1641,7 @@ export function CreateDatabaseManager(context, rcon) {
                 const board = dbm.getByID(t.board);
                 if (board) {
                     board.post_count--;
-                    const br = dbm.updateEntity(board); // TODO
+                    dbm.updateEntity(board);
                 }
                 return {
                     success: true
@@ -2190,6 +2201,7 @@ export function CreateDatabaseManager(context, rcon) {
                 db.save(db_save_resv);
                 const err = await db_save;
                 if (err) console.error(err);
+                this.collectIDMap();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([delay_prom, controller.waitFor(false)]);

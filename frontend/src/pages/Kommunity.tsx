@@ -370,7 +370,7 @@ const Kommunity: React.FC = () => {
                           <article
                             key={post.id}
                             className={styles.postCard}
-                            onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                            onClick={() => navigate(`/komunity/post/${post.id}`)}
                           >
                             <div className={styles.postHeader}>
                               <span className={styles.postBadge}>{activeBoard?.name}</span>
@@ -434,7 +434,7 @@ const Kommunity: React.FC = () => {
                         <article
                           key={post.id}
                           className={styles.postCard}
-                          onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                          onClick={() => navigate(`/komunity/post/${post.id}`)}
                         >
                           <div className={styles.postHeader}>
                             <span className={styles.postBadge}>{subjectBoards.find(b => b.realBoardId === post.board)?.name || '게시판'}</span>

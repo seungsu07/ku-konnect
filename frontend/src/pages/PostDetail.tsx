@@ -139,7 +139,7 @@ const PostDetail: React.FC = () => {
           </button>
           <button className={styles.actionBtn}>
             <Share2 size={18} />
-            <span>공공유</span>
+            <span>공유</span>
           </button>
         </div>
       </article>

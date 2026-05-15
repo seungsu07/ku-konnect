@@ -341,13 +341,16 @@ export function CreateSessionManager(context, rcon) {
         controller: rcon.outer,
         context: sessionContext,
         
-        collect() {}, // TODO
+        collect() {
+            const sessions = context.databaseManager?.findEntity({ type: 'session' });
+            sessions?.forEach(s => s.expired? context.databaseManager?.deleteEntity(s): undefined);
+        },
         
         /**
          * @param {Temporal.Duration} delay
          * @returns {Promise<void>}
          */
-        async serve(delay = Temporal.Duration.from({ minutes: 3 })) {
+        async serve(delay = Temporal.Duration.from({ minutes: 10 })) {
             dbManager = context.databaseManager;
             if (!dbManager) throw new Error();
             sessionContext.dbManager = dbManager;
@@ -378,7 +381,7 @@ export function CreateSessionManager(context, rcon) {
                     mailMgr.serve();
                     await mailCon.start();
                 }
-                
+                this.collect();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([

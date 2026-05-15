@@ -139,6 +139,8 @@ export interface User extends Entity<'user'> {
   univ_mail: string;
   /** 개인 메일 */
   mail: string | null;
+  /** 계정 삭제 여부 */
+  deleted: boolean;
 }
 
 /** 유저 프로필 */
