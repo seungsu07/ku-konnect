@@ -29,7 +29,7 @@ export async function generate(input) {
         type: Type.ARRAY,
         items: {
             type: Type.OBJECT,
-            required: ["name", "score", "reason", "LimitOff", "code"],
+            required: ["name", "score", "reason", "limitoff", "code"],
             properties: {
                 name: {
                     type: Type.STRING,

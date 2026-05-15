@@ -8,15 +8,29 @@ Content-Type: application/json
 
 ###
 
-GET https://konnect.hydv.kr/api/data/userprofile
+GET https://konnect.hydv.kr/api/data/userprofile?data={"my":true}
+Cookie: token=57c7625b-0e25-4a2f-9881-26f57553942f; Path=/; Expires=Sun, 14 Jun 2026 13:22:07 GMT; HttpOnly
+
+###
+
+GET konnect.hydv.kr/api/auth/verify/studygroup?data={"group":"b19f6402-83b9-48cc-a8b7-dfb1004c83d1","profile":"3b83d328-7ddb-4113-b0cc-4b1ec21e5f44"}
+Cookie: token=57c7625b-0e25-4a2f-9881-26f57553942f; Path=/; Expires=Sun, 14 Jun 2026 13:22:07 GMT; HttpOnly
+
+# 065223
+###
+
+
+POST konnect.hydv.kr/api/auth/verify/studygroup
 Cookie: token=57c7625b-0e25-4a2f-9881-26f57553942f; Path=/; Expires=Sun, 14 Jun 2026 13:22:07 GMT; HttpOnly
 Content-Type: application/json
 
 {
-    "my": true
+    "group": "b19f6402-83b9-48cc-a8b7-dfb1004c83d1",
+    "code": "065223",
+    "profile": "3b83d328-7ddb-4113-b0cc-4b1ec21e5f44"
 }
 
 ###
 
-GET https://konnect.hydv.kr/api/data/userprofile?data={"my":true}
+GET konnect.hydv.kr/api/generate/roadmap?data={"input":"미소녀가 되고 싶어"}
 Cookie: token=57c7625b-0e25-4a2f-9881-26f57553942f; Path=/; Expires=Sun, 14 Jun 2026 13:22:07 GMT; HttpOnly

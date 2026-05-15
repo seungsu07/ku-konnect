@@ -782,7 +782,6 @@ export function CreateDatabaseManager(context, rcon) {
                         e: 'already_processed'
                     };
                 }
-                genUsed.set(user.id, Temporal.Now.instant());
                 if (
                     map_gened.length >= GEN_LIMIT &&
                     Temporal.Now.instant()
@@ -796,7 +795,17 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'server_is_busy'
                 };
-                const output = await generate(input);
+                let output = null;
+                try {
+                    output = await generate(input);
+                } catch (e) {
+                    console.error(e);
+                }
+                if (!output) return {
+                    success: false,
+                    e: 'unexpected'
+                };
+                genUsed.set(user.id, Temporal.Now.instant());
                 map_gened.push(Temporal.Now.instant());
                 if (map_gened.length > GEN_LIMIT)
                     map_gened.splice(0, map_gened.length - GEN_LIMIT);
