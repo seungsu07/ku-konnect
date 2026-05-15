@@ -113,6 +113,15 @@ const Study: React.FC = () => {
   const [messages, setMessages] = useState(MOCK_CHAT);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Create Mode States
+  const [isCreateMode, setIsCreateMode] = useState(false);
+  const [newStudyName, setNewStudyName] = useState('');
+  const [newStudySubject, setNewStudySubject] = useState('');
+  const [newStudyDesc, setNewStudyDesc] = useState('');
+  const [newStudyCategory, setNewStudyCategory] = useState('전공');
+  const [newStudyMaxMembers, setNewStudyMaxMembers] = useState(4);
+  const [newStudyIsPrivate, setNewStudyIsPrivate] = useState(false);
+
   useEffect(() => {
     document.body.style.backgroundColor = '#f8fafc';
     return () => { document.body.style.backgroundColor = ''; };
@@ -201,7 +210,7 @@ const Study: React.FC = () => {
                 );
               })}
             </div>
-            <button className={styles.createStudyBtn}>
+            <button className={styles.createStudyBtn} onClick={() => setIsCreateMode(true)}>
               <Plus size={18} /> 새 스터디 만들기
             </button>
           </div>
@@ -211,7 +220,6 @@ const Study: React.FC = () => {
         <main className={styles.mainContent}>
           {view === 'explore' ? (
             <>
-              {/* Explore Header */}
               <div className={styles.exploreHeader}>
                 <h2 className={styles.exploreTitle}>스터디 탐색</h2>
               </div>
@@ -414,6 +422,7 @@ const Study: React.FC = () => {
           )}
         </main>
 
+
         {/* ===== Right Sidebar ===== */}
         <aside className={styles.rightSidebar}>
           {/* Entry Code */}
@@ -484,27 +493,87 @@ const Study: React.FC = () => {
           </div>
 
           {/* CTA Card */}
-          <div className={styles.rightCard} style={{ background: 'linear-gradient(135deg, #ff3131 0%, #ff914d 100%)', color: 'white', border: 'none' }}>
-            <h3 className={styles.rightCardTitle} style={{ color: 'white' }}>
+          <div className={styles.ctaCard}>
+            <h3 className={styles.ctaCardTitle}>
               <Sparkles size={18} /> 스터디 만들기
             </h3>
-            <p style={{ fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.5 }}>
+            <p className={styles.ctaCardDesc}>
               나만의 스터디 그룹을 만들고 함께 성장하세요! 비공개 입장 코드도 자동 생성됩니다.
             </p>
-            <button style={{
-              marginTop: 14, padding: '10px 20px', borderRadius: 10,
-              border: '2px solid rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.15)',
-              color: 'white', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-              transition: 'all 0.2s', width: '100%',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-            >
-              <Plus size={16} style={{ verticalAlign: 'text-bottom', marginRight: 6 }} />
-              스터디 개설하기
+            <button className={styles.ctaCardBtn} onClick={() => setIsCreateMode(true)}>
+              <Plus size={16} /> 스터디 개설하기
             </button>
           </div>
         </aside>
+
+        {/* ===== Create Study Modal ===== */}
+        {isCreateMode && (
+          <div className={styles.modalBackdrop} onClick={() => setIsCreateMode(false)}>
+            <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>📚 새 스터디 개설</h2>
+                <button className={styles.modalCloseBtn} onClick={() => setIsCreateMode(false)}>&times;</button>
+              </div>
+              
+              <div className={styles.modalBody}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>스터디 이름 <span className={styles.formRequired}>*</span></label>
+                  <input type="text" className={styles.formInput} placeholder="예: 알고리즘 스터디 A반"
+                    value={newStudyName} onChange={e => setNewStudyName(e.target.value)} />
+                </div>
+                
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup} style={{ flex: 1 }}>
+                    <label className={styles.formLabel}>관련 과목 <span className={styles.formRequired}>*</span></label>
+                    <input type="text" className={styles.formInput} placeholder="예: 알고리즘"
+                      value={newStudySubject} onChange={e => setNewStudySubject(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup} style={{ width: 130 }}>
+                    <label className={styles.formLabel}>카테고리</label>
+                    <select className={styles.formSelect} value={newStudyCategory}
+                      onChange={e => setNewStudyCategory(e.target.value)}>
+                      {CATEGORIES.filter(c => c !== '전체').map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>스터디 설명</label>
+                  <textarea className={styles.formTextarea} placeholder="스터디 목표, 진행 방식 등을 적어주세요."
+                    value={newStudyDesc} onChange={e => setNewStudyDesc(e.target.value)} />
+                </div>
+
+                <div className={styles.settingsRow}>
+                  <div className={styles.settingItem}>
+                    <span className={styles.settingLabel}>👥 최대 인원</span>
+                    <input type="range" min="2" max="10" className={styles.formRange}
+                      value={newStudyMaxMembers} onChange={e => setNewStudyMaxMembers(parseInt(e.target.value))} />
+                    <span className={styles.settingValue}>{newStudyMaxMembers}명</span>
+                  </div>
+                  <div className={styles.settingItem}>
+                    <span className={styles.settingLabel}>🔒 비공개</span>
+                    <label className={styles.toggleSwitch}>
+                      <input type="checkbox" checked={newStudyIsPrivate}
+                        onChange={e => setNewStudyIsPrivate(e.target.checked)} />
+                      <span className={styles.toggleSlider}></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button className={styles.formCancelBtn} onClick={() => setIsCreateMode(false)}>취소</button>
+                <button className={styles.formSubmitBtn}
+                  disabled={!newStudyName.trim() || !newStudySubject.trim()}
+                  onClick={() => { alert('새 스터디가 생성되었습니다!'); setIsCreateMode(false); }}>
+                  <Sparkles size={14} /> 개설하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

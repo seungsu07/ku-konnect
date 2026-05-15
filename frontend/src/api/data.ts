@@ -85,6 +85,26 @@ export const dataApi = {
     deleteTimeTable: (data: Scheme<'/api/data/timetable', 'DELETE', 'REQ'>) =>
         fetchData('/api/data/timetable', 'DELETE', data),
 
+    // Boards
+    getBoards: (query: Scheme<'/api/data/board', 'GET', 'REQ'>) =>
+        getMany('/api/data/board', query),
+
+    // Posts
+    getPosts: (query: Scheme<'/api/data/post', 'GET', 'REQ'>) =>
+        getMany('/api/data/post', query),
+    createPost: (data: Scheme<'/api/data/post', 'POST', 'REQ'>) =>
+        fetchData('/api/data/post', 'POST', data),
+    updatePost: (data: Scheme<'/api/data/post', 'PATCH', 'REQ'>) =>
+        fetchData('/api/data/post', 'PATCH', data),
+    deletePost: (data: Scheme<'/api/data/post', 'DELETE', 'REQ'>) =>
+        fetchData('/api/data/post', 'DELETE', data),
+
+    // User Profiles
+    getUserProfiles: (query: Scheme<'/api/data/userprofile', 'GET', 'REQ'>) =>
+        getMany('/api/data/userprofile', query),
+    createUserProfile: (data: Scheme<'/api/data/userprofile', 'POST', 'REQ'>) =>
+        fetchData('/api/data/userprofile', 'POST', data),
+
     // Graduation Progress
     getGraduationProgress: (query: Scheme<'/api/data/graduationprogress', 'GET', 'REQ'>) =>
         fetchData('/api/data/graduationprogress', 'GET', query),
