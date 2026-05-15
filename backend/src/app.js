@@ -233,6 +233,11 @@ export function CreateAppManager(context, rcon) {
         '/api/session': {
             DELETE: gObjectGuarder({})
         },
+        '/api/generate/roadmap': {
+            GET: gObjectGuarder({
+                input: G.s
+            })
+        },
         '/api/data/user': {
             GET: gObjectGuarder({}),
             PATCH: gObjectGuarder({
@@ -280,8 +285,8 @@ export function CreateAppManager(context, rcon) {
         '/api/data/userprofile': {
             GET: gObjectGuarder({
                 id: optGuarder(G.id),
-                user: optGuarder(G.id),
-                nickname: optGuarder(G.s)
+                nickname: optGuarder(G.s),
+                my: optGuarder(G.b)
             }),
             POST: gObjectGuarder({
                 nickname: G.s,
@@ -564,8 +569,20 @@ export function CreateAppManager(context, rcon) {
 
         /** @type {RequestHandler<V, Scheme<T, U, 'RES'>, Scheme<T, U, 'REQ'>, any, { getSessionUser: () => User | null; getSession: () => Session | null }>} */
         function handler(req, res, next) {
+            let parsedQ = {};
+            if (method == 'GET') {
+                try {
+                    parsedQ = JSON.parse(req.query.data);
+                } catch (e) {
+                    res.status(400).json(/** @type {any} */ ({
+                        success: false,
+                        e: 'bad_request'
+                    }));
+                    return;
+                }
+            }
             const data = method == 'GET' ?
-                req.query : req.body;
+                parsedQ: req.body;
             const guarder = guarders[path][method];
             /** @type {ParseError | Scheme<T, U, 'REQ'>} */
             const gdata = /** @type {any} */ (guarder(data));
@@ -688,6 +705,18 @@ export function CreateAppManager(context, rcon) {
         const result = context.databaseManager.API.sessionDelete(data, session);
         res.status(result.success ? 200 : 400).json(result);
     }));
+    
+    app.get(...makeHandler('/api/generate/roadmap', 'GET', async (req, res) => {
+        if (!context.databaseManager) throw new Error();
+        const data = req.body;
+        const user = res.locals.getSessionUser();
+        if (!user) {
+            res.status(400).json({ success: false, e: 'unauthorized' });
+            return;
+        }
+        const result = await context.databaseManager.API.generateRoadMap(data, user);
+        res.status(result.success ? 200 : 400).json(result);
+    }));
 
     app.get(...makeHandler('/api/data/user', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
@@ -728,7 +757,8 @@ export function CreateAppManager(context, rcon) {
     app.get(...makeHandler('/api/data/userprofile', 'GET', (req, res) => {
         if (!context.databaseManager) throw new Error();
         const data = req.body;
-        const result = context.databaseManager.API.dataUserProfileGet(data);
+        const user = res.locals.getSessionUser();
+        const result = context.databaseManager.API.dataUserProfileGet(data, user);
         res.status(result.success ? 200 : 400).json(result);
     }));
 

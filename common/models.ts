@@ -435,3 +435,11 @@ export interface Session extends Entity<'session'> {
   /** 만료 시각 */
   expires_at: TimeStamp;
 }
+
+export interface RoadMapCourse {
+  name: string;
+  code: string;
+  score: number;
+  reason: string;
+  limitoff: boolean;
+}

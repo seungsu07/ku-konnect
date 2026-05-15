@@ -20,7 +20,8 @@ import {
   type BoolRecord,
   type RemovedID,
   type StudyGroup,
-  type SessionDataType
+  type SessionDataType,
+  type RoadMapCourse
 } from './models.ts';
 
 export type ErrorString =
@@ -60,6 +61,7 @@ export type Path =
   | '/api/auth/signup'
   | '/api/auth/login'
   | '/api/session'
+  | '/api/generate/roadmap'
   | '/api/data/user'
   | '/api/data/userprofile'
   | '/api/data/professor'
@@ -258,6 +260,22 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     };
   };
   
+  '/api/generate/roadmap': {
+    GET: {
+      REQ: {
+        input: string;
+      };
+      
+      RES: {
+        success: true;
+        data: RoadMapCourse[];
+      } | {
+        success: false;
+        e: ErrorString;
+      };
+    }
+  };
+  
   '/api/data/user': {
     GET: {
       REQ: {};
@@ -336,9 +354,10 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
     GET: {
       REQ: Partial<Pick<UserProfile,
         | 'id'
-        | 'user'
         | 'nickname'
-      >>;
+      >> & {
+        my?: boolean;
+      };
       
       RES: {
         success: true;
@@ -346,7 +365,6 @@ export interface PATH_ROUTE extends PATH_ROUTE_SCHEME {
           | 'id'
           | 'image'
           | 'nickname'
-          | 'user'
         >[];
       } | {
         success: false;

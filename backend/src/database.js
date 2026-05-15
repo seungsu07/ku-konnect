@@ -20,6 +20,7 @@ import JSON_LECTURES from '../data/lectures.json' with { type: 'json' };
 import JSON_LECTURECLASSES from '../data/lectureclasses.json' with { type: 'json' };
 import JSON_PROFESSORS from '../data/professors.json' with { type: 'json' };
 import JSON_BOARDS from '../data/boards.json' with { type: 'json' };
+import { generate } from './llm.js';
 
 
 
@@ -62,8 +63,8 @@ export function sendMail(to, subject, html) {
         html
     }).then(() => {
         mail_sended.push(Temporal.Now.instant());
-        if (mail_sended.length > 100) {
-            mail_sended.splice(0, mail_sended.length - 100);
+        if (mail_sended.length > SEND_LIMIT) {
+            mail_sended.splice(0, mail_sended.length - SEND_LIMIT);
         }
         return true;
     }).catch((e) => (console.error(e), false));
@@ -118,6 +119,14 @@ const db = new loki('./database.json', {
 
 /** @type {EntityID<'board'>} */
 const STUDY_GROUP_DESCRIPTIONS = '709d1bed-6f52-4584-8ad6-0c8c92ea4772';
+
+const GEN_LIMIT = 100;
+const GEN_MIN_DURATION = Temporal.Duration.from({ minutes: 1 });
+const GEN_LIMIT_DURATION = Temporal.Duration.from({ hours: 12 });
+/** @type {Map<EntityID<'user'>, Temporal.Instant>} */
+const genUsed = new Map();
+/** @type {Temporal.Instant[]} */
+const map_gened = [];
 
 /**
  * @template {(...args: any[]) => any} T
@@ -313,6 +322,16 @@ export function CreateDatabaseManager(context, rcon) {
 
         collectIDMap() {
             idMap.forEach((v, k) => v.deref() == undefined ? idMap.delete(k) : undefined);
+        },
+        
+        collectGenMap() {
+            const now = Temporal.Now.instant();
+            genUsed.forEach((v, k) =>
+                now.since(v)
+                    .subtract(Temporal.Duration.from({ minutes: 1 }))
+                    .sign >= 0?
+                genUsed.delete(k): undefined
+            );
         },
 
         /**
@@ -568,9 +587,9 @@ export function CreateDatabaseManager(context, rcon) {
                     e: 'already_processed'
                 };
                 if (
-                    mail_sended.length >= 100 &&
+                    mail_sended.length >= SEND_LIMIT &&
                     Temporal.Now.instant()
-                        .since(/** @type {any} */(mail_sended.at(-100)))
+                        .since(/** @type {any} */(mail_sended.at(-SEND_LIMIT)))
                         .subtract(SEND_LIMIT_DURATION).sign < 0 ||
                     mail_sended.length != 0 &&
                     Temporal.Now.instant()
@@ -744,6 +763,49 @@ export function CreateDatabaseManager(context, rcon) {
             //     
             //     return;
             // },
+            
+            /**
+             * /api/generate/roadmap
+             * @method GET
+             * @type {Asyncify<RouteFunction<'/api/generate/roadmap', 'GET', [User]>>}
+             */
+            async generateRoadMap(data, user) {
+                const { input } = data;
+                const prev = genUsed.get(user.id);
+                if (!prev)
+                    genUsed.set(user.id, Temporal.Now.instant());
+                else {
+                    if (
+                        prev &&
+                        Temporal.Now.instant().since(prev)
+                            .subtract(Temporal.Duration.from({ minutes: 1 })).sign < 0
+                    ) return {
+                        success: false,
+                        e: 'already_processed'
+                    };
+                }
+                if (
+                    map_gened.length >= GEN_LIMIT &&
+                    Temporal.Now.instant()
+                        .since(/** @type {any} */(map_gened.at(-GEN_LIMIT)))
+                        .subtract(GEN_LIMIT_DURATION).sign < 0 ||
+                    map_gened.length != 0 &&
+                    Temporal.Now.instant()
+                        .since(/** @type {any} */(map_gened.at(-1)))
+                        .subtract(GEN_MIN_DURATION).sign < 0
+                ) return {
+                    success: false,
+                    e: 'server_is_busy'
+                };
+                const output = await generate(input);
+                map_gened.push(Temporal.Now.instant());
+                if (map_gened.length > GEN_LIMIT)
+                    map_gened.splice(0, map_gened.length - GEN_LIMIT);
+                return {
+                    success: true,
+                    data: output
+                };
+            },
 
             /**
              * /api/data/user
@@ -893,26 +955,30 @@ export function CreateDatabaseManager(context, rcon) {
             /**
              * /api/data/userprofile
              * @method GET
-             * @type {RouteFunction<'/api/data/userprofile', 'GET'>}
+             * @type {RouteFunction<'/api/data/userprofile', 'GET', [User | null]>}
              */
-            dataUserProfileGet(data) {
+            dataUserProfileGet(data, user) {
                 const {
                     id,
-                    user: u,
-                    nickname
+                    nickname,
+                    my
                 } = data;
+                if (my && !user) return {
+                    success: false,
+                    e: 'unauthorized'
+                };
                 const t = dbm.findEntity({
                     type: 'user_profile',
                     ...removeEmpty({
                         id,
-                        u,
-                        nickname
+                        nickname,
+                        user: my? user?.id: undefined
                     })
                 });
                 return {
                     success: true,
-                    data: t.map(({ id, nickname, image, user }) =>
-                        ({ id, nickname, image, user }))
+                    data: t.map(({ id, nickname, image }) =>
+                        ({ id, nickname, image }))
                 };
             },
 
@@ -2204,6 +2270,7 @@ export function CreateDatabaseManager(context, rcon) {
                 const err = await db_save;
                 if (err) console.error(err);
                 this.collectIDMap();
+                this.collectGenMap();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
                 await Promise.any([delay_prom, controller.waitFor(false)]);
