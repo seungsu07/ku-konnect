@@ -190,7 +190,7 @@ body:not(.light-mode) .logout-btn:hover {
 /* =========================================
    반응형 (화면 가로 768px 이하일 때 적용)
    ========================================= */
-@media (max-width: 768px) {
+@media (max-width: 800px) {
   
 
   .navbar-container {

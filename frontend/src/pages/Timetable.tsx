@@ -5,7 +5,7 @@ import CenterPanel from '../components/Timetable/CenterPanel';
 import RightPanel from '../components/Timetable/RightPanel';
 import { Loader2, AlertCircle, Plus, Download } from 'lucide-react';
 
-import type { TimeTable, Lecture, Preferences } from '../../../common/models';
+import type { TimeTable, Lecture, Preferences, Period } from '../../../common/models';
 import type { WorkerInput, WorkerOutput } from '../workers/timetableWorker';
 import { dataApi } from '../api/data';
 
@@ -19,32 +19,117 @@ const Timetable: React.FC = () => {
   const [deadEndReason, setDeadEndReason] = useState<string | null>(null);
 
   // View/Create modes
-  const [mode, setMode] = useState<'view' | 'create'>('create');
-  const [savedTimetables, setSavedTimetables] = useState<TimeTable[]>([]);
+  const [mode, setMode] = useState<'view' | 'create'>('view');
+  const [savedTimetables, setSavedTimetables] = useState<(TimeTable & { renderableClasses?: any[] })[]>([]);
   const [activeSavedIndex, setActiveSavedIndex] = useState<number>(0);
 
   const workerRef = useRef<Worker | null>(null);
 
+  const inflateTimetable = async (tt: TimeTable, cache: Map<string, any>): Promise<TimeTable & { renderableClasses: any[] }> => {
+    if ((tt as any).renderableClasses) return tt as any;
+
+    const renderableClasses: any[] = [];
+    const grouped = new Map<string, any[]>();
+
+    const fetchWithCache = async (key: string, fetcher: () => Promise<any>) => {
+      if (cache.has(key)) return cache.get(key);
+      const promise = fetcher();
+      cache.set(key, promise); // Store promise to avoid duplicate pending requests
+      const res = await promise;
+      cache.set(key, res);
+      return res;
+    };
+
+    // Parallelize all classes in the timetable
+    await Promise.all(tt.classes.map(async (classId) => {
+      const cls = await fetchWithCache(`cls-${classId}`, () => dataApi.getLectureClass({ id: classId as any }));
+      if (!cls) return;
+
+      const lecture = await fetchWithCache(`lect-${cls.lecture}`, () => dataApi.getLecture({ id: cls.lecture }));
+      if (!lecture) return;
+
+      // Parallelize Course, Professor, and Periods/Rooms/Buildings
+      const [course, professor, ...periodData] = await Promise.all([
+        fetchWithCache(`course-${lecture.course}`, () => dataApi.getCourse({ id: lecture.course })),
+        lecture.professor ? fetchWithCache(`prof-${lecture.professor}`, () => dataApi.getProfessor({ id: lecture.professor })) : Promise.resolve(undefined),
+        ...cls.periods.map(async (period: Period) => {
+          const room = await fetchWithCache(`room-${period.room}`, () => dataApi.getClassRoom({ id: period.room }));
+          const building = room ? await fetchWithCache(`bld-${room.building}`, () => dataApi.getBuilding({ id: room.building })) : undefined;
+          return { period, room, building };
+        })
+      ]);
+
+      const duration = lecture.hours / (cls.periods.length || 1);
+
+      periodData.forEach(({ period, room, building }) => {
+        const entry = {
+          id: `${classId}-${period.day}-${period.time}`,
+          lectureId: lecture.id,
+          courseName: course?.name || '알 수 없음',
+          courseCode: course?.code || '----',
+          courseType: course?.course_type || 'major',
+          credit: lecture.credit,
+          profName: professor?.name || '미지정',
+          day: period.day,
+          start: 9 + (period.time - 1) * 1.5,
+          end: 9 + (period.time - 1) * 1.5 + duration,
+          location: `${building?.name || ''} ${room?.room || ''}`.trim(),
+          warning: false
+        };
+
+        if (!grouped.has(classId)) grouped.set(classId, []);
+        grouped.get(classId)!.push(entry);
+      });
+    }));
+
+    grouped.forEach(list => {
+      const dayGroups = new Map<string, any[]>();
+      list.forEach(entry => {
+        if (!dayGroups.has(entry.day)) dayGroups.set(entry.day, []);
+        dayGroups.get(entry.day)!.push(entry);
+      });
+
+      dayGroups.forEach(dayList => {
+        dayList.sort((a, b) => a.start - b.start);
+        let current = dayList[0];
+        if (!current) return;
+        for (let i = 1; i < dayList.length; i++) {
+          const next = dayList[i];
+          if (next.start - current.end <= 0.3) {
+            current.end = next.end;
+          } else {
+            renderableClasses.push(current);
+            current = next;
+          }
+        }
+        renderableClasses.push(current);
+      });
+    });
+
+    return { ...tt, renderableClasses };
+  };
+
   // Fetch saved timetables from API on mount
   useEffect(() => {
     dataApi.getTimeTables({})
-      .then((fetched: TimeTable[]) => {
-        setSavedTimetables(fetched);
-        if (fetched.length > 0) {
-          const selectedIdx = fetched.findIndex(t => t.selected);
+      .then(async (fetched: TimeTable[]) => {
+        const globalCache = new Map<string, any>();
+        const inflated = await Promise.all(fetched.map(tt => inflateTimetable(tt, globalCache)));
+        setSavedTimetables(inflated);
+        if (inflated.length > 0) {
+          const selectedIdx = inflated.findIndex(t => t.selected);
           setActiveSavedIndex(selectedIdx !== -1 ? selectedIdx : 0);
           setMode('view');
-        } else {
-          setMode('create');
         }
       })
-      .catch(() => setMode('create'))
+      .catch(() => { })
       .finally(() => setIsLoading(false));
   }, []);
 
+
   useEffect(() => {
     workerRef.current = new Worker(new URL('../workers/timetableWorker.ts', import.meta.url), { type: 'module' });
-    
+
     workerRef.current.onmessage = (e: MessageEvent<WorkerOutput>) => {
       const { timetables, reason } = e.data;
       if (timetables.length > 0) {
@@ -67,7 +152,7 @@ const Timetable: React.FC = () => {
   const handleGenerate = (basket: Lecture[], prefs: Preferences, bannedCells: Record<string, boolean>) => {
     setIsGenerating(true);
     setHasGenerated(false);
-    
+
     const input: WorkerInput = { basket, prefs, bannedCells };
     workerRef.current?.postMessage(input);
   };
@@ -95,8 +180,11 @@ const Timetable: React.FC = () => {
 
       if (res.success) {
         const newTimetable = res.data as TimeTable;
+        // Re-attach renderableClasses from the source to avoid re-inflating
+        const finalTimetable = { ...newTimetable, renderableClasses: (timeTable as any).renderableClasses };
+
         setSavedTimetables(prev => {
-          const updated = [...prev, newTimetable];
+          const updated = [...prev, finalTimetable];
           setActiveSavedIndex(updated.length - 1);
           return updated;
         });
@@ -116,6 +204,7 @@ const Timetable: React.FC = () => {
       setIsSaving(false);
     }
   };
+
 
 
   const handleNextAlternative = () => {
@@ -148,7 +237,7 @@ const Timetable: React.FC = () => {
         </div>
       )}
       <div className={styles.wrapper}>
-        
+
         {mode === 'create' ? (
           <>
             {/* Left Panel - 2.5/10 */}
@@ -181,15 +270,15 @@ const Timetable: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                  <CenterPanel 
-                    timeTable={generatedTimetables[currentAlternativeIndex]}
-                    mode="create"
-                    currentIndex={currentAlternativeIndex}
-                    totalAlternatives={generatedTimetables.length}
-                    onPrev={handlePrevAlternative}
-                    onNext={handleNextAlternative}
-                    onSave={handleSaveTimetable}
-                  />
+                <CenterPanel
+                  timeTable={generatedTimetables[currentAlternativeIndex]}
+                  mode="create"
+                  currentIndex={currentAlternativeIndex}
+                  totalAlternatives={generatedTimetables.length}
+                  onPrev={handlePrevAlternative}
+                  onNext={handleNextAlternative}
+                  onSave={handleSaveTimetable}
+                />
               )}
             </div>
 
@@ -206,16 +295,16 @@ const Timetable: React.FC = () => {
                 <div className={styles.emptyIcon}>📅</div>
                 <h3 className={styles.emptyTitle}>아직 저장된 시간표가 없습니다</h3>
                 <p className={styles.emptyDesc}>새로운 시간표를 만들거나 기존 시간표를 불러와보세요.</p>
-                
-                <button 
-                  className={styles.primaryActionBtn} 
+
+                <button
+                  className={styles.primaryActionBtn}
                   onClick={() => setMode('create')}
                   style={{ marginTop: '24px', padding: '16px 32px', fontSize: '1.1rem', borderRadius: '12px', background: '#ff3131', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
                 >
                   <Plus size={24} /> 새 시간표 만들기
                 </button>
-                
-                <button 
+
+                <button
                   className={styles.secondaryActionBtn}
                   style={{ marginTop: '16px', padding: '10px 20px', fontSize: '0.95rem', borderRadius: '8px', background: 'transparent', color: '#666', border: '1px solid #ddd', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
@@ -223,7 +312,7 @@ const Timetable: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <CenterPanel 
+              <CenterPanel
                 timeTable={savedTimetables[activeSavedIndex]}
                 mode="view"
                 savedTimetables={savedTimetables}

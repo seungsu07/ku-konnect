@@ -242,6 +242,24 @@ const Study: React.FC = () => {
                 ))}
               </div>
 
+              {/* Mobile Entry Code */}
+              <div className={styles.mobileEntryCard}>
+                <div className={styles.codeInputGroup}>
+                  <input
+                    type="text"
+                    className={styles.codeInput}
+                    placeholder="비공개 스터디 입장 코드..."
+                    maxLength={6}
+                    value={entryCode}
+                    onChange={e => setEntryCode(e.target.value.toUpperCase())}
+                    onKeyDown={e => e.key === 'Enter' && handleEntryCode()}
+                  />
+                  <button className={styles.codeSubmitBtn} onClick={handleEntryCode}>
+                    입장
+                  </button>
+                </div>
+              </div>
+
               {/* Study Cards */}
               <div className={styles.studyGrid}>
                 {filteredStudies.map(study => {

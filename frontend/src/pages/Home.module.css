@@ -312,8 +312,25 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .content {
+    padding: 48px 16px;
+  }
+
+  .hero {
+    margin-bottom: 60px;
+  }
+
   .title {
-    font-size: 42px;
+    font-size: 36px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .badge {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 
   .featuresGrid {
@@ -322,6 +339,26 @@
 
   .ctaGroup {
     flex-direction: column;
+  }
+
+  .primaryBtn,
+  .secondaryBtn {
+    font-size: 16px;
+    padding: 14px 24px;
+    justify-content: center;
+  }
+
+  .sectionTitle {
+    font-size: 24px;
+    margin-bottom: 32px;
+  }
+
+  .featureCard {
+    padding: 24px;
+  }
+
+  .physicsContainer {
+    display: none;
   }
 }
 

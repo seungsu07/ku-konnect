@@ -20,7 +20,7 @@ const AppContent = () => {
 
   return (
     <>
-      {showNavbar && <Navbar/>}
+      {showNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/majormap" element={<MajorMap />} />

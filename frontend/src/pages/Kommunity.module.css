@@ -245,6 +245,7 @@
   width: 100%;
   font-size: 0.95rem;
   color: #1e293b;
+  background: transparent;
 }
 
 .searchInput::placeholder {

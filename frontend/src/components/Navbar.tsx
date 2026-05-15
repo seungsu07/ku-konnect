@@ -40,7 +40,7 @@ const Navbar = () => {
   return (
     <header className="navbar">
       <div className="navbar-container">
-        
+
         <button className="mobile-menu-btn" onClick={toggleMenu}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -77,8 +77,8 @@ const Navbar = () => {
         </div>
       </div>
 
-      <div 
-        className={`slide-menu-overlay ${isMenuOpen ? 'open' : ''}`} 
+      <div
+        className={`slide-menu-overlay ${isMenuOpen ? 'open' : ''}`}
         onClick={toggleMenu}
       ></div>
 

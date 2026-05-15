@@ -176,7 +176,9 @@ const Kommunity: React.FC = () => {
               </div>
 
               <div className={styles.postsList}>
-                {MOCK_POSTS.filter(p => p.board === activeBoard?.name || !activeBoard).map(post => (
+                {MOCK_POSTS.filter(p => (p.board === activeBoard?.name || !activeBoard) && 
+                  (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())))
+                .map(post => (
                   <article 
                     key={post.id} 
                     className={styles.postCard}
@@ -217,73 +219,121 @@ const Kommunity: React.FC = () => {
           ) : (
             /* Main Subject Grid View */
             <>
-              <div className={styles.feedHeader}>
-                <h2 className={styles.feedTitle}>나의 수강 과목 게시판</h2>
-                <div style={{ fontSize: '0.9rem', color: '#64748b' }}>2026학년도 1학기</div>
-              </div>
-              
-              <div className={styles.subjectGrid}>
-                {MOCK_SUBJECT_BOARDS.map(subject => {
-                  const colors = getColor(subject.code);
-                  return (
-                    <div 
-                      key={subject.id} 
-                      className={styles.subjectCard}
-                      style={{ backgroundColor: colors.bg, color: colors.text }}
-                      onClick={() => setSelectedBoardId(subject.id)}
-                    >
-                      <div>
-                        <div className={styles.subjectCardTitle}>{subject.name}</div>
-                        <div className={styles.subjectCardInfo}>
-                          <span className={styles.subjectCardProf}>{subject.prof}</span>
-                          <span className={styles.subjectCardCode}>{subject.code}</span>
-                        </div>
-                      </div>
-                      
-                      <div className={styles.subjectCardStats}>
-                        {subject.newPosts > 0 && (
-                          <div className={styles.newCount} style={{ color: colors.text }}>
-                            <Flame size={12} fill={colors.text} />
-                            새 글 {subject.newPosts}
-                          </div>
-                        )}
-                        {subject.newPosts === 0 && (
-                          <div className={styles.newCount} style={{ opacity: 0.6, color: colors.text }}>
-                            최근 게시글 없음
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className={styles.searchBar} style={{ marginBottom: 24 }}>
+                <Search size={18} className={styles.searchIcon} />
+                <input 
+                  type="text" 
+                  placeholder="전체 게시판 검색..." 
+                  className={styles.searchInput}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
-              <div className={styles.feedHeader} style={{ marginTop: 40 }}>
-                <h2 className={styles.feedTitle}>실시간 전체 인기글</h2>
-              </div>
-              <div className={styles.postsList}>
-                {MOCK_POSTS.map(post => (
-                  <article 
-                    key={post.id} 
-                    className={styles.postCard}
-                    onClick={() => navigate(`/kommunity/post/${post.id}`)}
-                  >
-                    <div className={styles.postHeader}>
-                      <span className={styles.postBadge}>{post.board}</span>
-                    </div>
-                    <h3 className={styles.postTitle}>{post.title}</h3>
-                    <p className={styles.postExcerpt}>{post.excerpt}</p>
-                    <div className={styles.postMeta}>
-                      <div className={styles.authorInfo}>
-                        <div className={styles.authorAvatar}>{post.author[0]}</div>
-                        <span>{post.author}</span>
-                      </div>
-                      <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes}</div>
-                      <div className={styles.metaItem}><MessageCircle size={14} /> {post.comments}</div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              {searchQuery ? (
+                <>
+                  <div className={styles.feedHeader}>
+                    <h2 className={styles.feedTitle}>'{searchQuery}' 검색 결과</h2>
+                  </div>
+                  <div className={styles.postsList}>
+                    {MOCK_POSTS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                      MOCK_POSTS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+                        <article 
+                          key={post.id} 
+                          className={styles.postCard}
+                          onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                        >
+                          <div className={styles.postHeader}>
+                            <span className={styles.postBadge}>{post.board}</span>
+                          </div>
+                          <h3 className={styles.postTitle}>{post.title}</h3>
+                          <p className={styles.postExcerpt}>{post.excerpt}</p>
+                          <div className={styles.postMeta}>
+                            <div className={styles.authorInfo}>
+                              <div className={styles.authorAvatar}>{post.author[0]}</div>
+                              <span>{post.author}</span>
+                            </div>
+                            <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes}</div>
+                            <div className={styles.metaItem}><MessageCircle size={14} /> {post.comments}</div>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>검색 결과가 없습니다.</div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.feedHeader}>
+                    <h2 className={styles.feedTitle}>나의 수강 과목 게시판</h2>
+                    <div style={{ fontSize: '0.9rem', color: '#64748b' }}>2026학년도 1학기</div>
+                  </div>
+                  
+                  <div className={styles.subjectGrid}>
+                    {MOCK_SUBJECT_BOARDS.map(subject => {
+                      const colors = getColor(subject.code);
+                      return (
+                        <div 
+                          key={subject.id} 
+                          className={styles.subjectCard}
+                          style={{ backgroundColor: colors.bg, color: colors.text }}
+                          onClick={() => setSelectedBoardId(subject.id)}
+                        >
+                          <div>
+                            <div className={styles.subjectCardTitle}>{subject.name}</div>
+                            <div className={styles.subjectCardInfo}>
+                              <span className={styles.subjectCardProf}>{subject.prof}</span>
+                              <span className={styles.subjectCardCode}>{subject.code}</span>
+                            </div>
+                          </div>
+                          
+                          <div className={styles.subjectCardStats}>
+                            {subject.newPosts > 0 && (
+                              <div className={styles.newCount} style={{ color: colors.text }}>
+                                <Flame size={12} fill={colors.text} />
+                                새 글 {subject.newPosts}
+                              </div>
+                            )}
+                            {subject.newPosts === 0 && (
+                              <div className={styles.newCount} style={{ opacity: 0.6, color: colors.text }}>
+                                최근 게시글 없음
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className={styles.feedHeader} style={{ marginTop: 40 }}>
+                    <h2 className={styles.feedTitle}>실시간 전체 인기글</h2>
+                  </div>
+                  <div className={styles.postsList}>
+                    {MOCK_POSTS.map(post => (
+                      <article 
+                        key={post.id} 
+                        className={styles.postCard}
+                        onClick={() => navigate(`/kommunity/post/${post.id}`)}
+                      >
+                        <div className={styles.postHeader}>
+                          <span className={styles.postBadge}>{post.board}</span>
+                        </div>
+                        <h3 className={styles.postTitle}>{post.title}</h3>
+                        <p className={styles.postExcerpt}>{post.excerpt}</p>
+                        <div className={styles.postMeta}>
+                          <div className={styles.authorInfo}>
+                            <div className={styles.authorAvatar}>{post.author[0]}</div>
+                            <span>{post.author}</span>
+                          </div>
+                          <div className={styles.metaItem}><ThumbsUp size={14} /> {post.likes}</div>
+                          <div className={styles.metaItem}><MessageCircle size={14} /> {post.comments}</div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </main>
