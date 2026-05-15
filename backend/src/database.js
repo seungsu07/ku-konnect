@@ -43,6 +43,12 @@ const transporter = nodemailer.createTransport(/** @type {any} */ ({
 
 transporter.set('proxy_socks_module', socks);
 
+const SEND_LIMIT = 100;
+const SEND_MIN_DURATION = Temporal.Duration.from({ minutes: 1 });
+const SEND_LIMIT_DURATION = Temporal.Duration.from({ hours: 12 });
+/** @type {Temporal.Instant[]} */
+const mail_sended = [];
+
 /**
  * @param {string} to
  * @param {string} subject
@@ -54,7 +60,13 @@ export function sendMail(to, subject, html) {
         to,
         subject,
         html
-    }).then(() => true).catch((e) => (console.error(e), false));
+    }).then(() => {
+        mail_sended.push(Temporal.Now.instant());
+        if (mail_sended.length > 100) {
+            mail_sended.splice(0, mail_sended.length - 100);
+        }
+        return true;
+    }).catch((e) => (console.error(e), false));
 };
 
 /**
@@ -549,8 +561,27 @@ export function CreateDatabaseManager(context, rcon) {
                 const {
                     address
                 } = data;
-                if (mailMgr.checkVerify(address))
-                    mailMgr.expireVerify(address);
+                const prev = mailMgr.checkVerify(address);
+                if (
+                    prev.valid &&
+                    prev.limit >= Temporal.Duration.from({ minutes: 5 }).total('milliseconds')
+                ) return {
+                    success: false,
+                    e: 'already_processed'
+                };
+                if (
+                    mail_sended.length >= 100 &&
+                    Temporal.Now.instant()
+                        .since(/** @type {any} */ (mail_sended.at(-100)))
+                        .subtract(SEND_LIMIT_DURATION).sign < 0 ||
+                    mail_sended.length != 0 &&
+                    Temporal.Now.instant()
+                        .since(/** @type {any} */ (mail_sended.at(-1)))
+                        .subtract(SEND_MIN_DURATION).sign < 0
+                ) return {
+                    success: false,
+                    e: 'server_is_busy'
+                };
                 const mailvSession = mailMgr.registerVerify(address,
                     Temporal.Duration.from({ minutes: 15 })
                 );
@@ -1436,8 +1467,12 @@ export function CreateDatabaseManager(context, rcon) {
                     ...removeEmpty({
                         id,
                         board,
-                        title,
-                        content
+                        title: title? {
+                            '$regex': new RegExp(RegExp.escape(title))
+                        }: undefined,
+                        content: content? {
+                            '$regex': new RegExp(RegExp.escape(content))
+                        }: undefined,
                     })
                 }, {
                     limit,

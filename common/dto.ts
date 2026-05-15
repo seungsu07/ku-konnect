@@ -49,6 +49,7 @@ export type ErrorString =
   | 'unauthorized'
   | 'no_permission'
   | 'already_processed'
+  | 'server_is_busy'
   | 'unexpected';
 
 export type Path =

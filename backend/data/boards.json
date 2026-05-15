@@ -1,9 +1,422 @@
 [
     {
+        "id": "b203f190-65ea-4fa9-9b16-e184913183cd",
+        "type": "board",
+        "name": "__5546f0fb-1f38-405c-86b1-817494b07f28__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "87475a58-fb54-495c-930b-cae926869fa5",
+        "type": "board",
+        "name": "__fd34542d-b351-4daf-addf-f80b5534e119__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "1a4d2ce0-f30b-4901-99b8-ffeda2ff04f6",
+        "type": "board",
+        "name": "__0145033c-fc64-4d4c-a558-e0ba1396ffb4__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "a83f6cbb-7276-45f7-99dc-a9762c389bfc",
+        "type": "board",
+        "name": "__3d907b1a-bb94-4145-98d1-96250c2630ef__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "fa202d07-46db-4f9d-98a6-55017d8334f7",
+        "type": "board",
+        "name": "__633d1e1b-9cc6-4063-bbd2-9d432e752c65__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "e591272f-8f95-4315-848c-8a3e89e522bd",
+        "type": "board",
+        "name": "__2bcf3f81-a130-46e3-b6ad-9ea8dc9c1064__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "ce6b941f-0f06-44c5-ac80-efa0aa917754",
+        "type": "board",
+        "name": "__67761d7d-66da-4b08-9044-f2160676094e__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "abbeb333-5786-4c98-9bf5-443255d41af8",
+        "type": "board",
+        "name": "__3d73734d-6fa4-44a7-95c6-01aad8286d4f__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "ba706362-fb94-4881-9882-776abd8d8ca2",
+        "type": "board",
+        "name": "__b245bf11-82fe-40ed-a180-8f67a0955e3a__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "f5a131ba-4c8d-4e89-9112-907a90c66dad",
+        "type": "board",
+        "name": "__e8489fb2-7fa2-47c0-9be1-2df189b099b5__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "f59b253c-66df-4087-a8ba-2c652a07638c",
+        "type": "board",
+        "name": "__a7164bf5-f5bc-49c0-b5ee-718ee2b4d1a0__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "1588290a-aaff-4578-9db6-90c78c6b7124",
+        "type": "board",
+        "name": "__dda4da09-9929-4d35-9285-f0da7dfc909a__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "81d2393b-a675-41f7-b691-64f2bbc5a150",
+        "type": "board",
+        "name": "__19576723-a396-4fdf-87c1-8a1ac853ef91__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "a3ea31e3-2951-4b8d-b560-be5a9a0a93a8",
+        "type": "board",
+        "name": "__bd052284-91ac-4744-975f-898ba803a7d0__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "1f343233-c257-42df-b595-0983e48aff2e",
+        "type": "board",
+        "name": "__49de2e78-1617-4d1f-a37d-54067eff28f4__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "335e32f6-59c5-4478-a527-6466a02eaf13",
+        "type": "board",
+        "name": "__73877756-8dbc-4505-95cb-8a4b7a727ab8__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "dc8a6d53-0bc8-4190-8efa-c918f777e444",
+        "type": "board",
+        "name": "__6642c484-ccba-40e2-81d5-b36e85083931__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "efa148da-ee56-4b52-a96d-ecd111a2265a",
+        "type": "board",
+        "name": "__175ee81a-8d6e-4591-b075-fa6a7129dfac__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "633f230f-f59d-4f3c-8a8d-87142de94e80",
+        "type": "board",
+        "name": "__e6c05c08-21ff-4ad5-b8a3-65bd2547d168__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "417c811a-106f-4d54-828c-b1d8daba768e",
+        "type": "board",
+        "name": "__42ebe928-01bb-4881-bd74-fd997caeb577__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "844d1582-abd0-486d-ad50-b9f37159270e",
+        "type": "board",
+        "name": "__c7520813-9b31-4edf-8819-e821dd7ace0a__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "65f17462-0a23-4a10-a616-d9d0bbe68f77",
+        "type": "board",
+        "name": "__9b64f4c9-4988-49d3-92b4-13864cf8bc21__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "14ff820e-8b13-4ed4-8793-9de9cebd0f0d",
+        "type": "board",
+        "name": "__ffd07502-6363-49ff-9dcd-aa265583b631__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "287e70d2-336f-4945-a9dd-e444f107bba5",
+        "type": "board",
+        "name": "__801c65a2-1553-4468-8633-4689859c3178__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "df98aa5a-11a2-41d4-bdda-76f72357079f",
+        "type": "board",
+        "name": "__3f633d70-e1bf-465b-99cf-b5b128ae5b8f__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "ee7bf55e-206a-4962-99b8-6f816205674a",
+        "type": "board",
+        "name": "__79af3606-8002-4e4e-a1ff-428a3db5d242__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "2c72739a-5b75-46a0-8fa9-336afa110856",
+        "type": "board",
+        "name": "__10ad5086-d917-4075-aec2-824bd4d5eed4__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "00e45163-52cd-41ba-850e-41487585813f",
+        "type": "board",
+        "name": "__f84fa97b-a3c3-46b9-b683-6205abe4978c__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "9b166ae7-d858-4646-8bbc-83655c830343",
+        "type": "board",
+        "name": "__5d689a1f-9b06-4a51-a16b-afd656807528__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "f486b341-d2b6-4e58-96ea-e313f34d3a17",
+        "type": "board",
+        "name": "__8ffe95fb-1ffc-480e-93fe-47563fb28650__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "c0f17d16-e733-451c-83be-ccfe1e2312d1",
+        "type": "board",
+        "name": "__79739d67-9bca-4c8e-85d6-26822c08662e__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "5cddefce-f9cd-4c82-8912-57502610ad88",
+        "type": "board",
+        "name": "__e8577332-876a-4cb2-90c8-5faa4d33850b__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "c487f886-d6db-467c-829e-9f41cc7a8cd7",
+        "type": "board",
+        "name": "__fab4deca-6a9a-423f-902e-9b32b955de7a__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "e22aa5b3-0005-4545-bb0a-cf809d72c82a",
+        "type": "board",
+        "name": "__7e2f4bcc-3de5-4bf6-b4cf-0e062f351511__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "5e91b95e-f304-4a22-be73-a5939cf7a63e",
+        "type": "board",
+        "name": "__88d818e6-cdbc-4cfe-a94e-9dd1266f0c2c__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "37c4b975-de6f-4857-8aab-f47c804f80dc",
+        "type": "board",
+        "name": "__d21fbb77-8b4c-44fd-a29b-4fe1b4c734a3__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "e51ef1e5-456a-4c48-a0d5-0cc78e239840",
+        "type": "board",
+        "name": "__07448445-250a-47b7-9aee-912bd87673db__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "808e1e55-8775-4f4f-bd0a-a73f3efec718",
+        "type": "board",
+        "name": "__51a301ed-8a37-40ac-97bc-fd482706b3c7__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "622767c4-24ff-43c6-9ed4-3ce408fcf743",
+        "type": "board",
+        "name": "__3aab6237-766b-490e-a97f-b7864b56a89c__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "4537152a-6dea-4c77-9d3d-72e1925909f7",
+        "type": "board",
+        "name": "__6ff85c36-a638-481e-96d8-5610f86cd53c__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "409c04f5-5064-4d51-be27-3625ffc59158",
+        "type": "board",
+        "name": "__a8ccfb93-dbfa-47c7-9b1b-f318e7db3c99__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "4aa2577c-e2cb-4a48-833a-df9c50bb7e01",
+        "type": "board",
+        "name": "__a17f3d81-37da-4fbd-8822-554aa362bbd3__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "ff0db254-3b68-4551-add7-47b34bd3f0ea",
+        "type": "board",
+        "name": "__eace027f-7ce1-406d-8c0f-47312b17caf4__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "4dbddbe2-1642-46d4-8c51-4b801c6440bb",
+        "type": "board",
+        "name": "__299a7fa6-7669-4037-a666-b067ab9107c8__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "4373677d-42a9-4411-9b7a-e7f07fd56783",
+        "type": "board",
+        "name": "__270eecc7-1deb-4c5e-801d-20ebc5eeaded__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "46f5dd71-fe8f-4bbd-bcf8-d26cc632f246",
+        "type": "board",
+        "name": "__6b9fc87a-dc70-4f16-a8aa-650912d7708e__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "2a447752-302b-4754-a1bd-b298f4c91a38",
+        "type": "board",
+        "name": "__9f8303c4-3e4e-491f-8f78-103a8c1610ac__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "906f75f5-201d-4a87-bdc9-7040cffc7039",
+        "type": "board",
+        "name": "__893378cb-1ea9-4816-a65f-fc0bf15d31fb__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "94d5f0ec-1b40-425b-bb8f-7fa0b8d2e54e",
+        "type": "board",
+        "name": "__00666897-135b-48d2-9e12-7148c3f6674d__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "6df8af71-54e1-45d8-a931-7016ccca4a74",
+        "type": "board",
+        "name": "__82ed5a74-a2c4-4edc-878a-0ff0dde80aba__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "eb1ab8c8-b8f7-46fc-a09d-dc4fe64d3b95",
+        "type": "board",
+        "name": "__427a947d-47d4-4e93-9204-16cb08573db0__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "6337de5e-1814-407b-a21e-495a11417c36",
+        "type": "board",
+        "name": "__3c792f2f-9d36-4775-8fcd-47c781206707 __",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "0c9fee77-a85c-4a46-b253-e3699c5a939f",
+        "type": "board",
+        "name": "__40ba0ea8-1f7c-4abd-a162-72df3af62609__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "0491379f-b9df-4c1a-8d51-096ec4e11c9f",
+        "type": "board",
+        "name": "__441ad535-e061-4e55-b8d2-cbf11cb2cbe5__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "73d1eb3f-9a26-483f-9fa9-4e0311eb3d31",
+        "type": "board",
+        "name": "__e9b053a5-15a4-4242-95b6-03512f7cb7be__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "cf228154-8834-4fee-88a0-72b0ca0a17ba",
+        "type": "board",
+        "name": "__286aa42a-0cae-422c-b10b-0131980b1805__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "b516acf3-498f-4645-a4fc-0dc7141adaa2",
+        "type": "board",
+        "name": "__08aec4a4-fd33-4e57-812a-7878448fafda__",
+        "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "3dac5767-e23b-4977-b87b-252070e7e54d",
+        "type": "board",
+        "name": "__a3ea84d8-86d7-4f05-914e-1f5203c6e36d__",
+        "description": "",
+        "post_count": 0
+    },
+    {
         "id": "709d1bed-6f52-4584-8ad6-0c8c92ea4772",
         "type": "board",
         "name": "__study_group_descriptions__",
         "description": "",
+        "post_count": 0
+    },
+    {
+        "id": "f3a27cad-cac8-4164-a2e0-201fad0517c5",
+        "type": "board",
+        "name": "자유게시판",
+        "description": "자유롭게 소통하세요!",
         "post_count": 0
     }
 ]
