@@ -108,11 +108,7 @@ const db = new loki('./database.json', {
         dbOk();
         console.log('Database loaded');
     },
-    autosave: true,
-    autosaveInterval: 60000,
-    autosaveCallback: () => {
-        console.log('Database saved');
-    },
+    autosave: false,
     env: 'NODEJS'
 });
 
@@ -179,60 +175,6 @@ export function CreateDatabaseManager(context, rcon) {
      */
     function duration(cond) {
         return Temporal.Duration.from(cond);
-    }
-
-    /**
-     * @template {EntityType} T
-     * @template {EntityID<T>} U
-     * @typedef {{ [K in keyof U]: U[K] extends EntityID<infer V>? SolvedID<V, U[K]>: U[K] }} SolvedID<U>
-     */
-
-    /**
-     * @template {TypeEntity<EntityType> | EntityID<EntityType>} T
-     * @param {T} nested
-     * @param {number} max_depth
-     * @returns {SolvedNestedID<T>}
-     */
-    function solveID(nested, max_depth) {
-        ++max_depth;
-        /** @type {[string, any][][]} */
-        const stack = [[['0', nested]]];
-        const idx = [0];
-        const id_map = new Map();
-        let h = 0;
-        while (true) {
-            if (idx[h] == stack[h].length) {
-                if (h == 0) {
-                    return stack[0][0][1];
-                }
-                stack.pop();
-                idx.pop();
-                --h;
-                ++idx[h];
-                continue;
-            }
-            const c = stack[h][idx[h]];
-            let [k, v] = c;
-            if (
-                typeof v == 'string' &&
-                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)
-            ) {
-                if (!id_map.has(v))
-                    id_map.set(v, v=dbm.getByID(v))
-                else
-                    v = id_map.get(v);
-                stack[h][idx[h]][1] = v;
-            }
-            if (h > 0)
-                stack[h-1][idx[h-1]][1][k] = v;
-            if (v != null && typeof v == 'object' && h <= max_depth) {
-                stack.push(Object.entries(v));
-                idx.push(0);
-                ++h;
-                continue;
-            }
-            ++idx[h];
-        }
     }
     
     /**
@@ -429,7 +371,7 @@ export function CreateDatabaseManager(context, rcon) {
                     success: false,
                     e: 'id_exists'
                 };
-                if (dbm.findEntity({ type: 'user', univ_mail: address })) return {
+                if (dbm.findEntity({ type: 'user', univ_mail: address }).length) return {
                     success: false,
                     e: 'used_mail'
                 };
@@ -923,6 +865,14 @@ export function CreateDatabaseManager(context, rcon) {
              */
             dataUserProfilePost(data, user) {
                 const { nickname, image } = data;
+                const profiles = dbm.findEntity({
+                    type: 'user_profile',
+                    user: user.id
+                }).length;
+                if (profiles >= 5) return {
+                    success: false,
+                    e: 'too_many'
+                };
                 /** @type {WithoutID<UserProfile>} */
                 const param = {
                     type: 'user_profile',
@@ -1308,7 +1258,11 @@ export function CreateDatabaseManager(context, rcon) {
                     }).map(({ id }) => id): [];
                 return {
                     success: true,
-                    data: t.filter(({ visible, author }) => visible || profiles.includes(author)).map(
+                    data: t.filter(({ visible, author, post }) =>
+                        visible ||
+                        profiles.includes(/** @type {any} */ (dbm.getByID(post)?.author)) || 
+                        profiles.includes(author)
+                    ).map(
                         ({ id, post, content, created_at, updated_at, visible, author }) =>
                         ({ id, post, content, created_at, updated_at, visible, author })
                     )
@@ -2201,6 +2155,7 @@ export function CreateDatabaseManager(context, rcon) {
                 db.save(db_save_resv);
                 const err = await db_save;
                 if (err) console.error(err);
+                console.log('Database saved; at', Temporal.Now.instant());
                 this.collectIDMap();
                 const { promise: delay_prom, resolve } = Promise.withResolvers();
                 setTimeout(resolve, delay.total('millisecond'));
